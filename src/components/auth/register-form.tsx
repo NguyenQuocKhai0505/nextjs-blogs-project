@@ -6,6 +6,8 @@ import {z} from "zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form"
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
+import { signUp } from "@/lib/auth-client"
+import { toast } from "sonner"
 // Schema 
 //Tao schema Zod login
 const registerSchema = z.object({
@@ -19,7 +21,11 @@ const registerSchema = z.object({
 })
 
 type registerFormValue = z.infer<typeof registerSchema>
-function RegisterForm(){
+
+interface RegisterFormProps{
+    onSuccess?: () => void
+}
+function RegisterForm({onSuccess}: RegisterFormProps){
     const [isLoading,setIsLoading] = useState(false)
 
     //initlaze form
@@ -35,9 +41,24 @@ function RegisterForm(){
     const onRegisterSubmit = async(values:registerFormValue) =>{
         setIsLoading(true)
         try{
-            console.log(values)
-        }catch(error){
+            const {error} = await signUp.email({
+                name: values.name,
+                email: values.email,
+                password: values.password
+            })
+        if(error){
+            toast("Failed to create account. Please try again")
+            return
+        }
+        toast("Your account has been created successfully. Please sign in with your emain & password")
 
+        if(onSuccess){
+            onSuccess()
+        }
+        }catch(error){
+            console.log(error)
+        }finally{
+            setIsLoading(false)
         }
     }
     return(
