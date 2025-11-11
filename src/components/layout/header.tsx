@@ -3,9 +3,13 @@
 import Link from "next/link"
 import { Button } from "../ui/button"
 import { useRouter } from "next/navigation"
+import { useSession } from "@/lib/auth-client"
+import UserMenu from "../auth/user-menu"
+import ThemeToggle from "../theme/theme-toggle"
 
 
 function Header(){
+    const {data:session,isPending} = useSession()
     const router = useRouter()
     
     const navItems =[{
@@ -35,11 +39,15 @@ function Header(){
                     <div className="hidden md:block">
                         {/* Keep an place holder for searching*/}
                     </div>
-                    {/* Placehholder theme for toggle */}
+                    <ThemeToggle/>
                     <div className="flex items-center gap-2 cursor-pointer ">
-                        <Button variant = {"default"} onClick={() => router.push("/auth")}>
+                        {
+                            isPending ? null : session?.user ?
+                            <UserMenu user={session?.user}/> : 
+                            <Button variant = {"default"} onClick={() => router.push("/auth")}>
                             Login
                         </Button>
+                        }
                     </div>
             </div>
         </div>
