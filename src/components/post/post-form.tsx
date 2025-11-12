@@ -7,6 +7,10 @@ import { Button } from "../ui/button"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useTransition } from "react"
+import { CreatePost } from "@/actions/post-action"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+
 
 //post form schema for validation
 const postSchema = z.object({
@@ -18,6 +22,7 @@ const postSchema = z.object({
 type PostFormValue = z.infer<typeof postSchema>
 function PostForm(){
     const [isPending,startTransition] = useTransition()
+    const router = useRouter()
     const {register,handleSubmit,formState:{errors}} = useForm<PostFormValue>({
         resolver: zodResolver(postSchema),
         defaultValues:{
@@ -27,7 +32,23 @@ function PostForm(){
         }
     })
     const onFormSubmit = async(data:PostFormValue) =>{
-        console.log(data)
+        startTransition(async()=>{
+            try{
+                const formData = new FormData()
+                formData.append("title",data.title)
+                formData.append("description",data.description)  
+                formData.append("content",data.content)
+                let res;
+                res= await CreatePost(formData)
+                if(res.success){
+                    toast("Post was created sucessfully!")
+                    router.refresh()
+                    router.push("/")
+                }
+            }catch(e){
+                toast("Falied to create post!")
+            }
+        })
     }
     return (
         <form className="space-y-6" onSubmit={handleSubmit(onFormSubmit)}>
