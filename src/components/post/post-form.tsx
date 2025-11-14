@@ -44,6 +44,8 @@ function PostForm(){
                     toast("Post was created sucessfully!")
                     router.refresh()
                     router.push("/")
+                }else{
+                    toast(res.message)
                 }
             }catch(e){
                 toast("Falied to create post!")

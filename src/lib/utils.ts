@@ -1,3 +1,4 @@
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -11,4 +12,12 @@ export function slugify(text:string):string{
             .replace(/[^\w\s-]/g, '')        // Xóa ký tự đặc biệt
             .replace(/[\s_-]+/g, '-')        // Thay space và _ bằng -
             .replace(/^-+|-+$/g, '')         // Xóa - ở đầu/cuối 
+}
+
+export function formatDate(date:Date):string{
+  return new Intl.DateTimeFormat("en-US",{
+    month:"long",
+    day:"numeric",
+    year:"numeric"
+  }).format(date)
 }
