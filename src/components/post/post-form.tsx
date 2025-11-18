@@ -7,28 +7,40 @@ import { Button } from "../ui/button"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useTransition } from "react"
-import { CreatePost } from "@/actions/post-action"
+import { CreatePost, UpdatePost } from "@/actions/post-action"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
 
 //post form schema for validation
 const postSchema = z.object({
-    title: z.string().min(3,"Title must be at least 2 characters long").max(255,"Title must be less than 255 charaters"),
-    description:z.string().min(5,"Description must be at lease 5 characters long").max(255,"Description must be less than 255 characters long"),
-    content: z.string().min(10,"Content must be at least 10 characters long").max(255,"Content must be less than 255 characters long")
+    title: z.string().min(3,"Title must be at least 3 characters long").max(255,"Title must be less than 255 characters"),
+    description:z.string().min(5,"Description must be at least 5 characters long").max(255,"Description must be less than 255 characters long"),
+    content: z.string().min(10,"Content must be at least 10 characters long")
 })
 
 type PostFormValue = z.infer<typeof postSchema>
-function PostForm(){
+
+interface PostFormProps {
+    post?: {
+        id: number
+        title: string
+        description: string
+        content: string
+        slug: string
+    }
+    mode?: "create" | "edit"
+}
+
+function PostForm({ post, mode = "create" }: PostFormProps){
     const [isPending,startTransition] = useTransition()
     const router = useRouter()
     const {register,handleSubmit,formState:{errors}} = useForm<PostFormValue>({
         resolver: zodResolver(postSchema),
         defaultValues:{
-            title:"",
-            description:"",
-            content:""
+            title: post?.title || "",
+            description: post?.description || "",
+            content: post?.content || ""
         }
     })
     const onFormSubmit = async(data:PostFormValue) =>{
@@ -38,17 +50,29 @@ function PostForm(){
                 formData.append("title",data.title)
                 formData.append("description",data.description)  
                 formData.append("content",data.content)
+                
                 let res;
-                res= await CreatePost(formData)
+                if (mode === "edit" && post) {
+                    formData.append("postId", post.id.toString())
+                    formData.append("slug", post.slug)
+                    res = await UpdatePost(formData)
+                } else {
+                    res = await CreatePost(formData)
+                }
+                
                 if(res.success){
-                    toast("Post was created sucessfully!")
+                    toast(mode === "edit" ? "Post updated successfully!" : "Post created successfully!")
                     router.refresh()
-                    router.push("/")
+                    if (mode === "edit") {
+                        router.push(`/post/${res.slug || post?.slug}`)
+                    } else {
+                        router.push("/")
+                    }
                 }else{
                     toast(res.message)
                 }
             }catch(e){
-                toast("Falied to create post!")
+                toast(`Failed to ${mode === "edit" ? "update" : "create"} post!`)
             }
         })
     }
@@ -97,7 +121,9 @@ function PostForm(){
             </div>
             <Button className="mt-5 w-full" disabled={isPending} type="submit">
                 {
-                    isPending ? "Saving Post..." : "Create Post"
+                    isPending 
+                        ? (mode === "edit" ? "Updating Post..." : "Saving Post...") 
+                        : (mode === "edit" ? "Update Post" : "Create Post")
                 }
             </Button>
         </form>

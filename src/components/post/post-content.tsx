@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader } from "../ui/card"
 import { formatDate } from "@/lib/utils"
 import { Button } from "../ui/button"
 import Link from "next/link"
+import { DeletePostButton } from "./delete-post-button"
 
 function PostContent({post,isAuthor = false}: PostContentProps){
     return(
@@ -25,14 +26,15 @@ function PostContent({post,isAuthor = false}: PostContentProps){
                                 </p>
                             )}
                         </div>
-                        {/* Right side: Edit Button - Only display when isAuthor = true */}
+                        {/* Right side: Edit & Delete Buttons - Only display when isAuthor = true */}
                         {isAuthor && (
-                            <div className="flex-shrink-0">
-                                <Button asChild variant="outline">
+                            <div className="flex-shrink-0 flex gap-2">
+                                <Button asChild variant="default" className="bg-blue-600 hover:bg-blue-700">
                                     <Link href={`/post/edit/${post.slug}`}>
                                         Edit Post
                                     </Link>
                                 </Button>
+                                <DeletePostButton postId={post.id}/>
                             </div>
                         )}
                     </div>
