@@ -8,6 +8,20 @@
       "when": 1762324872707,
       "tag": "0000_neat_sentinels",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1763523886922,
+      "tag": "0001_chubby_songbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1763545939060,
+      "tag": "0002_freezing_spirit",
+      "breakpoints": true
     }
   ]
 }

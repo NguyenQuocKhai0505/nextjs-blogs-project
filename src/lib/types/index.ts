@@ -35,6 +35,8 @@ export interface PostContentProps{
         authorId: string,
         createdAt: Date,
         updatedAt: Date,
+        imageUrls?: string | string[] | null,
+        videoUrls?: string | string[] | null,
         author:{
             id:string,
             name: string,

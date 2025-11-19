@@ -39,6 +39,8 @@ export const posts = pgTable("posts",{
     description: varchar("description",{length:255}).notNull(),
     slug: varchar("slug",{length:255}).notNull(),
     content: text("content").notNull(),
+    imageUrls: text("image_urls"),
+    videoUrls: text("video_urls"),
     authorId: varchar("author_id",{length:255}).references(()=>users.id).notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),

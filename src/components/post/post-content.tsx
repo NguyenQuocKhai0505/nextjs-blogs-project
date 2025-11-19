@@ -4,8 +4,21 @@ import { formatDate } from "@/lib/utils"
 import { Button } from "../ui/button"
 import Link from "next/link"
 import { DeletePostButton } from "./delete-post-button"
+import { ImageCarousel } from "./image-carousel"
+
+const parseMediaField = (media?: string | string[] | null) => {
+    if (!media) return []
+    if (Array.isArray(media)) return media
+    try{
+        return JSON.parse(media)
+    }catch{
+        return []
+    }
+}
 
 function PostContent({post,isAuthor = false}: PostContentProps){
+    const images = parseMediaField(post?.imageUrls)
+    const videos = parseMediaField(post?.videoUrls)
     return(
         <div className="space-y-6">
             {/* 1.Header Card- Title, Author, Date */}
@@ -40,6 +53,28 @@ function PostContent({post,isAuthor = false}: PostContentProps){
                     </div>
                 </CardHeader>
             </Card>
+            {/* 2. Images Carousel (if exists) */}
+            {images.length > 0 && (
+                <ImageCarousel images={images} />
+            )}
+            {videos.length > 0 && (
+                <Card>
+                    <CardContent className="pt-6 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {videos.map((url: string, index: number) => (
+                                <div key={index} className="rounded-lg overflow-hidden border bg-black">
+                                    <video
+                                        src={url}
+                                        controls
+                                        className="w-full h-64"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+            
             {/* 3. Content Card */}
             <Card>
                 <CardContent className="pt-6">

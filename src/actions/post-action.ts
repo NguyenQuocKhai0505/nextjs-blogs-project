@@ -49,10 +49,18 @@ export async function CreatePost(formData: FormData){
                 message: "A post with this title is aldready exist! Please create post with different title."
             }
         }
+        //Get media from formData (if exists)
+        const imageUrlsStr = formData.get("imageUrls") as string | null
+        const imageUrls = imageUrlsStr ? JSON.parse(imageUrlsStr) : null
+        const videoUrlsStr = formData.get("videoUrls") as string | null
+        const videoUrls = videoUrlsStr ? JSON.parse(videoUrlsStr) : null
+
         //Post data into Database
         const [newPost] = await db.insert(posts).values({
             title, description,content,slug,
-            authorId:session.user.id
+            authorId:session.user.id,
+            imageUrls: imageUrls ? JSON.stringify(imageUrls) : null,
+            videoUrls: videoUrls ? JSON.stringify(videoUrls) : null
         }).returning()
 
         //Revalidatte the homepage to get the lastest post 
@@ -126,7 +134,13 @@ export async function UpdatePost(formData:FormData){
             }
         }
     }
-    //B7: Update post 
+    //B7: Get media from formData (if exists)
+    const imageUrlsStr = formData.get("imageUrls") as string | null
+    const imageUrls = imageUrlsStr ? JSON.parse(imageUrlsStr) : null
+    const videoUrlsStr = formData.get("videoUrls") as string | null
+    const videoUrls = videoUrlsStr ? JSON.parse(videoUrlsStr) : null
+
+    //B8: Update post 
     const [updatedPost] = await db
         .update(posts)
         .set({
@@ -134,11 +148,13 @@ export async function UpdatePost(formData:FormData){
             description,
             content,
             slug: newSlug,
+            imageUrls: imageUrls ? JSON.stringify(imageUrls) : existingPost.imageUrls, // Giữ nguyên nếu không có mới
+            videoUrls: videoUrls ? JSON.stringify(videoUrls) : existingPost.videoUrls,
             updatedAt: new Date()
         })
         .where(eq(posts.id, postId))
         .returning()
-    //B8: Validate paths 
+    //B9: Validate paths 
     revalidatePath("/")
     revalidatePath(`/post/${newSlug}`)
     revalidatePath(`/post/${slug}`)  //Slug cu neu doi
