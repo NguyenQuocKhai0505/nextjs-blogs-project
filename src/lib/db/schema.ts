@@ -1,7 +1,7 @@
 
 
 import { relations } from "drizzle-orm"
-import {pgTable, varchar, boolean, timestamp, text, serial} from "drizzle-orm/pg-core"
+import {pgTable, varchar, boolean, timestamp, text, serial, integer, uniqueIndex} from "drizzle-orm/pg-core"
 
 export const users = pgTable("user",{
     id: varchar("id",{length:255}).primaryKey(),
@@ -41,21 +41,45 @@ export const posts = pgTable("posts",{
     content: text("content").notNull(),
     imageUrls: text("image_urls"),
     videoUrls: text("video_urls"),
+    likeCount: integer("like_count").notNull().default(0),
+    commentCount: integer("comment_count").notNull().default(0),
     authorId: varchar("author_id",{length:255}).references(()=>users.id).notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })
+
+export const postLikes = pgTable("post_likes",{
+    id:serial("id").primaryKey(),
+    postId: integer("post_id").references(()=>posts.id).notNull(),
+    userId: varchar("user_id",{length:255}).references(()=>users.id).notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+    uniqueLike: uniqueIndex("post_likes_post_id_user_id_unique").on(table.postId, table.userId)
+}))
+
+export const comments = pgTable("comments",{
+    id: serial("id").primaryKey(),
+    postId: integer("post_id").references(()=>posts.id).notNull(),
+    authorId: varchar("author_id",{length:255}).references(()=>users.id).notNull(),
+    content: text("content").notNull(),
+    parentId: integer("parent_id"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
+
 
 // ===== RELATIONS =====
 // Định nghĩa quan hệ giữa các bảng
 
 // 1. Posts Relations: Mỗi post thuộc về một user (author)
 // Từ phía posts -> users: "Mỗi post có một tác giả"
-export const postsRelations = relations(posts, ({ one }) => ({
+export const postsRelations = relations(posts, ({ one, many }) => ({
     author: one(users, {
-        fields: [posts.authorId],      // Foreign key trong bảng posts
-        references: [users.id]          // Primary key trong bảng users
-    })
+        fields: [posts.authorId],
+        references: [users.id]
+    }),
+    likes: many(postLikes),
+    comments: many(comments)
 }))
 
 // 2. Accounts Relations: Mỗi account thuộc về một user
@@ -79,9 +103,11 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
 // 4. Users Relations: Một user có nhiều posts, accounts, sessions
 // Từ phía users -> các bảng khác: "Một user có nhiều..."
 export const usersRelations = relations(users, ({ many }) => ({
-    posts: many(posts),         // Một user có nhiều posts
-    accounts: many(accounts),   // Một user có nhiều accounts (có thể đăng nhập bằng email, Google, etc.)
-    sessions: many(sessions)    // Một user có nhiều sessions (đăng nhập từ nhiều thiết bị)
+    posts: many(posts),
+    accounts: many(accounts),
+    sessions: many(sessions),
+    postLikes: many(postLikes),
+    comments: many(comments)
 }))
 
 export const schema = {
@@ -89,5 +115,32 @@ export const schema = {
     accounts,
     sessions,
     posts,
+    postLikes,
+    comments
     
 }
+
+// 5. Post Likes Relations
+export const postLikesRelations = relations(postLikes, ({ one }) => ({
+    post: one(posts, {
+        fields: [postLikes.postId],
+        references: [posts.id]
+    }),
+    user: one(users, {
+        fields: [postLikes.userId],
+        references: [users.id]
+    })
+}))
+
+// 6. Comments Relations
+export const commentsRelations = relations(comments, ({ one }) => ({
+    post: one(posts, {
+        fields: [comments.postId],
+        references: [posts.id]
+    }),
+    author: one(users, {
+        fields: [comments.authorId],
+        references: [users.id]
+    })
+}))
+

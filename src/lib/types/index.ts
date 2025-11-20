@@ -35,6 +35,8 @@ export interface PostContentProps{
         authorId: string,
         createdAt: Date,
         updatedAt: Date,
+        likeCount: number,
+        commentCount: number,
         imageUrls?: string | string[] | null,
         videoUrls?: string | string[] | null,
         author:{
@@ -43,5 +45,7 @@ export interface PostContentProps{
             email: string
         }
     },
-    isAuthor?:boolean
+    isAuthor?:boolean,
+    initialLiked?: boolean,
+    userId?:string
 }

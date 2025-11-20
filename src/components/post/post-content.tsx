@@ -5,7 +5,8 @@ import { Button } from "../ui/button"
 import Link from "next/link"
 import { DeletePostButton } from "./delete-post-button"
 import { ImageCarousel } from "./image-carousel"
-
+import { LikeButton } from "./like-button"
+import { CommentSection } from "./comment-section"
 const parseMediaField = (media?: string | string[] | null) => {
     if (!media) return []
     if (Array.isArray(media)) return media
@@ -15,8 +16,7 @@ const parseMediaField = (media?: string | string[] | null) => {
         return []
     }
 }
-
-function PostContent({post,isAuthor = false}: PostContentProps){
+function PostContent({post,isAuthor = false,initialLiked = false, userId}: PostContentProps){
     const images = parseMediaField(post?.imageUrls)
     const videos = parseMediaField(post?.videoUrls)
     return(
@@ -85,6 +85,22 @@ function PostContent({post,isAuthor = false}: PostContentProps){
                     </div>
                 </CardContent>
             </Card>
+            {/* 4.Like Button */}
+            <Card>
+                <CardContent className="pt-6">
+                    <LikeButton 
+                        postId={post.id}
+                        initialLikeCount={post.likeCount}
+                        initialLiked={initialLiked}
+                    />
+                </CardContent>
+            </Card>
+            {/* 5. Comment Section */}
+            <CommentSection
+                postId={post.id}
+                initialCommentCount={post.commentCount}
+                userId={userId}
+            />
         </div>
     )
 }

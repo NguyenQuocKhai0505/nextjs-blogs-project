@@ -22,6 +22,13 @@
       "when": 1763545939060,
       "tag": "0002_freezing_spirit",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1763552016248,
+      "tag": "0003_dear_slayback",
+      "breakpoints": true
     }
   ]
 }
