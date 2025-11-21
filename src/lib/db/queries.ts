@@ -5,6 +5,8 @@ import { postLikes,comments } from "./schema"
 import {and} from "drizzle-orm"
 import { sql } from "drizzle-orm"
 import { success } from "better-auth"
+import {users} from "./schema"
+
 //GET ALL POST
 export async function getAllPost(){
     try{
@@ -256,5 +258,48 @@ export async function getPostByUserId(userId:string)
     }catch(e){
         console.log("Get posts by User ID error: ",e)
         return []
+    }
+}
+//UPDATE USER PROFILE
+export async function updateUserProfile(
+    userId: string,
+    data:{
+        name?:string,
+        avatar?:string | null,
+    }
+){
+    try{
+        const updateData: any = {
+            updatedAt: new Date()
+        }
+        if(data.name !== undefined){
+            updateData.name = data.name
+        }
+        if(data.avatar !== undefined){
+            updateData.avatar = data.avatar
+        }
+        const [updateUser] = await db
+           .update(users)
+           .set(updateData)
+           .where(eq(users.id,userId))
+           .returning()
+
+        return updateUser || null
+
+    }catch(e){
+        console.error("Error updating user profile:",e)
+        return null
+    }
+}
+//GET USER BY ID 
+export async function getUserById(userId:string){
+    try{
+        const user = await db.query.users.findFirst({
+            where: eq(users.id,userId)
+        })
+        return user || null
+    }catch(e){
+        console.error("Error getting user by ID: ",e)
+        return null
     }
 }
