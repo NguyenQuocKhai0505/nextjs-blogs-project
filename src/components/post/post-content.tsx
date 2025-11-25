@@ -31,7 +31,7 @@ function PostContent({post,isAuthor = false,initialLiked = false, userId}: PostC
                                 {post?.title}
                             </h1>
                             <CardDescription className="text-base">
-                                By <span className="font-semibold">{post?.author.name}</span> • {formatDate(post?.createdAt)}
+                                By <span className="font-semibold"><Link href={`/profile/${post?.author.id}`}>{post?.author.name}</Link></span> • {formatDate(post?.createdAt)}
                             </CardDescription>
                             {post.description && (
                                 <p className="text-lg text-muted-foreground mt-4">

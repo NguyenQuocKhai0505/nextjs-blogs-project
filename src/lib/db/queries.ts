@@ -1,8 +1,8 @@
-import { desc, eq } from "drizzle-orm"
+import { desc, eq, ilike } from "drizzle-orm"
 import { db } from "."
-import {posts} from "./schema"
+import {follows, posts} from "./schema"
 import { postLikes,comments } from "./schema"
-import {and} from "drizzle-orm"
+import {and,or} from "drizzle-orm"
 import { sql } from "drizzle-orm"
 import { success } from "better-auth"
 import {users} from "./schema"
@@ -301,5 +301,151 @@ export async function getUserById(userId:string){
     }catch(e){
         console.error("Error getting user by ID: ",e)
         return null
+    }
+}
+//TOGGLE FOLLOW 
+export async function toggleFollow(followerId:string, followingId: string)
+{
+    try{
+        if(followerId === followingId)
+        {
+            return{
+                action: null,
+                success: false,
+                message:"You cannot follow yourself"
+            }
+        }
+        const existing = await db.query.follows.findFirst({
+            where:and(eq(follows.followerId,followerId),eq(follows.followingId,followingId))
+        })
+        if(existing){
+            // Đã follow rồi -> Unfollow (xóa)
+            await db
+                .delete(follows)
+                .where(and(eq(follows.followerId,followerId),(eq(follows.followingId,followingId))))
+            return{
+                action:"unfollowed",
+                success: true
+            }
+        } else {
+            // Chưa follow -> Follow (thêm)
+            await db.insert(follows).values({
+                followerId,
+                followingId
+            })
+            return{
+                action:"followed",
+                success: true
+            }
+        }
+    } catch(e){
+        console.error("Toggle follow error:", e)
+        return{
+            action: null,
+            success: false,
+            message: "Failed to update follow status"
+        }
+    }
+}
+//CHECK FOLLOWING
+export async function checkUserFollowing(followerId:string,followingId:string)
+{
+    try{
+        if(!followerId || !followingId || followerId === followingId) return false
+        const follow = await db.query.follows.findFirst({
+            where:and(eq(follows.followerId,followerId),eq(follows.followingId,followingId))
+        })
+        return !!follow // Convert to boolean: true nếu follow tồn tại, false nếu không
+    } catch(e){
+        console.error("Check following error:", e)
+        return false
+    }
+}
+//GET FOLLOWER COUNT 
+export async function getFollowerCount(userId:string)
+{
+    try{
+        const [row] = await db 
+            .select({count: sql<number>`cast(count(*) as int)`})
+            .from(follows)
+            .where(eq(follows.followingId,userId))
+        return row?.count ?? 0
+    } catch(e){
+        console.error("Get follower count error:", e)
+        return 0
+    }
+}
+//GET FOLLOWING COUNT 
+export async function getFollowingCount(userId:string)
+{
+    try{
+        const [row] = await db 
+            .select({count:sql<number>`cast(count(*) as int)`})
+            .from(follows)
+            .where(eq(follows.followerId,userId))
+        return row?.count ?? 0
+    } catch(e){
+        console.error("Get following count error:", e)
+        return 0
+    }
+}
+//GET FOLLOWER LIST - Lấy danh sách những người đang follow user này
+export async function getFollowersList(userId: string)
+{
+    try{
+        const followers = await db.query.follows.findMany({
+            where: eq(follows.followingId, userId), // Những người follow userId này
+            with: {
+                follower: true // Lấy thông tin user (follower)
+            },
+            orderBy: [desc(follows.createdAt)]
+        })
+        return followers
+    } catch(e){
+        console.error("Get followers list error:", e)
+        return []
+    }
+}
+//GET FOLLOWING LIST - Lấy danh sách những người mà user này đang follow
+export async function getFollowingList(userId: string)
+{
+    try{
+        const following = await db.query.follows.findMany({
+            where: eq(follows.followerId, userId), // Những người mà userId này đang follow
+            with: {
+                following: true // Lấy thông tin user (following)
+            },
+            orderBy: [desc(follows.createdAt)]
+        })
+        return following
+    } catch(e){
+        console.error("Get following list error:", e)
+        return []
+    }
+}
+//SEARCH USER BY NAME/EMAIL (case-insensitive, partial match)
+export async function searchUsers(query: string, maxResults: number = 20)
+{
+    try{
+        if (!query || query.trim().length === 0) return []
+
+        const searchTerm = `%${query.trim()}%`
+        const results = await db
+          .select()
+          .from(users)
+          .where(
+            or(
+              ilike(users.name, searchTerm),
+              ilike(users.email, searchTerm)
+            )
+          )
+          .limit(maxResults)
+          .orderBy(users.name)
+    
+        return results
+
+    }catch(e){
+        console.error("Search users error:", e)
+        return []
     }
 }

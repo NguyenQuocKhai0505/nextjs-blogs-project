@@ -10,7 +10,10 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { PenSquare } from "lucide-react"
 import { EditProfileDialog } from "@/components/profile/edit-profile-dialog"
+import { FollowersDialog } from "@/components/profile/followers-dialog"
+import { FollowingDialog } from "@/components/profile/following-dialog"
 import { getUserById } from "@/lib/db/queries"
+import { getFollowersStatsAction } from "@/actions/follow-actions"
 export default async function ProfilePage(){
     //Kiem tra session - user phai dang nhap
     const session = await auth.api.getSession({
@@ -24,14 +27,7 @@ export default async function ProfilePage(){
     //Lay thong tin user tu session 
     const user = session.user 
 
-    //Lay tat ca cac post cua user 
-    const posts = await getPostByUserId(user.id)
-    
-    // TODO: Lấy follower/following counts từ database sau
-    const followerCount: number = 0  // Tạm thời hardcode
-    const followingCount: number = 0  // Tạm thời hardcode
-    
-  // Hàm lấy initials cho avatar
+    // Hàm lấy initials cho avatar
     const getInitials = (name?: string) => {
         if (!name) return "U"
         return name
@@ -41,10 +37,20 @@ export default async function ProfilePage(){
             .toUpperCase()
             .slice(0, 2)
     }
-    const userData = await getUserById(user.id)
+
+    // Fetch tất cả data song song để tối ưu performance
+    const [posts, userData, stats] = await Promise.all([
+        getPostByUserId(user.id),
+        getUserById(user.id),
+        getFollowersStatsAction(user.id)
+    ])
+
     const userAvatar = userData?.avatar || null
     const displayName = userData?.name || user.name || "User"
     const displayEmail = userData?.email || user.email
+    const followerCount = stats.followers
+    const followingCount = stats.following
+
     return(
         <main className="py-10">
             <div className="max-w-7xl mx-auto px-4">

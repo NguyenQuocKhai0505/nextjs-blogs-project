@@ -1,9 +1,9 @@
 "use client"
 
 import { DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuSeparator,DropdownMenuTrigger } from "../ui/dropdown-menu"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "../ui/button"
-import { Avatar, AvatarFallback } from "../ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { User } from "better-auth"
 import Link from "next/link"
 import {  LogOut, PenSquare, User as UserIcon } from "lucide-react"
@@ -16,6 +16,7 @@ interface UserMenuProps{
 }
 function UserMenu({user}: UserMenuProps){
     const [isLoading,setIsLoading] = useState(false)
+    const [avatarUrl,setAvatarUrl] = useState<string | null>(null)
     const router = useRouter()
     const getInitials = (name?: string) =>{
         if(!name) return ""
@@ -25,6 +26,25 @@ function UserMenu({user}: UserMenuProps){
         .join("")
         .toUpperCase()
     }
+    useEffect(()=>{
+        let isMounted = true
+        const fetchProfile = async () =>{
+            try{
+                const response = await fetch("/api/me")
+                if(!response.ok) return
+                const data = await response.json()
+                if(isMounted){
+                    setAvatarUrl(data?.user?.avatar ?? null)
+                }
+            }catch(error){
+                console.error("Failed to load user avatar:",error)
+            }
+        }
+        fetchProfile()
+        return () => {
+            isMounted = false
+        }
+    },[user?.id])
     const handleLogOut = async()=>{
         setIsLoading(true)
         try{
@@ -43,6 +63,9 @@ function UserMenu({user}: UserMenuProps){
         <DropdownMenuTrigger asChild>
             <Button variant={"ghost"} className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
+                    {avatarUrl && (
+                        <AvatarImage src={avatarUrl} alt={user?.name || "User avatar"}/>
+                    )}
                     <AvatarFallback>
                         {getInitials(user?.name) || "User"}
                     </AvatarFallback>

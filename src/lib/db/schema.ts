@@ -67,8 +67,25 @@ export const comments = pgTable("comments",{
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
 })
-
-
+export const follows = pgTable(
+    "follows",
+    {
+      id: serial("id").primaryKey(),
+      followerId: varchar("follower_id", { length: 255 })
+        .references(() => users.id)
+        .notNull(),
+      followingId: varchar("following_id", { length: 255 })
+        .references(() => users.id)
+        .notNull(),
+      createdAt: timestamp("created_at").notNull().defaultNow()
+    },
+    table => ({
+      uniqueFollow: uniqueIndex("follows_follower_id_following_id_unique").on(
+        table.followerId,
+        table.followingId
+      )
+    })
+  )
 // ===== RELATIONS =====
 // Định nghĩa quan hệ giữa các bảng
 
@@ -108,7 +125,9 @@ export const usersRelations = relations(users, ({ many }) => ({
     accounts: many(accounts),
     sessions: many(sessions),
     postLikes: many(postLikes),
-    comments: many(comments)
+    comments: many(comments),
+    followers: many(follows, { relationName: "followers" }),
+    following: many(follows, { relationName: "following" })
 }))
 
 export const schema = {
@@ -118,7 +137,7 @@ export const schema = {
     posts,
     postLikes,
     comments
-    
+    ,follows
 }
 
 // 5. Post Likes Relations
@@ -144,4 +163,16 @@ export const commentsRelations = relations(comments, ({ one }) => ({
         references: [users.id]
     })
 }))
+export const followsRelations = relations(follows, ({ one }) => ({
+    follower: one(users, {
+      fields: [follows.followerId],
+      references: [users.id],
+      relationName: "following"
+    }),
+    following: one(users, {
+      fields: [follows.followingId],
+      references: [users.id],
+      relationName: "followers"
+    })
+  }))
 

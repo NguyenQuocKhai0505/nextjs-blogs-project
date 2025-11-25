@@ -4,7 +4,8 @@ import { useState, useTransition, useEffect } from "react"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Card, CardContent } from "../ui/card"
-import { Avatar, AvatarFallback } from "../ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
+import Link from "next/link"
 import { createCommentAction, deleteCommentAction, getPostCommentsAction } from "@/actions/comment-action"
 import { toast } from "sonner"
 import { formatDate } from "@/lib/utils"
@@ -18,6 +19,7 @@ interface Comment {
         id: string
         name: string
         email: string
+        avatar?: string | null
     }
     createdAt: Date
     updatedAt: Date
@@ -142,6 +144,9 @@ export function CommentSection({postId,initialCommentCount,userId}: CommentSecti
                                 comments.map((comment)=>(
                                     <div key={comment.id} className="flex gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
                                         <Avatar>
+                                            {comment.author.avatar && (
+                                                <AvatarImage src={comment.author.avatar} alt={comment.author.name}/>
+                                            )}
                                             <AvatarFallback>
                                                 {comment.author.name.charAt(0).toUpperCase()}
                                             </AvatarFallback>
@@ -149,7 +154,11 @@ export function CommentSection({postId,initialCommentCount,userId}: CommentSecti
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="flex-1">
-                                                    <p className="font-medium text-sm">{comment.author.name}</p>
+                                                    <p className="font-medium text-sm">
+                                                        <Link href={`/profile/${comment.author.id}`} className="hover:underline">
+                                                            {comment.author.name}
+                                                        </Link>
+                                                    </p>
                                                     <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap break-words">
                                                         {comment.content}
                                                     </p>
