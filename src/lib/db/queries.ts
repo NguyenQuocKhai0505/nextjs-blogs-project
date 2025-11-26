@@ -423,6 +423,44 @@ export async function getFollowingList(userId: string)
         return []
     }
 }
+
+export async function getFollowingUsers(userId: string) {
+    try{
+        const rows = await db
+            .select({
+                id: users.id,
+                name: users.name,
+                email: users.email,
+                avatar: users.avatar,
+            })
+            .from(follows)
+            .innerJoin(users, eq(follows.followingId, users.id))
+            .where(eq(follows.followerId, userId))
+        return rows
+    } catch(e){
+        console.error("Get following users error:", e)
+        return []
+    }
+}
+
+export async function getFollowersUsers(userId: string) {
+    try{
+        const rows = await db
+            .select({
+                id: users.id,
+                name: users.name,
+                email: users.email,
+                avatar: users.avatar,
+            })
+            .from(follows)
+            .innerJoin(users, eq(follows.followerId, users.id))
+            .where(eq(follows.followingId, userId))
+        return rows
+    } catch(e){
+        console.error("Get followers users error:", e)
+        return []
+    }
+}
 //SEARCH USER BY NAME/EMAIL (case-insensitive, partial match)
 export async function searchUsers(query: string, maxResults: number = 20)
 {

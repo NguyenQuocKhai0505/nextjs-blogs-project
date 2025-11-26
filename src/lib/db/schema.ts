@@ -86,6 +86,41 @@ export const follows = pgTable(
       )
     })
   )
+// ===== CHAT SCHEMA =====
+export const conversations = pgTable(
+    "conversations",
+    {
+        id: serial("id").primaryKey(),
+        user1Id:varchar("user1_id",{length:255})
+            .references(()=>users.id)
+            .notNull(),
+        user2Id: varchar("user2_id",{length:255})
+            .references(()=>users.id)
+            .notNull(),
+        createdAt: timestamp("created_at").notNull().defaultNow(),
+        updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    },
+    (table) =>({
+        uniqueConversation: uniqueIndex("conversations_user1_user2_unique").on(
+            table.user1Id,
+            table.user2Id
+        )
+    })
+)
+
+export const messages = pgTable("messages",{
+    id: serial("id").primaryKey(),
+    conversationId: integer("conversation_id")
+        .references(()=>conversations.id,{onDelete:"cascade"})
+        .notNull(),
+    senderId: varchar("sender_id",{length:255})
+        .references(()=>users.id)
+        .notNull(),
+    content: text("content").notNull(),
+    read: boolean("read").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+})
+
 // ===== RELATIONS =====
 // Định nghĩa quan hệ giữa các bảng
 
@@ -127,7 +162,10 @@ export const usersRelations = relations(users, ({ many }) => ({
     postLikes: many(postLikes),
     comments: many(comments),
     followers: many(follows, { relationName: "followers" }),
-    following: many(follows, { relationName: "following" })
+    following: many(follows, { relationName: "following" }),
+    conversationsAsUser1: many(conversations, { relationName: "user1" }),
+    conversationsAsUser2: many(conversations, { relationName: "user2" }),
+    sentMessages: many(messages),
 }))
 
 export const schema = {
@@ -136,8 +174,10 @@ export const schema = {
     sessions,
     posts,
     postLikes,
-    comments
-    ,follows
+    comments,
+    follows,
+    conversations,
+    messages,
 }
 
 // 5. Post Likes Relations
@@ -176,3 +216,28 @@ export const followsRelations = relations(follows, ({ one }) => ({
     })
   }))
 
+  export const conversationsRelations = relations(conversations, ({ one, many }) => ({
+    user1: one(users, {
+      fields: [conversations.user1Id],
+      references: [users.id],
+      relationName: "user1",
+    }),
+    user2: one(users, {
+      fields: [conversations.user2Id],
+      references: [users.id],
+      relationName: "user2",
+    }),
+    messages: many(messages),
+  }))
+  
+  export const messagesRelations = relations(messages, ({ one }) => ({
+    conversation: one(conversations, {
+      fields: [messages.conversationId],
+      references: [conversations.id],
+    }),
+    sender: one(users, {
+      fields: [messages.senderId],
+      references: [users.id],
+    }),
+  }))
+  

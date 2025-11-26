@@ -23,17 +23,18 @@ function Header(){
     }]
     return(
        <header className="border-b bg-background sticky top-0 z-10">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="container mx-auto px-4 h-20 md:h-24 flex items-center justify-between">
             <div className="flex items-center gap-6">
                 <Link href="/" className="flex items-center gap-2 group">
-                    <Image
-                        src="/logo.png"
-                        alt="Social Website Logo"
-                        width={200}
-                        height={200}
-                        priority
-                        className="h-14 w-auto md:h-16 rounded-full border-2 border-white/40 shadow-lg shadow-primary/30 transition-transform duration-500 group-hover:scale-110 animate-pulse"
-                    />
+                    <div className="heart-mask relative h-20 w-20 md:h-24 md:w-24 border-2 border-white/40 shadow-xl shadow-primary/40 transition-transform duration-500 group-hover:scale-110 animate-pulse overflow-hidden translate-y-1 md:translate-y-2">
+                        <Image
+                            src="/logo.png"
+                            alt="Social Website Logo"
+                            fill
+                            priority
+                            className="object-cover"
+                        />
+                    </div>
                 </Link>
                 <nav className="hidden md:flex items-center gap-6">
                     {
