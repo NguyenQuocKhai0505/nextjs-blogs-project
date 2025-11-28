@@ -1,7 +1,7 @@
 
 
 import { relations } from "drizzle-orm"
-import {pgTable, varchar, boolean, timestamp, text, serial, integer, uniqueIndex} from "drizzle-orm/pg-core"
+import {pgTable, varchar, boolean, timestamp, text, serial, integer, uniqueIndex,jsonb} from "drizzle-orm/pg-core"
 
 export const users = pgTable("user",{
     id: varchar("id",{length:255}).primaryKey(),
@@ -120,6 +120,15 @@ export const messages = pgTable("messages",{
     read: boolean("read").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
 })
+export const notifications = pgTable("notifications", {
+    id: serial("id").primaryKey(),
+    userId: varchar("user_id", { length: 255 }).references(() => users.id).notNull(),
+    actorId: varchar("actor_id", { length: 255 }).references(() => users.id).notNull(),
+    type: text("type").notNull(),
+    meta: jsonb("meta").$type<Record<string, any>>().default({}).notNull(),
+    read: boolean("read").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  })
 
 // ===== RELATIONS =====
 // Định nghĩa quan hệ giữa các bảng
@@ -178,6 +187,7 @@ export const schema = {
     follows,
     conversations,
     messages,
+    notifications,
 }
 
 // 5. Post Likes Relations
@@ -240,4 +250,14 @@ export const followsRelations = relations(follows, ({ one }) => ({
       references: [users.id],
     }),
   }))
-  
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+  actor: one(users, {
+    fields: [notifications.actorId],
+    references: [users.id],
+  }),
+}))

@@ -1,3 +1,12 @@
+require("ts-node").register({
+    transpileOnly: true,
+    compilerOptions: {
+        module: "commonjs",
+        moduleResolution: "node"
+    }
+})
+require("tsconfig-paths/register")
+
 const { createServer } = require("http")
 const { parse } = require("url")
 const next = require("next")

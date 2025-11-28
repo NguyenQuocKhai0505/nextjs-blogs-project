@@ -38,6 +38,22 @@ export async function getPostBySlug(slug:string)
         return null
     }
 }
+
+export async function getPostById(postId: number) {
+    try {
+        const post = await db.query.posts.findFirst({
+            where: eq(posts.id, postId),
+            with: {
+                author: true,
+            },
+        })
+        return post || null
+    } catch (e) {
+        console.log("Get post by id error:", e)
+        return null
+    }
+}
+
 //UPDATE POST
 export async function updatePost(
     postId: number,

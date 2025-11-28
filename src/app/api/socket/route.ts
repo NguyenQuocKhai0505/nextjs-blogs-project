@@ -1,11 +1,10 @@
 import { NextRequest } from "next/server"
 import { Server as SocketIOServer } from "socket.io"
 import { Server as HTTPServer } from "http"
-import { auth } from "@/lib/auth"
-import { createMessage, markMessagesAsRead } from "@/lib/db/chat-queries"
-import { headers } from "next/headers"
-import { conversations } from "@/lib/db/schema"
-
+import { auth } from "../../../lib/auth"
+import { createMessage, markMessagesAsRead } from "../../../lib/db/chat-queries"
+import { emitNotificationToUser } from "@/lib/realtime/notification-emitter"
+import { createNotification } from "@/lib/db/notification-queries"
 let io: SocketIOServer | null = null
 
 //Map de luu userId -> socketId
@@ -93,6 +92,21 @@ export function initializeSocketIO(server: HTTPServer)
           createdAt: message.createdAt,
           sender: message.sender
         })
+
+        const recipientId =
+          message.conversation?.user1Id === userId
+            ? message.conversation?.user2Id
+            : message.conversation?.user1Id
+
+        if (recipientId && recipientId !== userId) {
+          const notification = await createNotification({
+            userId: recipientId,
+            actorId: userId,
+            type: "message",
+            meta: { conversationId: data.conversationId },
+          })
+          emitNotificationToUser(recipientId, notification)
+        }
       }catch(error)
       {
         console.error("Error sending message: ",error)

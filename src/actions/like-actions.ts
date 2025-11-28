@@ -5,8 +5,9 @@ import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { togglePostLike,checkUserLikedPost,getPostLikes } from "@/lib/db/queries"
-import { success } from "better-auth"
-
+import { getPostById } from "@/lib/db/queries"
+import { createNotification } from "@/lib/db/notification-queries"
+import { emitNotificationToUser } from "@/lib/realtime/notification-emitter"
 //TONGGLE LIKE ACTION
 export async function toggleLikeAction(postId: number){
     try{
@@ -31,6 +32,19 @@ export async function toggleLikeAction(postId: number){
     //Revalidate paths
     revalidatePath("/")
     revalidatePath(`/post/*`)
+
+    if(result.action === "liked"){
+        const post = await getPostById(postId)
+        if(post && post.authorId !== session.user.id){
+            const notification = await createNotification({
+                userId: post.authorId,
+                actorId: session.user.id,
+                type: "like",
+                meta: { postId: post.id, slug: post.slug }
+            })
+            emitNotificationToUser(post.authorId, notification)
+        }
+    }
 
     return{
         success: true,

@@ -10,6 +10,8 @@ import {
   getFollowersList,
   getFollowingList
 } from "@/lib/db/queries"
+import { createNotification } from "@/lib/db/notification-queries"
+import { emitNotificationToUser } from "@/lib/realtime/notification-emitter"
 import { revalidatePath } from "next/cache"
 
 export async function toggleFollowAction(targetuserId:string)
@@ -28,6 +30,15 @@ export async function toggleFollowAction(targetuserId:string)
     if(result?.success){
         revalidatePath("/profile")
         revalidatePath(`/profile/${targetuserId}`) 
+    }
+    if(result?.action === "followed" && targetuserId !== session.user.id){
+        const notification = await createNotification({
+            userId: targetuserId,
+            actorId: session.user.id,
+            type: "follow",
+            meta: {},
+        })
+        emitNotificationToUser(targetuserId, notification)
     }
     return result
 }

@@ -8,7 +8,7 @@ import { useSession } from "@/lib/auth-client"
 import UserMenu from "../auth/user-menu"
 import ThemeToggle from "../theme/theme-toggle"
 import { SearchInput } from "../search/search-input"
-
+import { NotificationBell } from "../notifications/notification-bell"
 
 function Header(){
     const {data:session,isPending} = useSession()
@@ -26,7 +26,7 @@ function Header(){
         <div className="container mx-auto px-4 h-20 md:h-24 flex items-center justify-between">
             <div className="flex items-center gap-6">
                 <Link href="/" className="flex items-center gap-2 group">
-                    <div className="heart-mask relative h-20 w-20 md:h-24 md:w-24 border-2 border-white/40 shadow-xl shadow-primary/40 transition-transform duration-500 group-hover:scale-110 animate-pulse overflow-hidden translate-y-1 md:translate-y-2">
+                    <div className="relative h-16 w-16 md:h-20 md:w-20 rounded-full border border-primary/30 bg-background/80 shadow-lg shadow-primary/30 transition-transform duration-300 group-hover:scale-105 overflow-hidden">
                         <Image
                             src="/logo.png"
                             alt="Social Website Logo"
@@ -47,6 +47,11 @@ function Header(){
                 </nav>
             </div>
             <div className="flex items-center gap-4">
+                {/* Notification Bell */}
+                    <div className="hidden md:block">
+                        <NotificationBell/>
+                    </div>
+                {/*Search Box  */}
                     <div className="hidden md:block">
                         <SearchInput/>
                     </div>
