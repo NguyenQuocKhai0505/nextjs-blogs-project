@@ -17,9 +17,9 @@ function Header(){
     const navItems =[{
         label:"Create Post", href:"/post/create",
     },{
-        label:"About", href:"/about",
+        label:"Chat", href:"/contact",
     },{
-        label:"Contact", href:"/contact",
+        label:"About me", href:"/about",
     }]
     return(
        <header className="border-b bg-background sticky top-0 z-10">
