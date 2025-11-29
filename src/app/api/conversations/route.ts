@@ -6,10 +6,11 @@ import { getFollowersUsers } from "@/lib/db/queries"
 type ConversationSummary = Awaited<ReturnType<typeof getConversations>>[number]
 type FollowerUser = Awaited<ReturnType<typeof getFollowersUsers>>[number]
 type ContactUser = ConversationSummary["otherUser"] | FollowerUser
-type SerializedMessage =
-  ConversationSummary["lastMessage"] extends null
-    ? null
-    : ConversationSummary["lastMessage"] & { createdAt: string }
+type SerializedMessage = {
+  content: string
+  createdAt: string
+  senderId: string
+} | null
 type ContactEntry = {
   id: number
   otherUser: ContactUser
@@ -29,7 +30,8 @@ function serializeConversation(conversation: ConversationSummary): ContactEntry 
         : conversation.updatedAt,
     lastMessage: conversation.lastMessage
       ? {
-          ...conversation.lastMessage,
+          content: conversation.lastMessage.content,
+          senderId: conversation.lastMessage.senderId,
           createdAt:
             typeof conversation.lastMessage.createdAt === "string"
               ? conversation.lastMessage.createdAt
