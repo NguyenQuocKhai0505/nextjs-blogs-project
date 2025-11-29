@@ -125,7 +125,7 @@ export const notifications = pgTable("notifications", {
     userId: varchar("user_id", { length: 255 }).references(() => users.id).notNull(),
     actorId: varchar("actor_id", { length: 255 }).references(() => users.id).notNull(),
     type: text("type").notNull(),
-    meta: jsonb("meta").$type<Record<string, any>>().default({}).notNull(),
+    meta: jsonb("meta").$type<Record<string, unknown>>().default({}).notNull(),
     read: boolean("read").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   })

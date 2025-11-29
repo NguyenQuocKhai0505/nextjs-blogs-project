@@ -285,7 +285,11 @@ export async function updateUserProfile(
     }
 ){
     try{
-        const updateData: any = {
+        const updateData: {
+            updatedAt: Date
+            name?: string
+            avatar?: string | null
+        } = {
             updatedAt: new Date()
         }
         if(data.name !== undefined){

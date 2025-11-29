@@ -3,6 +3,42 @@ import { auth } from "@/lib/auth"
 import { getConversations, getOrCreateConversation } from "@/lib/db/chat-queries"
 import { getFollowersUsers } from "@/lib/db/queries"
 
+type ConversationSummary = Awaited<ReturnType<typeof getConversations>>[number]
+type FollowerUser = Awaited<ReturnType<typeof getFollowersUsers>>[number]
+type ContactUser = ConversationSummary["otherUser"] | FollowerUser
+type SerializedMessage =
+  ConversationSummary["lastMessage"] extends null
+    ? null
+    : ConversationSummary["lastMessage"] & { createdAt: string }
+type ContactEntry = {
+  id: number
+  otherUser: ContactUser
+  updatedAt: string
+  unreadCount: number
+  lastMessage: SerializedMessage
+}
+
+function serializeConversation(conversation: ConversationSummary): ContactEntry {
+  return {
+    id: conversation.id,
+    otherUser: conversation.otherUser,
+    unreadCount: conversation.unreadCount ?? 0,
+    updatedAt:
+      conversation.updatedAt instanceof Date
+        ? conversation.updatedAt.toISOString()
+        : conversation.updatedAt,
+    lastMessage: conversation.lastMessage
+      ? {
+          ...conversation.lastMessage,
+          createdAt:
+            typeof conversation.lastMessage.createdAt === "string"
+              ? conversation.lastMessage.createdAt
+              : new Date(conversation.lastMessage.createdAt).toISOString(),
+        }
+      : null,
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
     const session = await auth.api.getSession({
@@ -18,26 +54,10 @@ export async function GET(req: NextRequest) {
       getFollowersUsers(session.user.id),
     ])
 
-    const contactsMap = new Map<string, any>()
+    const contactsMap = new Map<string, ContactEntry>()
 
     conversations.forEach(conv => {
-      contactsMap.set(conv.otherUser.id, {
-        ...conv,
-        unreadCount: conv.unreadCount ?? 0,
-        updatedAt:
-          conv.updatedAt instanceof Date
-            ? conv.updatedAt.toISOString()
-            : conv.updatedAt,
-        lastMessage: conv.lastMessage
-          ? {
-              ...conv.lastMessage,
-              createdAt:
-                typeof conv.lastMessage.createdAt === "string"
-                  ? conv.lastMessage.createdAt
-                  : new Date(conv.lastMessage.createdAt).toISOString(),
-            }
-          : null,
-      })
+      contactsMap.set(conv.otherUser.id, serializeConversation(conv))
     })
 
     followers.forEach(user => {

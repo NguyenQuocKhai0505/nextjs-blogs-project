@@ -11,7 +11,7 @@ let io: SocketIOServer | null = null
 
 const userSocketMap = new Map<string,string>()
 
-export async function GET(req: NextRequest)
+export async function GET(_req: NextRequest)
 {
   // Next.js không hỗ trợ WebSocket trực tiếp trong route handler
   // Cần dùng custom server hoặc tách ra file riêng
@@ -34,8 +34,17 @@ export function initializeSocketIO(server: HTTPServer)
   io.use(async(socket,next)=>{
     try{
       //Lay session tu cookie hoac query
+      const headers = new Headers()
+      Object.entries(socket.handshake.headers).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          headers.append(key, value.join(","))
+        } else if (value) {
+          headers.append(key, value)
+        }
+      })
+
       const session = await auth.api.getSession({
-        headers: socket.handshake.headers as any,
+        headers,
       })
 
       if(!session?.user)

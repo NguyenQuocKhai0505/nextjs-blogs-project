@@ -120,7 +120,7 @@ export default async function ProfilePage(){
                             <Card>
                                 <CardContent className="py-10 text-center">
                                     <p className="text-muted-foreground text-lg mb-4">
-                                        You haven't created any posts yet
+                                        You haven&apos;t created any posts yet
                                     </p>
                                     <Button asChild>
                                         <Link href={"/post/create"}>

@@ -12,7 +12,7 @@ export interface CreateNotificationInput{
     userId: string // nguoi nhan
     actorId: string //nguoi gay ra su kien
     type: NotificationType
-    meta?: Record<string,any>
+    meta?: Record<string,unknown>
 }
 export function serializeNotification(notification: NotificationWithActor) {
     return {

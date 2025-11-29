@@ -1,7 +1,16 @@
+export type ClientNotificationMeta = {
+  slug?: string
+  postId?: number
+  conversationId?: number
+  commentPreview?: string
+  messagePreview?: string
+  [key: string]: unknown
+}
+
 export type ClientNotification = {
   id: number
   type: string
-  meta: Record<string, any>
+  meta: ClientNotificationMeta
   read: boolean
   createdAt: string
   actor: { id: string; name: string; avatar?: string | null }

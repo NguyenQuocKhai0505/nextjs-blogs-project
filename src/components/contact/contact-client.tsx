@@ -33,6 +33,12 @@ type ContactClientProps = {
 }
 
 type ContactState = ContactSummary & { unreadCount: number }
+type IncomingSocketMessage = {
+  conversationId: number
+  content: string
+  createdAt: string | Date
+  senderId: string
+}
 
 function ContactClientContent({ initialContacts, currentUserId }: ContactClientProps) {
   const { socket } = useSocket()
@@ -125,7 +131,7 @@ function ContactClientContent({ initialContacts, currentUserId }: ContactClientP
   useEffect(() => {
     if (!socket) return
 
-    const handleNewMessage = (message: any) => {
+    const handleNewMessage = (message: IncomingSocketMessage) => {
       setContacts(prev => {
         const next = [...prev]
         const index = next.findIndex(contact => contact.id === message.conversationId)

@@ -12,6 +12,18 @@ cloudinary.config({
 
 type MediaType = "image" | "video"
 
+type CloudinaryError = {
+    message?: string
+    http_code?: number
+}
+
+function isCloudinaryError(error: unknown): error is CloudinaryError & Error {
+    if (typeof error === "object" && error !== null) {
+        return "message" in error || "http_code" in error
+    }
+    return false
+}
+
 function getResourceType(mime: string): MediaType {
     if (IMAGE_TYPES.includes(mime)) return "image"
     if (VIDEO_TYPES.includes(mime)) return "video"
@@ -60,8 +72,11 @@ export async function POST(request: NextRequest){
                 imageUrls: resourceType === "image" ? [result.secure_url] : [],
                 videoUrls: resourceType === "video" ? [result.secure_url] : [],
             })
-        } catch (uploadError: any) {
-            if (uploadError.message?.includes("Invalid image") || uploadError.http_code === 400) {
+        } catch (uploadError: unknown) {
+            if (
+                isCloudinaryError(uploadError) &&
+                (uploadError.message?.includes("Invalid image") || uploadError.http_code === 400)
+            ) {
                 return NextResponse.json(
                     {error: "Invalid media URL or media cannot be accessed"},
                     {status: 400}
@@ -133,18 +148,22 @@ export async function POST(request: NextRequest){
         videoUrls
     })
    }
-    catch(error:any){
+    catch(error: unknown){
         console.error("Upload error",error)
         
-        if (error.message?.includes("Invalid image") || error.http_code === 400) {
+        if (
+            isCloudinaryError(error) &&
+            (error.message?.includes("Invalid image") || error.http_code === 400)
+        ) {
             return NextResponse.json(
                 {error: "Invalid media or cannot be accessed"},
                 {status: 400}
             )
         }
         
+        const message = error instanceof Error ? error.message : "Failed to upload files"
         return NextResponse.json(
-            {error: error.message || "Failed to upload files"},
+            {error: message},
             {status:500}
         )
    }
