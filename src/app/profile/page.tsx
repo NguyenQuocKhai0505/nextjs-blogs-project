@@ -10,8 +10,6 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { PenSquare } from "lucide-react"
 import { EditProfileDialog } from "@/components/profile/edit-profile-dialog"
-import { FollowersDialog } from "@/components/profile/followers-dialog"
-import { FollowingDialog } from "@/components/profile/following-dialog"
 import { getUserById } from "@/lib/db/queries"
 import { getFollowersStatsAction } from "@/actions/follow-actions"
 export default async function ProfilePage(){

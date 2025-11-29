@@ -7,7 +7,6 @@ import { db } from "@/lib/db"
 import { posts } from "@/lib/db/schema"
 import { slugify } from "@/lib/utils"
 import {eq} from "drizzle-orm"
-import { success } from "better-auth"
 import { deletePost } from "@/lib/db/queries"
 //Create Post
 export async function CreatePost(formData: FormData){
@@ -56,7 +55,7 @@ export async function CreatePost(formData: FormData){
         const videoUrls = videoUrlsStr ? JSON.parse(videoUrlsStr) : null
 
         //Post data into Database
-        const [newPost] = await db.insert(posts).values({
+        await db.insert(posts).values({
             title, description,content,slug,
             authorId:session.user.id,
             imageUrls: imageUrls ? JSON.stringify(imageUrls) : null,
@@ -74,7 +73,7 @@ export async function CreatePost(formData: FormData){
             slug
         }
            
-    }catch(e){
+    }catch{
         return {
             success: false,
             message: "Failed to create post. Please try again."
@@ -164,8 +163,8 @@ export async function UpdatePost(formData:FormData){
         message: "Post updated successfully",
         slug: newSlug
     }
-   }catch(e){
-    console.log(e)
+   }catch(error){
+    console.log(error)
     return{
         success: false,
         message:"Failed to update post. Please try again"
@@ -214,8 +213,8 @@ export async function DeletePost(postId:number){
             message: "Post deleted successfully"
         }
 
-    }catch(e){
-        console.log(e)
+    }catch(error){
+        console.log(error)
         return{
             success: false,
             message: "Failed to delete post. Please try again."

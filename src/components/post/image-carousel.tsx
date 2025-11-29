@@ -71,7 +71,7 @@ export function ImageCarousel({images}: ImageCarouselProps){
     }
     window.addEventListener("keydown",handleKeyDown)
     return () => window.removeEventListener("keydown",handleKeyDown)
-   },[])
+   },[goToNext, goToPrevious])
    if(images.length === 0) return null
    return(
     <Card>

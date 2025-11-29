@@ -6,7 +6,6 @@ import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { uploadImageToCloudinary } from "@/lib/cloudinary"
 import { updateUserProfile } from "@/lib/db/queries"
-import { success } from "better-auth"
 interface UpdateProfileArgs{
     name?:string,
     avatar?:string | null
@@ -32,8 +31,8 @@ export async function updateProfileAction(data: UpdateProfileArgs){
                     folder:"profile_avatars"
                 })
                 avatarUrl = uploadResult.url
-            }catch(e){
-                console.error("Avatar upload failed: ",e)
+            }catch(error){
+                console.error("Avatar upload failed: ",error)
                 return{
                     success: false,
                     message:"Failed to upload avatar image"
@@ -59,8 +58,8 @@ export async function updateProfileAction(data: UpdateProfileArgs){
             message:"Profile updated successfully",
             user: updatedUser
         }
-    }catch(e){
-        console.error("updateProfileAction error:",e)
+    }catch(error){
+        console.error("updateProfileAction error:",error)
         return {
             success: false,
             message:"Failed to update profile. Please try again"

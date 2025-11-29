@@ -25,13 +25,6 @@ export function FollowingDialog({ userId, followingCount }: FollowingDialogProps
     const [following, setFollowing] = useState<FollowingUser[]>([])
     const [loading, setLoading] = useState(false)
 
-    // Khi mở dialog, fetch danh sách following
-    useEffect(() => {
-        if (open && following.length === 0) {
-            fetchFollowing()
-        }
-    }, [open])
-
     const fetchFollowing = async () => {
         setLoading(true)
         try {
@@ -45,6 +38,13 @@ export function FollowingDialog({ userId, followingCount }: FollowingDialogProps
             setLoading(false)
         }
     }
+
+    // Khi mở dialog, fetch danh sách following
+    useEffect(() => {
+        if (open && following.length === 0) {
+            fetchFollowing()
+        }
+    }, [open, following.length])
 
     const getInitials = (name: string) => {
         return name

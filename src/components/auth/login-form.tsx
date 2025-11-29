@@ -43,8 +43,8 @@ function LoginForm(){
         }
         toast("Login Success")
         router.push("/")
-        }catch(error){
-
+        }catch{
+            toast("Login Falied")
         }
     }
     return(

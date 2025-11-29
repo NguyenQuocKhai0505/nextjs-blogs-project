@@ -24,13 +24,6 @@ export function LikesDialog({ postId, likeCount }: LikesDialogProps) {
     const [likes, setLikes] = useState<LikeUser[]>([])
     const [loading, setLoading] = useState(false)
 
-    // Khi mở dialog, fetch danh sách likes
-    useEffect(() => {
-        if (open && likes.length === 0) {
-            fetchLikes()
-        }
-    }, [open])
-
     const fetchLikes = async () => {
         setLoading(true)
         try {
@@ -44,6 +37,13 @@ export function LikesDialog({ postId, likeCount }: LikesDialogProps) {
             setLoading(false)
         }
     }
+
+    // Khi mở dialog, fetch danh sách likes
+    useEffect(() => {
+        if (open && likes.length === 0) {
+            fetchLikes()
+        }
+    }, [open, likes.length])
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>

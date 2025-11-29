@@ -11,7 +11,7 @@ let io: SocketIOServer | null = null
 
 const userSocketMap = new Map<string,string>()
 
-export async function GET(_req: NextRequest)
+export async function GET()
 {
   // Next.js không hỗ trợ WebSocket trực tiếp trong route handler
   // Cần dùng custom server hoặc tách ra file riêng

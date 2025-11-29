@@ -51,8 +51,8 @@ export async function toggleLikeAction(postId: number){
         message: result.action === "liked" ? "Post liked!" : "Post unliked!",
         action: result.action
     }
-    }catch(e){
-        console.log("Toggle like action error: ",e)
+    }catch(error){
+        console.log("Toggle like action error: ",error)
         return{
             success: false,
             message: "Failed to toggle like"
@@ -70,7 +70,7 @@ export async function checkUserLiked(postId:number){
     }
 
     return await checkUserLikedPost(postId,session.user.id)
-    }catch(e){
+    }catch{
         return false
     }
 }
@@ -88,7 +88,7 @@ export async function getPostLikeAction(postId:number)
                 likedAt: like.createdAt
             }))
         }
-    }catch(e){
+    }catch{
         return{
             success: false,
             likes: []

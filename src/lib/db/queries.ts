@@ -4,7 +4,6 @@ import {follows, posts} from "./schema"
 import { postLikes,comments } from "./schema"
 import {and,or} from "drizzle-orm"
 import { sql } from "drizzle-orm"
-import { success } from "better-auth"
 import {users} from "./schema"
 
 //GET ALL POST

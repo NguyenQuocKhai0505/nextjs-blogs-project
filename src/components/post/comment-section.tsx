@@ -31,20 +31,14 @@ interface CommentSectionProps {
     userId?: string  // Current user ID
 }
 
-export function CommentSection({postId,initialCommentCount,userId}: CommentSectionProps)
-{
+export function CommentSection({postId,initialCommentCount,userId}: CommentSectionProps) {
     const [comments,setComments] = useState<Comment[]>([])
     const [commentCount,setCommentCount]= useState(initialCommentCount)
     const [content, setContent]= useState("")
     const [isPending,startTransition] = useTransition()
     const [loading,setLoading] = useState(false)
 
-    //Load comments khi component mount 
-    useEffect(()=>{
-        fetchComments()
-    },[postId])
-
-    const fetchComments = async () =>{
+    const fetchComments = async () => {
         setLoading(true)
         try{
             const result = await getPostCommentsAction(postId)
@@ -57,6 +51,11 @@ export function CommentSection({postId,initialCommentCount,userId}: CommentSecti
             setLoading(false)
         }
     }
+
+    //Load comments khi component mount 
+    useEffect(()=>{
+        fetchComments()
+    },[postId])
 
     const handleSubmit = (e:React.FormEvent) =>{
         e.preventDefault()

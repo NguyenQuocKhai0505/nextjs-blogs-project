@@ -56,8 +56,8 @@ export async function createCommentAction(postId: number, content: string, paren
                 createdAt: newComment.createdAt
             }
         }
-    } catch (e) {
-        console.log("Create comment action error:", e)
+    } catch (error) {
+        console.log("Create comment action error:", error)
         return {
             success: false,
             message: "Failed to create comment"
@@ -102,8 +102,8 @@ export async function deleteCommentAction(commentId: number) {
             success: true,
             message: "Comment deleted successfully"
         }
-    } catch (e) {
-        console.log("Delete comment action error:", e)
+    } catch (error) {
+        console.log("Delete comment action error:", error)
         return {
             success: false,
             message: "Failed to delete comment"
@@ -130,7 +130,7 @@ export async function getPostCommentsAction(postId: number) {
                 updatedAt: comment.updatedAt
             }))
         }
-    } catch (e) {
+    } catch {
         return {
             success: false,
             comments: []
