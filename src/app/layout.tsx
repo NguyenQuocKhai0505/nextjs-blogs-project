@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Next JS 15 Blog",
-  description: "Next JS using zustand, drizzle and postgres",
+  title: "Ksocial Website",
+  description: "Connect, share, and discover with our community",
 };
 
 export default function RootLayout({

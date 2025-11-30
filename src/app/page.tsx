@@ -8,8 +8,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { PenSquare, Users, BookOpen } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Next.js 15 Blog",
-  description: "Next.js 15 Blog",
+  title: "My Social Network",
+  description: "Connect, share, and discover with our community",
 }
 
 export default async function Home() {
