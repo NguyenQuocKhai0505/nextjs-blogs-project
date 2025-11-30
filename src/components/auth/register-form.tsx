@@ -40,25 +40,43 @@ function RegisterForm({onSuccess}: RegisterFormProps){
     })
     const onRegisterSubmit = async(values:registerFormValue) =>{
         setIsLoading(true)
+        console.log("[REGISTER] Starting registration process...")
+        console.log("[REGISTER] Form values:", { 
+            name: values.name, 
+            email: values.email, 
+            passwordLength: values.password.length 
+        })
+        
         try{
-            const {error} = await signUp.email({
+            console.log("[REGISTER] Calling signUp.email()...")
+            const result = await signUp.email({
                 name: values.name,
                 email: values.email,
                 password: values.password
             })
-        if(error){
-            toast("Failed to create account. Please try again")
-            return
-        }
-        toast("Your account has been created successfully. Please sign in with your emain & password")
+            
+            console.log("[REGISTER] SignUp response:", result)
+            
+            if(result.error){
+                console.error("[REGISTER] SignUp error:", result.error)
+                console.error("[REGISTER] Error details:", JSON.stringify(result.error, null, 2))
+                toast.error(`Failed to create account: ${result.error.message || "Unknown error"}`)
+                return
+            }
+            
+            console.log("[REGISTER] Registration successful!")
+            toast.success("Your account has been created successfully. Please sign in with your email & password")
 
-        if(onSuccess){
-            onSuccess()
-        }
+            if(onSuccess){
+                onSuccess()
+            }
         }catch(error){
-            console.log(error)
+            console.error("[REGISTER] Exception caught:", error)
+            console.error("[REGISTER] Error stack:", error instanceof Error ? error.stack : "No stack trace")
+            toast.error(`Registration failed: ${error instanceof Error ? error.message : "Unknown error"}`)
         }finally{
             setIsLoading(false)
+            console.log("[REGISTER] Registration process completed")
         }
     }
     return(

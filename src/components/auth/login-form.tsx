@@ -31,20 +31,37 @@ function LoginForm(){
     })
     const onSubmit = async(values:LoginFormValues) =>{
         setIsLoading(true)
+        console.log("[LOGIN] Starting login process...")
+        console.log("[LOGIN] Email:", values.email)
+        
         try{
-           const {error} = await signIn.email({
-            email: values.email,
-            password: values.password,
-            rememberMe: true
-           })
-        if(error){
-            toast("Login Falied")
-            return
-        }
-        toast("Login Success")
-        router.push("/")
-        }catch{
-            toast("Login Falied")
+            console.log("[LOGIN] Calling signIn.email()...")
+            const result = await signIn.email({
+                email: values.email,
+                password: values.password,
+                rememberMe: true
+            })
+            
+            console.log("[LOGIN] SignIn response:", result)
+            
+            if(result.error){
+                console.error("[LOGIN] SignIn error:", result.error)
+                console.error("[LOGIN] Error details:", JSON.stringify(result.error, null, 2))
+                toast.error(`Login failed: ${result.error.message || "Invalid credentials"}`)
+                return
+            }
+            
+            console.log("[LOGIN] Login successful!")
+            console.log("[LOGIN] User data:", result.data?.user)
+            toast.success("Login Success")
+            router.push("/")
+        }catch(error){
+            console.error("[LOGIN] Exception caught:", error)
+            console.error("[LOGIN] Error stack:", error instanceof Error ? error.stack : "No stack trace")
+            toast.error(`Login failed: ${error instanceof Error ? error.message : "Unknown error"}`)
+        }finally{
+            setIsLoading(false)
+            console.log("[LOGIN] Login process completed")
         }
     }
     return(
