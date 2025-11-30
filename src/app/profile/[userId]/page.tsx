@@ -10,11 +10,11 @@ import { checkFollowingAction, getFollowersStatsAction } from "@/actions/follow-
 
 interface ProfilePageProps
 {
-    params: {userId:string}
+    params: Promise<{userId:string}>
 }
 export default async function UserProfilePage({params}:ProfilePageProps)
 {
-    const {userId} = params
+    const {userId} = await params
     const session = await auth.api.getSession({headers:await headers()})
     if(!session?.user) redirect("/auth")
 
