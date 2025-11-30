@@ -29,10 +29,34 @@ export async function POST(req: NextRequest) {
         const responseStatus = response.status
         console.log("[AUTH API] POST response status:", responseStatus)
         
+        // Log error response body nếu có lỗi
+        if (responseStatus >= 400) {
+            try {
+                const clonedResponse = response.clone()
+                const errorBody = await clonedResponse.json().catch(() => null)
+                console.error("[AUTH API] Error response body:", JSON.stringify(errorBody, null, 2))
+            } catch (e) {
+                console.error("[AUTH API] Could not parse error response")
+            }
+        }
+        
         return response
     } catch (error) {
-        console.error("[AUTH API] POST error:", error)
+        console.error("[AUTH API] POST exception:", error)
+        console.error("[AUTH API] Error type:", error?.constructor?.name)
+        console.error("[AUTH API] Error message:", error instanceof Error ? error.message : String(error))
         console.error("[AUTH API] Error stack:", error instanceof Error ? error.stack : "No stack trace")
+        
+        // Log full error object
+        if (error instanceof Error) {
+            console.error("[AUTH API] Error details:", {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+                cause: (error as any).cause
+            })
+        }
+        
         throw error // Re-throw để Next.js xử lý
     }
 }

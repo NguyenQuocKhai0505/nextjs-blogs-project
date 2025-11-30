@@ -44,10 +44,19 @@ const pool = new Pool({
     max: 10,
     
     // Tối ưu cho production - giảm thời gian chờ kết nối
-    connectionTimeoutMillis: 5000, // 5 giây timeout
+    connectionTimeoutMillis: 10000, // Tăng lên 10 giây timeout
     idleTimeoutMillis: 30000, // Đóng kết nối idle sau 30s
     keepAlive: true,
     keepAliveInitialDelayMillis: 10000,
+})
+
+// Log database connection errors
+pool.on('error', (err) => {
+    console.error('[DB] Unexpected error on idle client:', err)
+})
+
+pool.on('connect', () => {
+    console.log('[DB] New client connected to database')
 })
 
 /**
