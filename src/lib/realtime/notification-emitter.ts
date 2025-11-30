@@ -1,4 +1,4 @@
-import { getIO } from "@/app/api/socket/route";
+import { getIO } from "@/lib/realtime/socket-server";
 import {
     NotificationWithActor,
     serializeNotification,

@@ -10,7 +10,7 @@ require("tsconfig-paths/register")
 const { createServer } = require("http")
 const { parse } = require("url")
 const next = require("next")
-const { initializeSocketIO } = require("./src/app/api/socket/route")
+const { initializeSocketIO } = require("./src/lib/realtime/socket-server")
 
 const dev = process.env.NODE_ENV !== "production"
 const hostname ="localhost"
