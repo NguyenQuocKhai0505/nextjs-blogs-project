@@ -1,5 +1,5 @@
 import { db } from "."
-import { conversations, messages, users } from "./schema"
+import { conversations, messages } from "./schema"
 import { eq, and, or, desc, asc } from "drizzle-orm"
 
 /**

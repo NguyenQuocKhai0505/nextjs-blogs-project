@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "../ui/button"
@@ -21,14 +21,14 @@ export function ImageCarousel({images}: ImageCarouselProps){
    const minSwipeDistance = 50 // Khoảng cách tối thiểu để swipe
 
    // Function: Chuyển về ảnh trước
-   const goToPrevious = () => {
+   const goToPrevious = useCallback(() => {
        setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
-   }
+   }, [images.length])
 
    // Function: Chuyển sang ảnh sau
-   const goToNext = () => {
+   const goToNext = useCallback(() => {
        setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
-   }
+   }, [images.length])
 
    // Function: Nhảy đến ảnh cụ thể (khi click dots)
    const goToSlide = (index: number) => {

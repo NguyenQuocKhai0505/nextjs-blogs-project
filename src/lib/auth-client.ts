@@ -1,6 +1,5 @@
 
 import {createAuthClient} from "better-auth/react"
-import { auth } from "./auth"
 
 // Get base URL for client-side
 // In browser, use window.location.origin

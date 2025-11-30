@@ -140,7 +140,7 @@ export async function UpdatePost(formData:FormData){
     const videoUrls = videoUrlsStr ? JSON.parse(videoUrlsStr) : null
 
     //B8: Update post 
-    const [updatedPost] = await db
+    await db
         .update(posts)
         .set({
             title,

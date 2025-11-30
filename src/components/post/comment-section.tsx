@@ -55,6 +55,7 @@ export function CommentSection({postId,initialCommentCount,userId}: CommentSecti
     //Load comments khi component mount 
     useEffect(()=>{
         fetchComments()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     },[postId])
 
     const handleSubmit = (e:React.FormEvent) =>{

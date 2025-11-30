@@ -43,6 +43,7 @@ export function LikesDialog({ postId, likeCount }: LikesDialogProps) {
         if (open && likes.length === 0) {
             fetchLikes()
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, likes.length])
 
     return (

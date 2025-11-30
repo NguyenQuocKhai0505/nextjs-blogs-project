@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
                 const clonedResponse = response.clone()
                 const errorBody = await clonedResponse.json().catch(() => null)
                 console.error("[AUTH API] Error response body:", JSON.stringify(errorBody, null, 2))
-            } catch (e) {
+            } catch {
                 console.error("[AUTH API] Could not parse error response")
             }
         }
@@ -49,12 +49,16 @@ export async function POST(req: NextRequest) {
         
         // Log full error object
         if (error instanceof Error) {
-            console.error("[AUTH API] Error details:", {
+            const errorDetails: Record<string, unknown> = {
                 name: error.name,
                 message: error.message,
                 stack: error.stack,
-                cause: (error as any).cause
-            })
+            }
+            // Add cause if it exists (Error with cause property)
+            if ('cause' in error && error.cause !== undefined) {
+                errorDetails.cause = error.cause
+            }
+            console.error("[AUTH API] Error details:", errorDetails)
         }
         
         throw error // Re-throw để Next.js xử lý

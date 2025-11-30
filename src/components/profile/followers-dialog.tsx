@@ -44,6 +44,7 @@ export function FollowersDialog({ userId, followerCount }: FollowersDialogProps)
         if (open && followers.length === 0) {
             fetchFollowers()
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, followers.length])
 
     const getInitials = (name: string) => {

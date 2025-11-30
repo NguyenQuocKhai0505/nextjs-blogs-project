@@ -44,7 +44,7 @@ export function initializeSocketIO(server: HTTPServer) {
       //Luu userId vao socket data
       socket.data.userId = session.user.id
       next()
-    } catch (error) {
+    } catch {
       next(new Error("Authentication Failed"))
     }
   })

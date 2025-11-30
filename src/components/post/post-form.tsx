@@ -98,7 +98,7 @@ function PostForm({ post, mode = "create" }: PostFormProps){
                 }else{
                     toast(res.message)
                 }
-            }catch(e){
+            }catch{
                 toast(`Failed to ${mode === "edit" ? "update" : "create"} post!`)
             }
         })
@@ -144,7 +144,7 @@ function PostForm({ post, mode = "create" }: PostFormProps){
             }else{
                 toast.error(result.error || "Failed to upload images")
             }
-        }catch(error){
+        }catch{
             toast.error("Failed to upload images")
         }finally{
             setIsUploading(false)
@@ -186,7 +186,7 @@ function PostForm({ post, mode = "create" }: PostFormProps){
             } else {
                 toast.error(result.error || "Failed to upload media from URL")
             }
-        } catch (error) {
+        } catch {
             toast.error("Failed to upload media from URL")
         } finally {
             setIsUploading(false)
