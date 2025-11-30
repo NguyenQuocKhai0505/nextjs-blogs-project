@@ -1,12 +1,12 @@
 
 
-//Define protected routes => /profile, post/create
+//Define protected routes => /profile, /post/create, /post/edit, /contact
+//These routes require authentication - users will be redirected to /auth if not logged in
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
 const protectedRoutes = ["/profile","/post/create","/post/edit","/contact"]
-const protectedApiRoutes = ["/api/conversations","/api/messages"]
 
 export async function middleware(request: NextRequest){
     const pathName = request.nextUrl.pathname
@@ -20,15 +20,8 @@ export async function middleware(request: NextRequest){
         return NextResponse.redirect(new URL("/auth",request.url))
     }
     
-    // Check protected API routes
-    const isProtectedApiRoute = protectedApiRoutes.some((route)=> pathName.startsWith(route))
-    if(isProtectedApiRoute && !session){
-        // Return 401 for API routes instead of redirect
-        return NextResponse.json(
-            { error: "Unauthorized" },
-            { status: 401 }
-        )
-    }
+    // Note: API routes handle authentication themselves in route handlers
+    // Middleware should not intercept API routes to avoid conflicts
     
     //if user is already logged in and user is accessing /auth route
     //they will automatically redirect to homepage 
@@ -43,8 +36,6 @@ export const config = {
         "/post/create",
         "/post/edit/:path*",
         "/contact",
-        "/auth",
-        "/api/conversations",
-        "/api/messages"
+        "/auth"
     ]
 }
