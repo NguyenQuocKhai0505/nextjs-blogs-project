@@ -13,8 +13,8 @@ const next = require("next")
 const { initializeSocketIO } = require("./src/lib/realtime/socket-server")
 
 const dev = process.env.NODE_ENV !== "production"
-const hostname ="localhost"
-const port = 3000
+const hostname = process.env.HOSTNAME || "0.0.0.0"
+const port = process.env.PORT || 3000
 
 const app = next({dev,hostname,port})
 const handle = app.getRequestHandler()

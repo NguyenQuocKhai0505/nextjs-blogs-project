@@ -41,7 +41,13 @@ const pool = new Pool({
     
     // Số lượng kết nối tối đa trong pool (default: 10)
     // Khi có > 10 requests đồng thời, các request phải đợi đến khi có kết nối trống
-    max: 10
+    max: 10,
+    
+    // Tối ưu cho production - giảm thời gian chờ kết nối
+    connectionTimeoutMillis: 5000, // 5 giây timeout
+    idleTimeoutMillis: 30000, // Đóng kết nối idle sau 30s
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000,
 })
 
 /**
