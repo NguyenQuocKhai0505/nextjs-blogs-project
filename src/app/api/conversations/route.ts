@@ -11,23 +11,63 @@ type SerializedMessage = {
   createdAt: string
   senderId: string
 } | null
+type SerializedUser = {
+  id: string
+  name: string
+  email: string
+  avatar: string | null
+  createdAt?: string
+  updatedAt?: string
+}
 type ContactEntry = {
   id: number
-  otherUser: ContactUser
+  otherUser: SerializedUser
   updatedAt: string
   unreadCount: number
   lastMessage: SerializedMessage
 }
 
+function serializeUser(user: ContactUser): SerializedUser {
+  const serialized: SerializedUser = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar ?? null,
+  }
+  
+  // Serialize Date fields if they exist (using type assertion for optional fields)
+  const userWithDates = user as ContactUser & { createdAt?: Date | string; updatedAt?: Date | string }
+  
+  if (userWithDates.createdAt) {
+    serialized.createdAt = userWithDates.createdAt instanceof Date 
+      ? userWithDates.createdAt.toISOString() 
+      : typeof userWithDates.createdAt === 'string' 
+        ? userWithDates.createdAt 
+        : String(userWithDates.createdAt)
+  }
+  
+  if (userWithDates.updatedAt) {
+    serialized.updatedAt = userWithDates.updatedAt instanceof Date 
+      ? userWithDates.updatedAt.toISOString() 
+      : typeof userWithDates.updatedAt === 'string' 
+        ? userWithDates.updatedAt 
+        : String(userWithDates.updatedAt)
+  }
+  
+  return serialized
+}
+
 function serializeConversation(conversation: ConversationSummary): ContactEntry {
   return {
     id: conversation.id,
-    otherUser: conversation.otherUser,
+    otherUser: serializeUser(conversation.otherUser),
     unreadCount: conversation.unreadCount ?? 0,
     updatedAt:
       conversation.updatedAt instanceof Date
         ? conversation.updatedAt.toISOString()
-        : conversation.updatedAt,
+        : typeof conversation.updatedAt === 'string'
+          ? conversation.updatedAt
+          : String(conversation.updatedAt),
     lastMessage: conversation.lastMessage
       ? {
           content: conversation.lastMessage.content,
@@ -35,7 +75,9 @@ function serializeConversation(conversation: ConversationSummary): ContactEntry 
           createdAt:
             typeof conversation.lastMessage.createdAt === "string"
               ? conversation.lastMessage.createdAt
-              : new Date(conversation.lastMessage.createdAt).toISOString(),
+              : conversation.lastMessage.createdAt instanceof Date
+                ? conversation.lastMessage.createdAt.toISOString()
+                : String(conversation.lastMessage.createdAt),
         }
       : null,
   }
@@ -75,7 +117,7 @@ export async function GET(req: NextRequest) {
       if (!contactsMap.has(user.id)) {
         contactsMap.set(user.id, {
           id: -1,
-          otherUser: user,
+          otherUser: serializeUser(user),
           updatedAt: new Date().toISOString(),
           lastMessage: null,
           unreadCount: 0,
@@ -158,7 +200,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       conversation: {
         id: conversation.id,
-        otherUser,
+        otherUser: serializeUser(otherUser),
         lastMessage: null,
         updatedAt: new Date().toISOString(),
         unreadCount: 0,
