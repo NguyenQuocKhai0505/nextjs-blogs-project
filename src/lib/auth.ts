@@ -3,6 +3,13 @@ import {betterAuth} from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import {db} from "./db"
 import * as schema from "./db/schema"
+
+// Log database connection status
+console.log("[AUTH] Initializing Better Auth...")
+console.log("[AUTH] Database URL:", process.env.DATABASE_URL ? "Set" : "Missing")
+console.log("[AUTH] Base URL:", process.env.BASE_URL || "http://localhost:3000")
+console.log("[AUTH] NODE_ENV:", process.env.NODE_ENV)
+
 export const auth = betterAuth({
     appName:"NextJS 15 Blog",
     secret:process.env.BETTER_AUTH_SECRET || "BETTER_AUTH_SECRET",
