@@ -22,9 +22,31 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     const url = req.nextUrl.pathname
+    const method = req.method
+    console.log("[AUTH API] ========== POST REQUEST START ==========")
     console.log("[AUTH API] POST request to:", url)
+    console.log("[AUTH API] Request method:", method)
+    console.log("[AUTH API] Request URL:", req.url)
     
     try {
+        // Try to read body for sign-up requests
+        if (url.includes('sign-up')) {
+            try {
+                const clonedReq = req.clone()
+                const body = await clonedReq.json().catch(() => null)
+                if (body) {
+                    const safeBody = { ...body }
+                    if (safeBody.password) {
+                        safeBody.password = "[REDACTED]"
+                    }
+                    console.log("[AUTH API] Request body:", JSON.stringify(safeBody, null, 2))
+                }
+            } catch {
+                console.log("[AUTH API] Could not read request body")
+            }
+        }
+        
+        console.log("[AUTH API] Calling Better Auth handler...")
         const response = await handler.POST(req)
         const responseStatus = response.status
         console.log("[AUTH API] POST response status:", responseStatus)
@@ -34,14 +56,19 @@ export async function POST(req: NextRequest) {
             try {
                 const clonedResponse = response.clone()
                 const errorBody = await clonedResponse.json().catch(() => null)
+                console.error("[AUTH API] ========== ERROR RESPONSE ==========")
                 console.error("[AUTH API] Error response body:", JSON.stringify(errorBody, null, 2))
-            } catch {
-                console.error("[AUTH API] Could not parse error response")
+                console.error("[AUTH API] ======================================")
+            } catch (e) {
+                console.error("[AUTH API] Could not parse error response:", e)
             }
+        } else {
+            console.log("[AUTH API] ========== SUCCESS RESPONSE ==========")
         }
         
         return response
     } catch (error) {
+        console.error("[AUTH API] ========== EXCEPTION CAUGHT ==========")
         console.error("[AUTH API] POST exception:", error)
         console.error("[AUTH API] Error type:", error?.constructor?.name)
         console.error("[AUTH API] Error message:", error instanceof Error ? error.message : String(error))
@@ -58,8 +85,9 @@ export async function POST(req: NextRequest) {
             if ('cause' in error && error.cause !== undefined) {
                 errorDetails.cause = error.cause
             }
-            console.error("[AUTH API] Error details:", errorDetails)
+            console.error("[AUTH API] Error details:", JSON.stringify(errorDetails, null, 2))
         }
+        console.error("[AUTH API] ======================================")
         
         throw error // Re-throw để Next.js xử lý
     }
