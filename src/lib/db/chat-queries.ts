@@ -127,20 +127,62 @@ export async function getMessages(conversationId: number, limit = 50) {
 }
 
 /**
+ * Xoá 1 message (chỉ cho phép chính sender xoá)
+ * Trả về conversationId nếu xoá thành công
+ */
+export async function deleteMessage(messageId: number, userId: string) {
+  try {
+    const message = await db.query.messages.findFirst({
+      where: eq(messages.id, messageId),
+    })
+
+    if (!message) {
+      return null
+    }
+
+    if (message.senderId !== userId) {
+      return false
+    }
+
+    await db.delete(messages).where(eq(messages.id, messageId))
+
+    return { conversationId: message.conversationId }
+  } catch (error) {
+    console.error("Error in deleteMessage:", error)
+    return null
+  }
+}
+
+/**
  * Tạo message mới
  */
 export async function createMessage(
   conversationId: number,
   senderId: string,
-  content: string
+  options: {
+    content?: string
+    imageUrl?: string
+    videoUrl?: string
+  }
 ) {
   try {
+    const hasText = !!(options.content && options.content.trim().length > 0)
+    const hasImage = !!options.imageUrl
+    const hasVideo = !!options.videoUrl
+
+    // Nếu không có text, không có image, không có video thì không tạo message
+    if (!hasText && !hasImage && !hasVideo) {
+      return null
+    }
+
     const [newMessage] = await db
       .insert(messages)
       .values({
         conversationId,
         senderId,
-        content,
+        content: hasText ? options.content!.trim() : null,
+        imageUrl: options.imageUrl ?? null,
+        videoUrl: options.videoUrl ?? null,
         read: false,
       })
       .returning()
@@ -249,5 +291,30 @@ export async function getUnreadCount(conversationId: number, userId: string) {
   } catch (error) {
     console.error("Error in getUnreadCount:", error)
     return 0
+  }
+}
+
+/**
+ * Xoá toàn bộ conversation (chỉ khi user là 1 trong 2 người)
+ */
+export async function deleteConversation(conversationId: number, userId: string) {
+  try {
+    const conversation = await db.query.conversations.findFirst({
+      where: eq(conversations.id, conversationId),
+    })
+
+    if (!conversation) return null
+
+    if (conversation.user1Id !== userId && conversation.user2Id !== userId) {
+      return false
+    }
+
+    await db.delete(messages).where(eq(messages.conversationId, conversationId))
+    await db.delete(conversations).where(eq(conversations.id, conversationId))
+
+    return true
+  } catch (error) {
+    console.error("Error in deleteConversation:", error)
+    return null
   }
 }

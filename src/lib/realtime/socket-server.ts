@@ -1,7 +1,7 @@
 import { Server as SocketIOServer } from "socket.io"
 import { Server as HTTPServer } from "http"
 import { auth } from "../../lib/auth"
-import { createMessage, markMessagesAsRead } from "../../lib/db/chat-queries"
+import { createMessage, deleteMessage, markMessagesAsRead } from "../../lib/db/chat-queries"
 import { createNotification, serializeNotification } from "@/lib/db/notification-queries"
 
 let io: SocketIOServer | null = null
@@ -67,14 +67,28 @@ export function initializeSocketIO(server: HTTPServer) {
     //Event: Gui tin nhan
     socket.on("send_message", async (data: {
       conversationId: number
-      content: string
+      content?: string
+      imageUrl?:string
+      videoUrl?: string
     }) => {
       try {
+        const hasText = data.content && data.content.trim().length>0
+        const hasImage = !!data.imageUrl
+        const hasVideo = !!data.videoUrl
+        if(!hasText && !hasImage && !hasVideo)
+        {
+          socket.emit("error",{message:"Empty Message"})
+          return
+        }
         //Luu vao database
         const message = await createMessage(
           data.conversationId,
           userId,
-          data.content
+          {
+            content: hasText ? data.content!.trim() : undefined,
+            imageUrl: data.imageUrl,
+            videoUrl: data.videoUrl
+          }
         )
         if (!message) {
           socket.emit("error", { message: "Failed to send message" })
@@ -86,6 +100,8 @@ export function initializeSocketIO(server: HTTPServer) {
           conversationId: message.conversationId,
           senderId: message.senderId,
           content: message.content,
+          imageUrl: message.imageUrl,
+          videoUrl: message.videoUrl, 
           read: message.read,
           createdAt: message.createdAt,
           sender: message.sender
@@ -110,6 +126,24 @@ export function initializeSocketIO(server: HTTPServer) {
       } catch (error) {
         console.error("Error sending message: ", error)
         socket.emit("error", { message: "Error sending messafe" })
+      }
+    })
+
+    // Event: Xoá message
+    socket.on("delete_message", async (data: { messageId: number }) => {
+      try {
+        const result = await deleteMessage(data.messageId, userId)
+
+        if (result === null || result === false) {
+          return
+        }
+
+        io?.to(`conversation:${result.conversationId}`).emit("message_deleted", {
+          conversationId: result.conversationId,
+          messageId: data.messageId,
+        })
+      } catch (error) {
+        console.error("Error deleting message: ", error)
       }
     })
     //Even danh dau da doc

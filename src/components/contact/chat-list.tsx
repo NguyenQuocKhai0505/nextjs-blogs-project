@@ -5,7 +5,7 @@ import { ContactSummary } from "./contact-client"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { RefreshCcw, Search } from "lucide-react"
+import { RefreshCcw, Search, MoreHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {ContactUser} from "./contact-client"
 type ChatListProps = {
@@ -13,6 +13,7 @@ type ChatListProps = {
   selectedUserId: string | null
   onSelect: (userId: string) => void
   onRefresh: () => void
+  onDeleteConversation?: (conversationId: number) => void
 }
 
 export default function ChatList({
@@ -20,6 +21,7 @@ export default function ChatList({
   selectedUserId,
   onSelect,
   onRefresh,
+  onDeleteConversation,
 }: ChatListProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [searchResults,setSearchResults] = useState<ContactUser[]>([])
@@ -102,38 +104,60 @@ export default function ChatList({
         {filteredContacts.length === 0 && (
           <p className="text-center text-sm text-muted-foreground">No contacts found</p>
         )}
-        {filteredContacts.map(contact => (
-          <button
-            key={contact.otherUser.id}
-            onClick={() => onSelect(contact.otherUser.id)}
-            className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2 text-left transition",
-              selectedUserId === contact.otherUser.id
-                ? "bg-primary/10 text-primary"
-                : "hover:bg-muted"
-            )}
-          >
-            <Avatar className="size-10">
-              {contact.otherUser.avatar ? (
-                <AvatarImage src={contact.otherUser.avatar} alt={contact.otherUser.name} />
-              ) : null}
-              <AvatarFallback>
-                {contact.otherUser.name?.charAt(0).toUpperCase() ?? "U"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex min-w-0 flex-1 flex-col">
-              <p className="truncate text-sm font-semibold">{contact.otherUser.name}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {contact.lastMessage?.content ?? "Say hi 👋"}
-              </p>
+        {displayContacts.map(contact => {
+          const key =
+            contact.id && contact.id > 0
+              ? `conv-${contact.id}`
+              : `user-${contact.otherUser.id}`
+
+          return (
+            <div key={key} className="flex items-center gap-1">
+              <button
+                onClick={() => onSelect(contact.otherUser.id)}
+                className={cn(
+                  "flex flex-1 items-center gap-3 rounded-xl px-3 py-2 text-left transition",
+                  selectedUserId === contact.otherUser.id
+                    ? "bg-primary/10 text-primary"
+                    : "hover:bg-muted"
+                )}
+                type="button"
+              >
+                <Avatar className="size-10">
+                  {contact.otherUser.avatar ? (
+                    <AvatarImage src={contact.otherUser.avatar} alt={contact.otherUser.name} />
+                  ) : null}
+                  <AvatarFallback>
+                    {contact.otherUser.name?.charAt(0).toUpperCase() ?? "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <p className="truncate text-sm font-semibold">{contact.otherUser.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {contact.lastMessage?.content ?? "Say hi 👋"}
+                  </p>
+                </div>
+                {contact.unreadCount ? (
+                  <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
+                    {contact.unreadCount}
+                  </span>
+                ) : null}
+              </button>
+              {contact.id > 0 && onDeleteConversation && (
+                <button
+                  type="button"
+                  className="rounded-full p-1 hover:bg-background"
+                  onClick={e => {
+                    e.stopPropagation()
+                    onDeleteConversation(contact.id)
+                  }}
+                  aria-label="Conversation options"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              )}
             </div>
-            {contact.unreadCount ? (
-              <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
-                {contact.unreadCount}
-              </span>
-            ) : null}
-          </button>
-        ))}
+          )
+        })}
       </div>
     </aside>
   )

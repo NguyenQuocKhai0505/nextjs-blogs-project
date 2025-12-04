@@ -7,17 +7,20 @@ import { ContactUser } from "./contact-client"
 import { useSocket } from "@/contexts/socket-context"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
+import { MoreHorizontal } from "lucide-react"
 
 type ChatPanelProps = {
   conversationId: number | null
   participant: ContactUser | null
   currentUserId: string
+  onDeleteConversation?: (conversationId: number) => void
 }
 
 export default function ChatPanel({
   conversationId,
   participant,
   currentUserId,
+  onDeleteConversation,
 }: ChatPanelProps) {
   const { socket, isConnected } = useSocket()
   const [messages, setMessages] = useState<MessageItem[]>([])
@@ -68,17 +71,25 @@ export default function ChatPanel({
     }
   }, [socket, conversationId])
 
-  const handleSendMessage = async (content: string) => {
-    if (!conversationId || !content.trim()) return
-    const payload = { conversationId, content: content.trim() }
+  type OutgoingMessagePayload = {
+    content?: string
+    imageUrl?: string
+    videoUrl?: string
+  }
+
+  const handleSendMessage = async (payload: OutgoingMessagePayload) => {
+    if (!conversationId) return
+
+    const body = { conversationId, ...payload }
+
     if (socket && isConnected) {
-      socket.emit("send_message", payload)
+      socket.emit("send_message", body)
     } else {
       try {
         const res = await fetch("/api/messages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(body),
         })
         if (!res.ok) {
           throw new Error("Failed to send message")
@@ -121,12 +132,47 @@ export default function ChatPanel({
             </p>
           </div>
         </div>
-        <div className="flex gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className={cn("h-2.5 w-2.5 rounded-full", isConnected ? "bg-green-500" : "bg-gray-400")} />
           <p>{isConnected ? "Connected" : "Waiting for connection"}</p>
+          {conversationId && onDeleteConversation && (
+            <button
+              type="button"
+              className="ml-3 rounded-full p-1 hover:bg-muted"
+              onClick={() => {
+                const ok = window.confirm("Delete this conversation? This action cannot be undone.")
+                if (ok) {
+                  onDeleteConversation(conversationId)
+                }
+              }}
+              aria-label="Conversation options"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </header>
-      <ChatWindow messages={messages} currentUserId={currentUserId} loading={loading} />
+      <ChatWindow
+        messages={messages}
+        currentUserId={currentUserId}
+        loading={loading}
+        onDeleteMessage={async (messageId) => {
+          // Xoá local ngay để UI phản hồi nhanh
+          setMessages(prev => prev.filter(m => m.id !== messageId))
+
+          if (socket && isConnected) {
+            socket.emit("delete_message", { messageId })
+          } else {
+            try {
+              await fetch(`/api/messages?messageId=${messageId}`, {
+                method: "DELETE",
+              })
+            } catch (error) {
+              console.error(error)
+            }
+          }
+        }}
+      />
       <MessageInput onSend={handleSendMessage} disabled={!conversationId} />
     </section>
   )

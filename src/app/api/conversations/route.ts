@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { getConversations, getOrCreateConversation } from "@/lib/db/chat-queries"
+import { getConversations, getOrCreateConversation, deleteConversation } from "@/lib/db/chat-queries"
 import { getFollowingUsers } from "@/lib/db/queries"
 
 type ConversationSummary = Awaited<ReturnType<typeof getConversations>>[number]
@@ -209,6 +209,52 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("[CONVERSATIONS API] Error creating conversation:", error)
     console.error("[CONVERSATIONS API] Error stack:", error instanceof Error ? error.stack : "No stack trace")
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await auth.api.getSession({
+      headers: req.headers,
+    })
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const conversationId = parseInt(searchParams.get("conversationId") || "0")
+
+    if (!conversationId) {
+      return NextResponse.json(
+        { error: "conversationId is required" },
+        { status: 400 }
+      )
+    }
+
+    const result = await deleteConversation(conversationId, session.user.id)
+
+    if (result === null) {
+      return NextResponse.json(
+        { error: "Conversation not found" },
+        { status: 404 }
+      )
+    }
+
+    if (result === false) {
+      return NextResponse.json(
+        { error: "You don't have permission to delete this conversation" },
+        { status: 403 }
+      )
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("[CONVERSATIONS API] Error deleting conversation:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

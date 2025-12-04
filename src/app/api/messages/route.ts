@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
-import { createMessage, getMessages } from "@/lib/db/chat-queries"
+import { createMessage, getMessages, deleteMessage } from "@/lib/db/chat-queries"
 
 export async function GET(req: NextRequest) {
   try {
@@ -46,12 +46,22 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const conversationId = body?.conversationId
-    const content = body?.content
+    const { conversationId, content, imageUrl, videoUrl } = body || {}
 
-    if (!conversationId || !content?.trim()) {
+    if (!conversationId) {
       return NextResponse.json(
-        { error: "conversationId and content are required" },
+        { error: "conversationId is required" },
+        { status: 400 }
+      )
+    }
+
+    const hasText = !!(content && content.trim().length > 0)
+    const hasImage = !!imageUrl
+    const hasVideo = !!videoUrl
+
+    if (!hasText && !hasImage && !hasVideo) {
+      return NextResponse.json(
+        { error: "At least one of content, imageUrl, videoUrl is required" },
         { status: 400 }
       )
     }
@@ -59,7 +69,11 @@ export async function POST(req: NextRequest) {
     const message = await createMessage(
       Number(conversationId),
       session.user.id,
-      content.trim()
+      {
+        content: hasText ? content.trim() : undefined,
+        imageUrl,
+        videoUrl,
+      }
     )
 
     if (!message) {
@@ -72,6 +86,52 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message })
   } catch (error) {
     console.error("Error creating message:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await auth.api.getSession({
+      headers: req.headers,
+    })
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const messageId = parseInt(searchParams.get("messageId") || "0")
+
+    if (!messageId) {
+      return NextResponse.json(
+        { error: "messageId is required" },
+        { status: 400 }
+      )
+    }
+
+    const result = await deleteMessage(messageId, session.user.id)
+
+    if (result === null) {
+      return NextResponse.json(
+        { error: "Message not found" },
+        { status: 404 }
+      )
+    }
+
+    if (result === false) {
+      return NextResponse.json(
+        { error: "You don't have permission to delete this message" },
+        { status: 403 }
+      )
+    }
+
+    return NextResponse.json({ success: true, conversationId: result.conversationId })
+  } catch (error) {
+    console.error("Error deleting message:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

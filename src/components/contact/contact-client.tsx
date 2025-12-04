@@ -4,6 +4,16 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import ChatList from "./chat-list"
 import ChatPanel from "./chat-panel"
 import { SocketProvider, useSocket } from "@/contexts/socket-context"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export type ContactUser = {
   id: string
@@ -42,12 +52,28 @@ type IncomingSocketMessage = {
 
 function ContactClientContent({ initialContacts, currentUserId }: ContactClientProps) {
   const { socket } = useSocket()
-  const [contacts, setContacts] = useState<ContactState[]>(() =>
-    (initialContacts ?? []).map(contact => ({
+  const [contacts, setContacts] = useState<ContactState[]>(() => {
+    const byUser = new Map<string, ContactSummary>()
+
+    for (const contact of initialContacts ?? []) {
+      const existing = byUser.get(contact.otherUser.id)
+      if (!existing) {
+        byUser.set(contact.otherUser.id, contact)
+      } else {
+        // Giữ conversation có updatedAt mới nhất
+        const existingTime = new Date(existing.updatedAt).getTime()
+        const currentTime = new Date(contact.updatedAt).getTime()
+        if (currentTime > existingTime) {
+          byUser.set(contact.otherUser.id, contact)
+        }
+      }
+    }
+
+    return Array.from(byUser.values()).map(contact => ({
       ...contact,
       unreadCount: contact.unreadCount ?? 0,
     }))
-  )
+  })
 
   const [selectedUserId, setSelectedUserId] = useState<string | null>(
     initialContacts?.[0]?.otherUser.id ?? null
@@ -211,6 +237,29 @@ function ContactClientContent({ initialContacts, currentUserId }: ContactClientP
   const activeConversationId =
     selectedConversation && selectedConversation.id > 0 ? selectedConversation.id : null
 
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
+
+  const handleDeleteConversation = useCallback(
+    async (conversationId: number) => {
+      // Xoá trong state contacts
+      setContacts(prev => prev.filter(c => c.id !== conversationId))
+
+      // Nếu đang xem cuộc trò chuyện này thì clear panel
+      if (selectedConversation?.id === conversationId) {
+        setSelectedUserId(null)
+      }
+
+      try {
+        await fetch(`/api/conversations?conversationId=${conversationId}`, {
+          method: "DELETE",
+        })
+      } catch (error) {
+        console.error("Failed to delete conversation", error)
+      }
+    },
+    [selectedConversation]
+  )
+
   return (
     <div className="container mx-auto py-6">
       <div className="h-[calc(100vh-160px)] rounded-2xl border bg-white shadow-sm dark:bg-neutral-900">
@@ -220,14 +269,45 @@ function ContactClientContent({ initialContacts, currentUserId }: ContactClientP
             selectedUserId={selectedUserId}
             onSelect={handleSelectContact}
             onRefresh={refreshContacts}
+            onDeleteConversation={id => setPendingDeleteId(id)}
           />
           <ChatPanel
             currentUserId={currentUserId}
             conversationId={activeConversationId}
             participant={selectedConversation?.otherUser ?? null}
+            onDeleteConversation={id => setPendingDeleteId(id)}
           />
         </div>
       </div>
+
+      <AlertDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={open => {
+          if (!open) setPendingDeleteId(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove all messages in this conversation. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (pendingDeleteId !== null) {
+                  await handleDeleteConversation(pendingDeleteId)
+                  setPendingDeleteId(null)
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
