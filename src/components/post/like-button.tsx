@@ -6,7 +6,8 @@ import { Button } from "../ui/button"
 import { toggleLikeAction } from "@/actions/like-actions"
 import { toast } from "sonner"
 import { LikesDialog } from "./likes-dialog"
-
+import { useEffect } from "react"
+import { useSocket } from "@/contexts/socket-context"
 interface LikeButtonProps {
     postId: number
     initialLikeCount: number
@@ -18,6 +19,7 @@ export function LikeButton({ postId, initialLikeCount, initialLiked }: LikeButto
     const [liked, setLiked] = useState(initialLiked)
     const [likeCount, setLikeCount] = useState(initialLikeCount)
     const [isPending, startTransition] = useTransition()
+    const {socket} = useSocket()
 
     // Handler khi click like button
     const handleLike = () => {
@@ -34,6 +36,28 @@ export function LikeButton({ postId, initialLikeCount, initialLiked }: LikeButto
             }
         })
     }
+
+    useEffect(()=>{
+        if(!socket) return 
+
+        socket.emit("join_post",postId)
+
+        const handleLikeUpdated = (payload:{
+            postId: number
+            likeCount: number
+            action: "liked" | "unliked" | null
+        }) =>{
+            if(payload.postId !== postId) return 
+            setLikeCount(payload.likeCount)
+            setLiked(payload.action === "liked")
+        }
+        socket.on("post_like_updated",handleLikeUpdated)
+
+        return () => {
+            socket.emit("leave_post",postId)
+            socket.off("post_like_updated",handleLikeUpdated)
+        }
+    },[socket,postId])
 
     return (
         <div className="flex items-center gap-2">

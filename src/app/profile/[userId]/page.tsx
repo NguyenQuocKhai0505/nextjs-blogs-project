@@ -7,6 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { FollowButton } from "@/components/profile/follow-button"
 import { checkFollowingAction, getFollowersStatsAction } from "@/actions/follow-actions"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { MessageCircle } from "lucide-react"
 
 interface ProfilePageProps
 {
@@ -67,7 +70,21 @@ export default async function UserProfilePage({params}:ProfilePageProps)
                                 </div>
                             </div>
                             {!isOwnProfile && (
-                                <FollowButton targetUserId={userId} initialFollowing={Boolean(initalFollowing)}/>
+                                <div className="flex gap-2">
+                                    <FollowButton
+                                        targetUserId={userId}
+                                        initialFollowing={Boolean(initalFollowing)}
+                                    />
+                                    <Button
+                                        asChild
+                                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm border-none"
+                                    >
+                                        <Link href={`/contact?userId=${userId}`}>
+                                            <MessageCircle className="mr-2 h-4 w-4" />
+                                            Chat
+                                        </Link>
+                                    </Button>
+                                </div>
                             )}
                         </div>
                     </CardHeader>

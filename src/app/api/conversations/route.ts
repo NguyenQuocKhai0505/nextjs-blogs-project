@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { getConversations, getOrCreateConversation } from "@/lib/db/chat-queries"
-import { getFollowersUsers } from "@/lib/db/queries"
+import { getFollowingUsers } from "@/lib/db/queries"
 
 type ConversationSummary = Awaited<ReturnType<typeof getConversations>>[number]
-type FollowerUser = Awaited<ReturnType<typeof getFollowersUsers>>[number]
-type ContactUser = ConversationSummary["otherUser"] | FollowerUser
+type FollowingUser = Awaited<ReturnType<typeof getFollowingUsers>>[number]
+type ContactUser = ConversationSummary["otherUser"] | FollowingUser
 type SerializedMessage = {
   content: string
   createdAt: string
@@ -98,14 +98,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    console.log("[CONVERSATIONS API] Fetching conversations and followers for user:", session.user.id)
-    const [conversations, followers] = await Promise.all([
+    console.log("[CONVERSATIONS API] Fetching conversations and following users for user:", session.user.id)
+    const [conversations, following] = await Promise.all([
       getConversations(session.user.id),
-      getFollowersUsers(session.user.id),
+      getFollowingUsers(session.user.id),
     ])
 
     console.log("[CONVERSATIONS API] Conversations count:", conversations.length)
-    console.log("[CONVERSATIONS API] Followers count:", followers.length)
+    console.log("[CONVERSATIONS API] Following users count:", following.length)
 
     const contactsMap = new Map<string, ContactEntry>()
 
@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
       contactsMap.set(conv.otherUser.id, serializeConversation(conv))
     })
 
-    followers.forEach(user => {
+    following.forEach(user => {
       if (!contactsMap.has(user.id)) {
         contactsMap.set(user.id, {
           id: -1,

@@ -1,13 +1,13 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState,useEffect } from "react"
 import { ContactSummary } from "./contact-client"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { RefreshCcw, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
-
+import {ContactUser} from "./contact-client"
 type ChatListProps = {
   contacts: ContactSummary[]
   selectedUserId: string | null
@@ -22,17 +22,58 @@ export default function ChatList({
   onRefresh,
 }: ChatListProps) {
   const [searchTerm, setSearchTerm] = useState("")
-
-  const filteredContacts = useMemo(() => {
-    if (!searchTerm.trim()) return contacts
+  const [searchResults,setSearchResults] = useState<ContactUser[]>([])
+  const [isSearching,setIsSearching] = useState(false)
+  const filteredContacts = useMemo(()=>{
+    if(!searchTerm.trim()) return contacts
     const keyword = searchTerm.toLowerCase()
-    return contacts.filter(contact => {
-      const name = contact.otherUser.name?.toLowerCase() ?? ""
-      const email = contact.otherUser.email?.toLowerCase() ?? ""
+    return contacts.filter(contacts => {
+      const name = contacts.otherUser.name?.toLowerCase() ?? ""
+      const email = contacts.otherUser.email?.toLocaleLowerCase() ?? ""
       return name.includes(keyword) || email.includes(keyword)
     })
-  }, [contacts, searchTerm])
+  },[contacts,searchTerm])
 
+  //Search user from API when search term changes 
+  useEffect(()=>{
+    const searchUser = async () =>{
+      if(!searchTerm.trim())
+      {
+        setSearchResults([])
+        return
+      }
+      setIsSearching(true)
+      try{
+        const res = await fetch(`/api/search-users?q=${encodeURIComponent(searchTerm.trim())}&limit=10`)
+        if(res.ok){
+          const data = await res.json()
+          setSearchResults(data.users || [])
+        }
+      }catch(error)
+      {
+        console.error("Failed to search users:",error)
+        setIsSearching(false)
+      }finally{
+        setIsSearching(false)
+      }
+    }
+  },[searchTerm])
+  //Combine filtered contacts with search results 
+  const displayContacts = useMemo(()=>{
+    if(!searchTerm.trim()) return contacts
+
+    const contactIds = new Set(contacts.map(c => c.otherUser.id))
+    const newUsersFromSearch = searchResults
+      .filter(user => !contactIds.has(user.id)) //loai bo user da co trong contacts
+      .map(user => ({
+        id:-1,
+        otherUser: user,
+        updatedAt: new Date().toISOString(),
+        lastMessage: null,
+        unreadCount: 0,
+      }))
+      return [...filteredContacts,...newUsersFromSearch]
+  },[filteredContacts,searchResults,searchTerm])
   return (
     <aside className="border-r bg-muted/40 p-4">
       <div className="mb-4 flex items-center justify-between">

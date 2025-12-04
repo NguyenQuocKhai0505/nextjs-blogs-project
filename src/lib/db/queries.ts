@@ -92,17 +92,20 @@ export async function deletePost(postId: number, userId: string) {
         }
 
         // B3: KIỂM TRA QUYỀN - CHỈ AUTHOR MỚI ĐƯỢC DELETE
-        // So sánh: post.authorId === userId
         if (post.authorId !== userId) {
             return false  // Không có quyền delete
         }
 
-        // B4: Xóa post từ database
+        // B4: Xóa dữ liệu liên quan để tránh lỗi khóa ngoại
+        await db.delete(postLikes).where(eq(postLikes.postId, postId))
+        await db.delete(comments).where(eq(comments.postId, postId))
+
+        // B5: Xóa post từ database
         await db.delete(posts).where(eq(posts.id, postId))
         
         return true  // Delete thành công
     } catch (e) {
-        console.log(e)
+        console.log("Delete post error:", e)
         return null  // Có lỗi xảy ra
     }
 }

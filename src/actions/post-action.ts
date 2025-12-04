@@ -210,7 +210,7 @@ export async function DeletePost(postId:number){
 
         return {
             success: true,
-            message: "Post deleted successfully"
+            message: "Deleted Successfully"
         }
 
     }catch(error){

@@ -1,6 +1,4 @@
-
 "use server"
-
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
@@ -8,6 +6,8 @@ import { togglePostLike,checkUserLikedPost,getPostLikes } from "@/lib/db/queries
 import { getPostById } from "@/lib/db/queries"
 import { createNotification } from "@/lib/db/notification-queries"
 import { emitNotificationToUser } from "@/lib/realtime/notification-emitter"
+import { getIO } from "@/lib/realtime/socket-server"
+
 //TONGGLE LIKE ACTION
 export async function toggleLikeAction(postId: number){
     try{
@@ -27,6 +27,18 @@ export async function toggleLikeAction(postId: number){
             success: false,
             message: "Failed to toggle like"
         }
+    }
+    //Lay lai post de co likeCount moi
+    const updatedPost = await getPostById(postId)
+    //Emit realtime cho room post: <postId>
+    const io = getIO()
+    if(io && updatedPost)
+    {
+        io.to(`post:${postId}`).emit("post_like_updated",{
+            postId,
+            likeCount: updatedPost.likeCount ?? 0,
+            action: result.action,
+        })
     }
 
     //Revalidate paths

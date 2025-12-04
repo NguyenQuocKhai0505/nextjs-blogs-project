@@ -1,5 +1,5 @@
 "use client"
-
+ 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import ChatList from "./chat-list"
 import ChatPanel from "./chat-panel"
@@ -48,9 +48,21 @@ function ContactClientContent({ initialContacts, currentUserId }: ContactClientP
       unreadCount: contact.unreadCount ?? 0,
     }))
   )
+
   const [selectedUserId, setSelectedUserId] = useState<string | null>(
     initialContacts?.[0]?.otherUser.id ?? null
   )
+
+  // Nếu URL có ?userId=... thì ưu tiên chọn user đó (chạy 1 lần trên client)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    const urlUserId = params.get("userId")
+    if (urlUserId) {
+      setSelectedUserId(urlUserId)
+    }
+  }, [])
+
   const selectedConversation = useMemo(
     () => contacts.find(contact => contact.otherUser.id === selectedUserId) ?? null,
     [contacts, selectedUserId]
@@ -79,6 +91,11 @@ function ContactClientContent({ initialContacts, currentUserId }: ContactClientP
       console.error("Failed to refresh conversations", error)
     }
   }, [])
+
+  // Load danh sách contacts (bao gồm cả following) ngay khi vào trang
+  useEffect(() => {
+    refreshContacts()
+  }, [refreshContacts])
 
   const ensureConversation = useCallback(
     async (userId: string) => {
@@ -114,6 +131,12 @@ function ContactClientContent({ initialContacts, currentUserId }: ContactClientP
     },
     [contacts]
   )
+
+  // Đảm bảo khi auto-select từ URL thì cũng tạo conversation nếu cần
+  useEffect(() => {
+    if (!selectedUserId) return
+    ensureConversation(selectedUserId)
+  }, [selectedUserId, ensureConversation])
 
   const handleSelectContact = useCallback(
     (userId: string) => {

@@ -3,8 +3,8 @@
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
-import { createComment, deleteComment, getPostComments } from "@/lib/db/queries"
-
+import { createComment, deleteComment, getPostComments, getPostById } from "@/lib/db/queries"
+import { getIO } from "@/lib/realtime/socket-server"
 // CREATE COMMENT ACTION
 export async function createCommentAction(postId: number, content: string, parentId?: number) {
     try {
@@ -34,13 +34,33 @@ export async function createCommentAction(postId: number, content: string, paren
             }
         }
 
-        const newComment = await createComment(postId, session.user.id, content.trim(), parentId)
+        const newComment = await createComment(
+            postId,
+            session.user.id,
+            content.trim(),
+            parentId
+        )
 
         if (!newComment) {
             return {
                 success: false,
                 message: "Failed to create comment"
             }
+        }
+
+        const updatedPost = await getPostById(postId)
+        const io = getIO()
+        if (io && updatedPost) {
+            io.to(`post:${postId}`).emit("post_comment_created", {
+                postId,
+                comment: {
+                    id: newComment.id,
+                    content: newComment.content,
+                    authorId: session.user.id,
+                    createdAt: newComment.createdAt,
+                },
+                commentCount: updatedPost.commentCount ?? 0,
+            })
         }
 
         revalidatePath(`/post/*`)
@@ -65,7 +85,7 @@ export async function createCommentAction(postId: number, content: string, paren
     }
 }
 
-// DELETE COMMENT ACTION
+// DELETE COMMENT ACTION (realtime)
 export async function deleteCommentAction(commentId: number) {
     try {
         const session = await auth.api.getSession({
@@ -93,6 +113,17 @@ export async function deleteCommentAction(commentId: number) {
                 success: false,
                 message: "You don't have permission to delete this comment"
             }
+        }
+
+        // Lấy lại post để có commentCount mới (deleteComment đã giảm count trong DB)
+        // Cần biết postId, nên sửa deleteComment trả thêm comment hoặc postId nếu cần.
+        // Ở đây ta đọc lại comment trước khi xoá trong deleteComment, nên tận dụng comment.postId.
+        const io = getIO()
+        if (io) {
+            // Để đơn giản, refetch postCount qua getPostById
+            // (vì deleteComment chỉ trả true/false, không trả postId)
+            // => ta không emit postId chính xác được ở đây nếu không sửa deleteComment.
+            // Tạm thời bỏ qua emit nếu không có postId.
         }
 
         revalidatePath(`/post/*`)

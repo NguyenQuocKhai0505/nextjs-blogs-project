@@ -10,6 +10,7 @@ import { createCommentAction, deleteCommentAction, getPostCommentsAction } from 
 import { toast } from "sonner"
 import { formatDate } from "@/lib/utils"
 import { Trash2, Send } from "lucide-react"
+import { useSocket } from "@/contexts/socket-context"
 
 interface Comment {
     id: number
@@ -37,7 +38,7 @@ export function CommentSection({postId,initialCommentCount,userId}: CommentSecti
     const [content, setContent]= useState("")
     const [isPending,startTransition] = useTransition()
     const [loading,setLoading] = useState(false)
-
+    const {socket} = useSocket()
     const fetchComments = async () => {
         setLoading(true)
         try{
@@ -57,7 +58,52 @@ export function CommentSection({postId,initialCommentCount,userId}: CommentSecti
         fetchComments()
     // eslint-disable-next-line react-hooks/exhaustive-deps
     },[postId])
+    useEffect(()=>{
+        if(!socket) return 
+        
+        // Join room cua post de nhan realtime comment
+        socket.emit("join_post", postId)
 
+        const handleCommentCreated = (payload: {
+            postId: number
+            comment:{
+                id:number
+                content: string
+                authorId: string 
+                createdAt: string | Date
+            }
+            commentCount: number 
+        }) => {
+            if(payload.postId !== postId) return  
+
+            // Tự thêm comment mới vào list (cho các user khác)
+            setComments(prev => [
+                {
+                id: payload.comment.id,
+                content: payload.comment.content,
+                authorId: payload.comment.authorId,
+                author: prev[0]?.author ?? {
+                    id: payload.comment.authorId,
+                    name: "Someone",
+                    email: "",
+                    avatar: null,
+                },
+                createdAt: new Date(payload.comment.createdAt),
+                updatedAt: new Date(payload.comment.createdAt),
+                },
+                ...prev,
+            ])
+        
+            setCommentCount(payload.commentCount)
+            }
+        
+            socket.on("post_comment_created", handleCommentCreated)
+        
+            return () => {
+            socket.emit("leave_post", postId)
+            socket.off("post_comment_created", handleCommentCreated)
+            }
+        }, [socket, postId])
     const handleSubmit = (e:React.FormEvent) =>{
         e.preventDefault()
 

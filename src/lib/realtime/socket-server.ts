@@ -48,6 +48,7 @@ export function initializeSocketIO(server: HTTPServer) {
       next(new Error("Authentication Failed"))
     }
   })
+  
   io.on("connection", (socket) => {
     const userId = socket.data.userId
 
@@ -126,6 +127,21 @@ export function initializeSocketIO(server: HTTPServer) {
         userSocketMap.delete(userId)
         console.log(`User ${userId} disconnected`)
       }
+    })
+
+    // ====== POST ROOMS (LIKE / COMMENT REALTIME) ======
+    // Client join vao room cua 1 post cu the
+    socket.on("join_post", (postId: number) => {
+      if (!postId) return
+      socket.join(`post:${postId}`)
+      console.log(`User ${userId} joined post room ${postId}`)
+    })
+
+    // Client roi khoi room cua post khi khong con xem nua
+    socket.on("leave_post", (postId: number) => {
+      if (!postId) return
+      socket.leave(`post:${postId}`)
+      console.log(`User ${userId} left post room ${postId}`)
     })
   })
   return io
