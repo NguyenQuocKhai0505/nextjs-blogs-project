@@ -7,7 +7,7 @@ type ConversationSummary = Awaited<ReturnType<typeof getConversations>>[number]
 type FollowingUser = Awaited<ReturnType<typeof getFollowingUsers>>[number]
 type ContactUser = ConversationSummary["otherUser"] | FollowingUser
 type SerializedMessage = {
-  content: string
+  content: string | null
   createdAt: string
   senderId: string
 } | null
