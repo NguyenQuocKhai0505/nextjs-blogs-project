@@ -42,8 +42,15 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         return // Không kết nối nếu chưa đăng nhập
       }
 
-      // Kết nối Socket.IO
-      socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000", {
+      // Xác định base URL cho socket
+      // - Dev: có thể dùng NEXT_PUBLIC_SOCKET_URL hoặc localhost
+      // - Prod (Render): mặc định dùng chính origin hiện tại của browser
+      const baseUrl =
+        process.env.NEXT_PUBLIC_SOCKET_URL ||
+        (typeof window !== "undefined" ? window.location.origin : undefined)
+
+      // Kết nối Socket.IO (nếu không có baseUrl, để undefined để client tự dùng same-origin)
+      socketInstance = io(baseUrl, {
         path: "/api/socket",
         transports: ["websocket"],
         withCredentials: true,
