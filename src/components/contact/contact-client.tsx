@@ -24,7 +24,7 @@ export type ContactUser = {
 
 export type ContactMessage = {
   id?: number
-  content: string
+  content: string | null
   createdAt: string
   senderId: string
 }
