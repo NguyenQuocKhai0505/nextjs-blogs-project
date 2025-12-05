@@ -17,7 +17,8 @@ export function initializeSocketIO(server: HTTPServer) {
     path: "/api/socket",
     addTrailingSlash: false,
     cors: {
-      origin: process.env.BASE_URL || "http://localhost:3000",
+      // Cho phép cùng origin (Render) và cả localhost khi dev
+      origin: process.env.BASE_URL || "*",
       methods: ["GET", "POST"],
     },
   })

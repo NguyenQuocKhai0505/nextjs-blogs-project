@@ -263,7 +263,7 @@ function ContactClientContent({ initialContacts, currentUserId }: ContactClientP
   return (
     <div className="container mx-auto py-6">
       <div className="h-[calc(100vh-160px)] rounded-2xl border bg-white shadow-sm dark:bg-neutral-900">
-        <div className="grid h-full grid-cols-[280px_1fr]">
+        <div className="grid h-full min-h-0 grid-cols-[280px_1fr]">
           <ChatList
             contacts={contacts}
             selectedUserId={selectedUserId}

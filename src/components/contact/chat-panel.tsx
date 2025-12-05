@@ -116,7 +116,7 @@ export default function ChatPanel({
   }
 
   return (
-    <section className="flex h-full flex-col">
+    <section className="flex h-full min-h-0 flex-col">
       <header className="flex items-center justify-between border-b px-6 py-4">
         <div className="flex items-center gap-3">
           <Avatar className="size-12">
@@ -152,27 +152,29 @@ export default function ChatPanel({
           )}
         </div>
       </header>
-      <ChatWindow
-        messages={messages}
-        currentUserId={currentUserId}
-        loading={loading}
-        onDeleteMessage={async (messageId) => {
-          // Xoá local ngay để UI phản hồi nhanh
-          setMessages(prev => prev.filter(m => m.id !== messageId))
+      <div className="flex-1 min-h-0">
+        <ChatWindow
+          messages={messages}
+          currentUserId={currentUserId}
+          loading={loading}
+          onDeleteMessage={async (messageId) => {
+            // Xoá local ngay để UI phản hồi nhanh
+            setMessages(prev => prev.filter(m => m.id !== messageId))
 
-          if (socket && isConnected) {
-            socket.emit("delete_message", { messageId })
-          } else {
-            try {
-              await fetch(`/api/messages?messageId=${messageId}`, {
-                method: "DELETE",
-              })
-            } catch (error) {
-              console.error(error)
+            if (socket && isConnected) {
+              socket.emit("delete_message", { messageId })
+            } else {
+              try {
+                await fetch(`/api/messages?messageId=${messageId}`, {
+                  method: "DELETE",
+                })
+              } catch (error) {
+                console.error(error)
+              }
             }
-          }
-        }}
-      />
+          }}
+        />
+      </div>
       <MessageInput onSend={handleSendMessage} disabled={!conversationId} />
     </section>
   )
