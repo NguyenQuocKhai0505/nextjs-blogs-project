@@ -25,17 +25,58 @@ export function initializeSocketIO(server: HTTPServer) {
   io.use(async (socket, next) => {
     try {
       //Lay session tu cookie hoac query
-      const headers = new Headers()
+      // Convert socket headers to a Headers-compatible object for Better Auth
+      // Create a plain object with Headers-like methods (not extending Headers class)
+      const headersData: Record<string, string> = {}
       Object.entries(socket.handshake.headers).forEach(([key, value]) => {
         if (Array.isArray(value)) {
-          headers.append(key, value.join(","))
+          headersData[key.toLowerCase()] = value.join(",")
         } else if (value) {
-          headers.append(key, value)
+          headersData[key.toLowerCase()] = value
         }
       })
 
+      // Create a Headers-like object without extending class to avoid super() issues
+      const headers = {
+        get(name: string): string | null {
+          return headersData[name.toLowerCase()] || null
+        },
+        has(name: string): boolean {
+          return name.toLowerCase() in headersData
+        },
+        set(name: string, value: string): void {
+          headersData[name.toLowerCase()] = value
+        },
+        append(name: string, value: string): void {
+          const key = name.toLowerCase()
+          if (headersData[key]) {
+            headersData[key] += `, ${value}`
+          } else {
+            headersData[key] = value
+          }
+        },
+        forEach(callback: (value: string, key: string) => void): void {
+          Object.entries(headersData).forEach(([key, value]) => {
+            callback(value, key)
+          })
+        },
+        // Add entries() method for compatibility
+        entries(): IterableIterator<[string, string]> {
+          return Object.entries(headersData)[Symbol.iterator]()
+        },
+        // Add keys() method
+        keys(): IterableIterator<string> {
+          return Object.keys(headersData)[Symbol.iterator]()
+        },
+        // Add values() method
+        values(): IterableIterator<string> {
+          return Object.values(headersData)[Symbol.iterator]()
+        }
+      }
+
       const session = await auth.api.getSession({
-        headers,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        headers: headers as any,
       })
 
       if (!session?.user) {
