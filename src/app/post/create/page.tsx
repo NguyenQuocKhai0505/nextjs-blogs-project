@@ -8,7 +8,12 @@ import { auth } from "@/lib/auth"
 
 // Server-side route protection: only authenticated users can access /post/create.
 export default async function CreatePost() {
-  const session = await auth.api.getSession({ headers: await headers() })
+  let session = null
+  try {
+    session = await auth.api.getSession({ headers: await headers() })
+  } catch (error) {
+    console.error("[CreatePost] Failed to get session", error)
+  }
 
   if (!session?.user) {
     redirect("/auth")

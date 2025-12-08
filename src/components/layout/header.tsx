@@ -19,7 +19,7 @@ function Header(){
     },{
         label:"Chat", href:"/contact",
     },{
-        label:"About me", href:"/about",
+        label:"About Author", href:"/about",
     }]
     return(
        <header className="border-b bg-background sticky top-0 z-10">
