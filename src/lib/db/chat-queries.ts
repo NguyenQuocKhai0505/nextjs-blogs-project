@@ -295,6 +295,24 @@ export async function getUnreadCount(conversationId: number, userId: string) {
 }
 
 /**
+ * Kiểm tra user có trong conversation không
+ */
+export async function isUserInConversation(conversationId: number, userId: string) {
+  try {
+    const conversation = await db.query.conversations.findFirst({
+      where: eq(conversations.id, conversationId),
+    })
+
+    if (!conversation) return false
+
+    return conversation.user1Id === userId || conversation.user2Id === userId
+  } catch (error) {
+    console.error("Error in isUserInConversation:", error)
+    return false
+  }
+}
+
+/**
  * Xoá toàn bộ conversation (chỉ khi user là 1 trong 2 người)
  */
 export async function deleteConversation(conversationId: number, userId: string) {

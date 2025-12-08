@@ -34,7 +34,13 @@ app.prepare().then(()=>{
     initializeSocketIO(httpServer)
 
     httpServer.listen(port, (error) => {
-        if (error) throw error
+        if (error) {
+            console.error("Failed to start server:", error)
+            process.exit(1)
+        }
         console.log(`> Ready on http://${hostname}:${port}`)
     })
+}).catch((error) => {
+    console.error("Failed to prepare Next.js app:", error)
+    process.exit(1)
 })
