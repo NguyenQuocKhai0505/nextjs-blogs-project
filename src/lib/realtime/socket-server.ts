@@ -25,53 +25,30 @@ export function initializeSocketIO(server: HTTPServer) {
   io.use(async (socket, next) => {
     try {
       //Lay session tu cookie hoac query
-      // Convert socket headers to a Headers-compatible object for Better Auth
-      // Create a plain object with Headers-like methods (not extending Headers class)
-      const headersData: Record<string, string> = {}
+      // Convert socket headers for Better Auth
+      // Create a simple object that Better Auth can work with
+      // Better Auth expects headers to have get() method or be a plain object
+      const rawHeaders: Record<string, string> = {}
       Object.entries(socket.handshake.headers).forEach(([key, value]) => {
         if (Array.isArray(value)) {
-          headersData[key.toLowerCase()] = value.join(",")
+          rawHeaders[key] = value.join(",")
         } else if (value) {
-          headersData[key.toLowerCase()] = value
+          rawHeaders[key] = value
         }
       })
 
-      // Create a Headers-like object without extending class to avoid super() issues
-      const headers = {
-        get(name: string): string | null {
-          return headersData[name.toLowerCase()] || null
-        },
-        has(name: string): boolean {
-          return name.toLowerCase() in headersData
-        },
-        set(name: string, value: string): void {
-          headersData[name.toLowerCase()] = value
-        },
-        append(name: string, value: string): void {
-          const key = name.toLowerCase()
-          if (headersData[key]) {
-            headersData[key] += `, ${value}`
-          } else {
-            headersData[key] = value
-          }
-        },
-        forEach(callback: (value: string, key: string) => void): void {
-          Object.entries(headersData).forEach(([key, value]) => {
-            callback(value, key)
-          })
-        },
-        // Add entries() method for compatibility
-        entries(): IterableIterator<[string, string]> {
-          return Object.entries(headersData)[Symbol.iterator]()
-        },
-        // Add keys() method
-        keys(): IterableIterator<string> {
-          return Object.keys(headersData)[Symbol.iterator]()
-        },
-        // Add values() method
-        values(): IterableIterator<string> {
-          return Object.values(headersData)[Symbol.iterator]()
-        }
+      // Create a minimal Headers-like object that doesn't extend any class
+      // This avoids super() constructor issues in production builds
+      const headers = Object.create(null)
+      headers.get = (name: string) => rawHeaders[name.toLowerCase()] || null
+      headers.has = (name: string) => name.toLowerCase() in rawHeaders
+      headers.set = (name: string, value: string) => { rawHeaders[name.toLowerCase()] = value }
+      headers.append = (name: string, value: string) => {
+        const key = name.toLowerCase()
+        rawHeaders[key] = rawHeaders[key] ? `${rawHeaders[key]}, ${value}` : value
+      }
+      headers.forEach = (callback: (value: string, key: string) => void) => {
+        Object.entries(rawHeaders).forEach(([key, value]) => callback(value, key))
       }
 
       const session = await auth.api.getSession({
