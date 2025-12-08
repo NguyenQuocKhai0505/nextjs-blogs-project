@@ -1,4 +1,8 @@
 
+// This page requires request headers for auth; force dynamic rendering to avoid
+// Next.js static optimization errors in production.
+export const dynamic = "force-dynamic"
+
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 
