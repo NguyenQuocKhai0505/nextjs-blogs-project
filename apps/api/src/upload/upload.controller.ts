@@ -1,0 +1,101 @@
+import {
+  BadRequestException,
+  Controller,
+  Post,
+  UploadedFiles,
+  UseInterceptors,
+} from "@nestjs/common"
+import { FilesInterceptor } from "@nestjs/platform-express"
+import { v2 as cloudinary } from "cloudinary"
+
+const IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"]
+const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"]
+
+type MediaType = "image" | "video"
+
+function getResourceType(mime: string): MediaType {
+  if (IMAGE_TYPES.includes(mime)) return "image"
+  if (VIDEO_TYPES.includes(mime)) return "video"
+  return "image"
+}
+
+@Controller("upload")
+export class UploadController {
+  constructor() {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    })
+  }
+
+  @Post()
+  @UseInterceptors(
+    FilesInterceptor("files", 10, {
+      limits: { fileSize: 50 * 1024 * 1024 }, // per-file upper bound (we validate by type too)
+    })
+  )
+  async upload(
+    @UploadedFiles()
+    files: Array<{
+      mimetype: string
+      originalname: string
+      size: number
+      buffer: Buffer
+    }>
+  ) {
+    if (!files?.length) {
+      throw new BadRequestException("No file uploaded")
+    }
+
+    const allowedTypes = new Set([...IMAGE_TYPES, ...VIDEO_TYPES])
+
+    const uploads = await Promise.all(
+      files.map(async file => {
+        if (!allowedTypes.has(file.mimetype)) {
+          throw new BadRequestException(`Invalid file type: ${file.originalname}`)
+        }
+
+        const resourceType = getResourceType(file.mimetype)
+        const maxSize = resourceType === "video" ? 50 * 1024 * 1024 : 10 * 1024 * 1024
+        if (file.size > maxSize) {
+          throw new BadRequestException(
+            `File ${file.originalname} exceeds ${resourceType === "video" ? "50MB" : "10MB"} limit`
+          )
+        }
+
+        return new Promise<{ url: string; type: MediaType }>((resolve, reject) => {
+          cloudinary.uploader
+            .upload_stream(
+              {
+                resource_type: resourceType,
+                folder: "blog-posts",
+                ...(resourceType === "image" && {
+                  transformation: [
+                    { width: 1920, height: 1080, crop: "limit" },
+                    { quality: "auto" },
+                  ],
+                }),
+              },
+              (error, result) => {
+                if (error) return reject(error)
+                if (!result?.secure_url) return reject(new Error("Upload failed"))
+                resolve({ url: result.secure_url, type: resourceType })
+              }
+            )
+            .end(file.buffer)
+        })
+      })
+    )
+
+    const imageUrls = uploads.filter(u => u.type === "image").map(u => u.url)
+    const videoUrls = uploads.filter(u => u.type === "video").map(u => u.url)
+
+    return {
+      success: true,
+      imageUrls,
+      videoUrls,
+    }
+  }
+}
+

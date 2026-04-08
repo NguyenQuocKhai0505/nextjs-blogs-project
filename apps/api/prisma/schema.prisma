@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                   String         @id @db.VarChar(255)
+  name                 String         @db.VarChar(255)
+  email                String         @unique @db.VarChar(255)
+  avatarUrl            String?        @map("avatar_url")
+  emailVerified        Boolean        @default(false) @map("email_verified")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @default(now()) @map("updated_at")
+  accounts             Account[]
+  conversationsAsUser1 Conversation[] @relation("User1")
+  conversationsAsUser2 Conversation[] @relation("User2")
+  messages             Message[]
+  notificationsActor   Notification[] @relation("NotificationActor")
+  notifications        Notification[] @relation("NotificationUser")
+  posts                Post[]
+  sessions             Session[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @db.VarChar(255)
+  userId    String   @map("user_id") @db.VarChar(255)
+  token     String   @db.VarChar(255)
+  expiresAt DateTime @map("expires_at")
+  ipAddress String   @map("ip_address") @db.VarChar(255)
+  userAgent String   @map("user_agent") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("session")
+}
+
+model Account {
+  id         String   @id @db.VarChar(255)
+  userId     String   @map("user_id") @db.VarChar(255)
+  accountId  String   @map("account_id") @db.VarChar(255)
+  providerId String   @map("provider_id") @db.VarChar(255)
+  password   String
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @map("updated_at")
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@map("account")
+}
+
+model Post {
+  id           Int      @id @default(autoincrement())
+  title        String   @db.VarChar(255)
+  description  String   @db.VarChar(255)
+  slug         String   @db.VarChar(255)
+  content      String
+  imageUrls    String?  @map("image_urls")
+  videoUrls    String?  @map("video_urls")
+  likeCount    Int      @default(0) @map("like_count")
+  commentCount Int      @default(0) @map("comment_count")
+  authorId     String   @map("author_id") @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @map("updated_at")
+  author       User     @relation(fields: [authorId], references: [id])
+
+  @@map("posts")
+}
+
+model Conversation {
+  id        Int       @id @default(autoincrement())
+  user1Id   String    @map("user1_id") @db.VarChar(255)
+  user2Id   String    @map("user2_id") @db.VarChar(255)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @map("updated_at")
+  user1     User      @relation("User1", fields: [user1Id], references: [id])
+  user2     User      @relation("User2", fields: [user2Id], references: [id])
+  messages  Message[]
+
+  @@unique([user1Id, user2Id], map: "conversations_user1_user2_unique")
+  @@map("conversations")
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  conversationId Int          @map("conversation_id")
+  senderId       String       @map("sender_id") @db.VarChar(255)
+  content        String?
+  imageUrl       String?      @map("image_url")
+  videoUrl       String?      @map("video_url")
+  read           Boolean      @default(false)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id])
+
+  @@map("messages")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id") @db.VarChar(255)
+  actorId   String   @map("actor_id") @db.VarChar(255)
+  type      String
+  meta      Json     @default("{}")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  actor     User     @relation("NotificationActor", fields: [actorId], references: [id])
+  user      User     @relation("NotificationUser", fields: [userId], references: [id])
+
+  @@map("notifications")
+}
