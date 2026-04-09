@@ -6,12 +6,19 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  USER
+  ADMIN
+  @@map("user_role")
+}
+
 model User {
   id                   String         @id @db.VarChar(255)
   name                 String         @db.VarChar(255)
   email                String         @unique @db.VarChar(255)
   avatarUrl            String?        @map("avatar_url")
   emailVerified        Boolean        @default(false) @map("email_verified")
+  role                 UserRole       @default(USER) @map("role")
   createdAt            DateTime       @default(now()) @map("created_at")
   updatedAt            DateTime       @default(now()) @map("updated_at")
   accounts             Account[]
@@ -86,7 +93,10 @@ model Post {
   author       User     @relation(fields: [authorId], references: [id])
   likes        PostLike[]
   comments     Comment[]
+  categoryId Int?      @map("category_id")
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
+  @@index([categoryId], map: "posts_category_id_idx")
   @@map("posts")
 }
 
@@ -159,4 +169,14 @@ model Notification {
   user      User     @relation("NotificationUser", fields: [userId], references: [id])
 
   @@map("notifications")
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  slug      String   @unique @db.VarChar(100)
+  sortOrder Int      @default(0) @map("sort_order")
+  posts     Post[]
+
+  @@map("categories")
 }

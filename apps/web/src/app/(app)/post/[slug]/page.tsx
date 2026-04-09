@@ -30,6 +30,8 @@ async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
   }
 
   const isAuthor = me?.id && post?.authorId ? me.id === post.authorId : false
+  const isAdmin = me?.role === "ADMIN"
+  const canEdit = isAuthor || isAdmin
 
   const payload: PostDetailPayload = {
     id: post.id,
@@ -39,6 +41,15 @@ async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
     slug: post.slug,
     imageUrls: post.imageUrls ?? null,
     videoUrls: post.videoUrls ?? null,
+    categoryId: post.categoryId ?? null,
+    category:
+      post.category && typeof post.category === "object"
+        ? {
+            id: post.category.id,
+            name: post.category.name,
+            slug: post.category.slug,
+          }
+        : null,
     likeCount: post.likeCount ?? 0,
     commentCount: post.commentCount ?? 0,
     authorId: post.authorId,
@@ -56,7 +67,7 @@ async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
   return (
     <main className="py-10">
       <div className="mx-auto max-w-4xl px-4">
-        <PostDetailClient post={payload} isAuthor={isAuthor} viewerId={me?.id ?? null} />
+        <PostDetailClient post={payload} canEdit={canEdit} viewerId={me?.id ?? null} />
       </div>
     </main>
   )

@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common"
 import type { Prisma } from "@prisma/client"
+import { UserRole } from "@prisma/client"
 import { PrismaService } from "../prisma/prisma.service.js"
 import { CreateCommentDto } from "./dto/create-comment.dto.js"
 import { CreatePostDto } from "./dto/create-post.dto.js"
@@ -19,14 +20,59 @@ function slugify(input: string) {
     .replace(/^-+|-+$/g, "")
 }
 
+const postAuthorCategoryInclude = {
+  author: { select: { id: true, name: true, avatarUrl: true } },
+  category: { select: { id: true, name: true, slug: true } },
+} satisfies Prisma.PostInclude
+
 @Injectable()
 export class PostsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async assertCategoryExists(categoryId: number) {
+    const row = await this.prisma.category.findUnique({ where: { id: categoryId } })
+    if (!row) throw new BadRequestException("Invalid category")
+  }
+
+  /** True if the user is an admin (moderation / any post). */
+  private async isAdminUser(userId: string): Promise<boolean> {
+    const u = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    })
+    return u?.role === UserRole.ADMIN
+  }
+
+  /** Author or admin may change or remove a post. */
+  private canModeratePost(postAuthorId: string, actorId: string, actorIsAdmin: boolean): boolean {
+    return actorIsAdmin || postAuthorId === actorId
+  }
+
+  /**
+   * Resolves a URL slug unique among all posts.
+   * When `excludePostId` is set, that post’s current row is ignored (safe title edits).
+   */
+  private async resolveUniqueSlug(baseSlug: string, excludePostId?: number): Promise<string> {
+    let slug = baseSlug
+    let n = 1
+    for (;;) {
+      const conflict = await this.prisma.post.findFirst({
+        where: {
+          slug,
+          ...(excludePostId != null ? { NOT: { id: excludePostId } } : {}),
+        },
+        select: { id: true },
+      })
+      if (!conflict) return slug
+      n += 1
+      slug = `${baseSlug}-${n}`
+    }
+  }
+
   async list() {
     return this.prisma.post.findMany({
       orderBy: { createdAt: "desc" },
-      include: { author: { select: { id: true, name: true, avatarUrl: true } } },
+      include: postAuthorCategoryInclude,
     })
   }
 
@@ -34,28 +80,26 @@ export class PostsService {
     return this.prisma.post.findMany({
       where: { authorId },
       orderBy: { createdAt: "desc" },
-      include: { author: { select: { id: true, name: true, avatarUrl: true } } },
+      include: postAuthorCategoryInclude,
     })
   }
 
   async getBySlug(slug: string) {
     const post = await this.prisma.post.findFirst({
       where: { slug },
-      include: { author: { select: { id: true, name: true, avatarUrl: true } } },
+      include: postAuthorCategoryInclude,
     })
     if (!post) throw new NotFoundException("Post not found")
     return post
   }
 
   async create(userId: string, dto: CreatePostDto) {
-    const baseSlug = slugify(dto.title)
-    let slug = baseSlug
-    let i = 1
-    // ensure uniqueness without DB constraint
-    while (await this.prisma.post.findFirst({ where: { slug } })) {
-      i += 1
-      slug = `${baseSlug}-${i}`
+    if (dto.categoryId != null) {
+      await this.assertCategoryExists(dto.categoryId)
     }
+
+    const baseSlug = slugify(dto.title)
+    const slug = await this.resolveUniqueSlug(baseSlug)
 
     return this.prisma.post.create({
       data: {
@@ -66,44 +110,58 @@ export class PostsService {
         authorId: userId,
         imageUrls: dto.imageUrls ?? null,
         videoUrls: dto.videoUrls ?? null,
+        categoryId: dto.categoryId ?? null,
       },
+      include: postAuthorCategoryInclude,
     })
   }
 
   async update(userId: string, id: number, dto: UpdatePostDto) {
     const post = await this.prisma.post.findUnique({ where: { id } })
     if (!post) throw new NotFoundException("Post not found")
-    if (post.authorId !== userId) throw new ForbiddenException("Not allowed")
 
-    const data: Record<string, unknown> = {
-      ...dto,
+    const admin = await this.isAdminUser(userId)
+    if (!this.canModeratePost(post.authorId, userId, admin)) {
+      throw new ForbiddenException("Not allowed")
     }
 
-    // Ensure nullable fields are passed intentionally
+    if (dto.categoryId !== undefined) {
+      await this.assertCategoryExists(dto.categoryId)
+    }
+
+    // Unchecked input includes scalar `categoryId`; some Prisma versions omit `category` on PostUpdateInput.
+    const data: Prisma.PostUncheckedUpdateInput = {}
+
+    if (dto.title !== undefined) data.title = dto.title
+    if (dto.description !== undefined) data.description = dto.description
+    if (dto.content !== undefined) data.content = dto.content
     if (dto.imageUrls !== undefined) data.imageUrls = dto.imageUrls
     if (dto.videoUrls !== undefined) data.videoUrls = dto.videoUrls
+    if (dto.categoryId !== undefined) {
+      data.categoryId = dto.categoryId
+    }
 
-    if (dto.title && dto.title !== post.title) {
+    if (dto.title !== undefined && dto.title !== post.title) {
       const baseSlug = slugify(dto.title)
-      let slug = baseSlug
-      let i = 1
-      while (await this.prisma.post.findFirst({ where: { slug } })) {
-        i += 1
-        slug = `${baseSlug}-${i}`
-      }
-      data.slug = slug
+      data.slug = await this.resolveUniqueSlug(baseSlug, id)
     }
 
     return this.prisma.post.update({
       where: { id },
       data,
+      include: postAuthorCategoryInclude,
     })
   }
 
   async remove(userId: string, id: number) {
     const post = await this.prisma.post.findUnique({ where: { id } })
     if (!post) throw new NotFoundException("Post not found")
-    if (post.authorId !== userId) throw new ForbiddenException("Not allowed")
+
+    const admin = await this.isAdminUser(userId)
+    if (!this.canModeratePost(post.authorId, userId, admin)) {
+      throw new ForbiddenException("Not allowed")
+    }
+
     await this.prisma.post.delete({ where: { id } })
     return { success: true }
   }
@@ -199,9 +257,14 @@ export class PostsService {
       include: { post: { select: { authorId: true, id: true } } },
     })
     if (!c) throw new NotFoundException("Comment not found")
-    if (c.authorId !== userId && c.post.authorId !== userId) {
+
+    const admin = await this.isAdminUser(userId)
+    const isCommentAuthor = c.authorId === userId
+    const isPostAuthor = c.post.authorId === userId
+    if (!isCommentAuthor && !isPostAuthor && !admin) {
       throw new ForbiddenException("Not allowed")
     }
+
     await this.prisma.$transaction(async (tx) => {
       const removed = await this.countCommentSubtree(tx, commentId)
       await tx.comment.delete({ where: { id: commentId } })
@@ -225,4 +288,3 @@ export class PostsService {
     return total
   }
 }
-

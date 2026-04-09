@@ -7,6 +7,7 @@ import { apiUrl } from "@/lib/api"
 import ContactClient, {
   type ConversationItem,
 } from "@/components/contact/contact-client"
+import { ContactLoadingFallback } from "@/components/contact/contact-loading-fallback"
 
 export default async function ContactPage() {
   const token = await getAccessTokenFromCookies()
@@ -20,15 +21,9 @@ export default async function ContactPage() {
     .catch(() => [])
 
   return (
-    <main className="py-10">
-      <div className="mx-auto w-full max-w-4xl">
-        <Suspense
-          fallback={
-            <div className="rounded-xl border bg-card p-8 text-sm text-muted-foreground">
-              Loading chats…
-            </div>
-          }
-        >
+    <main className="py-6 md:py-8">
+      <div className="mx-auto w-full max-w-none">
+        <Suspense fallback={<ContactLoadingFallback />}>
           <ContactClient initialConversations={conversations as ConversationItem[]} />
         </Suspense>
       </div>

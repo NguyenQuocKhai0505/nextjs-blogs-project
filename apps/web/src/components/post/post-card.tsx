@@ -20,6 +20,8 @@ import { authFetch } from "@/lib/auth-fetch"
 import { getAccessToken } from "@/lib/token"
 import { toast } from "sonner"
 import CommentThreadDialog from "./comment-thread-dialog"
+import { useLocale } from "@/lib/i18n/locale-context"
+import { confirmToast } from "@/lib/confirm-toast"
 
 function parseMediaField(media?: string | string[] | null): string[] {
   if (!media) return []
@@ -156,10 +158,13 @@ function PostMediaGrid({
   )
 }
 
-function PostCard({ post, viewerId = null }: PostCardProps) {
+function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
+  const { t } = useLocale()
   const router = useRouter()
   const authorId = post.authorId ?? post.author.id
   const isAuthor = Boolean(viewerId && authorId && viewerId === authorId)
+  const isAdmin = viewerRole === "ADMIN"
+  const canEdit = isAuthor || isAdmin
 
   const images = parseMediaField(post.imageUrls)
   const videos = parseMediaField(post.videoUrls)
@@ -201,7 +206,7 @@ function PostCard({ post, viewerId = null }: PostCardProps) {
 
   const requireAuth = () => {
     if (!getAccessToken()) {
-      toast.error("Please sign in to continue.")
+      toast.error(t("post.signInToast"))
       router.push("/auth")
       return false
     }
@@ -220,20 +225,25 @@ function PostCard({ post, viewerId = null }: PostCardProps) {
       setLiked(data.liked)
       setLikeCount(data.likeCount)
     } catch {
-      toast.error("Could not update reaction.")
+      toast.error(t("post.reactionFail"))
     } finally {
       setLikeBusy(false)
     }
   }
 
   const onDeletePost = async () => {
-    if (!confirm("Delete this post permanently?")) return
+    const ok = await confirmToast({
+      title: t("post.deleteConfirm"),
+      confirmText: t("post.deletePost"),
+      cancelText: "Cancel",
+    })
+    if (!ok) return
     const res = await authFetch(`/posts/${post.id}`, { method: "DELETE" })
     if (!res.ok) {
-      toast.error("Could not delete post.")
+      toast.error(t("post.deleteFail"))
       return
     }
-    toast.success("Post deleted")
+    toast.success(t("post.deleted"))
     router.refresh()
   }
 
@@ -271,7 +281,7 @@ function PostCard({ post, viewerId = null }: PostCardProps) {
                 </Link>
                 <p className="text-xs text-muted-foreground">{formatDate(post.createdAt)}</p>
               </div>
-              {isAuthor ? (
+              {canEdit ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -279,7 +289,7 @@ function PostCard({ post, viewerId = null }: PostCardProps) {
                       variant="ghost"
                       size="icon-sm"
                       className="shrink-0 text-muted-foreground"
-                      aria-label="Post options"
+                      aria-label={t("post.optionsAria")}
                     >
                       <MoreHorizontal className="size-4" />
                     </Button>
@@ -288,7 +298,7 @@ function PostCard({ post, viewerId = null }: PostCardProps) {
                     <DropdownMenuItem asChild className="cursor-pointer">
                       <Link href={`/post/edit/${post.slug}`} className="flex items-center gap-2">
                         <Pencil className="h-4 w-4" />
-                        Edit post
+                        {t("post.editPost")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -298,7 +308,7 @@ function PostCard({ post, viewerId = null }: PostCardProps) {
                       onClick={() => void onDeletePost()}
                     >
                       <Trash2 className="h-4 w-4" />
-                      Delete post
+                      {t("post.deletePost")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -309,6 +319,13 @@ function PostCard({ post, viewerId = null }: PostCardProps) {
                 {post.title}
               </CardTitle>
             </Link>
+            {post.category ? (
+              <p className="mt-1.5">
+                <span className="inline-flex rounded-full border bg-muted/50 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                  {post.category.name}
+                </span>
+              </p>
+            ) : null}
             {post.description ? (
               <CardDescription className="mt-1 line-clamp-3 text-sm leading-relaxed">
                 {post.description}
@@ -324,7 +341,9 @@ function PostCard({ post, viewerId = null }: PostCardProps) {
             <PostMediaGrid imageUrls={images} postSlug={post.slug} />
           ) : videos[0] ? (
             <div className="space-y-2 p-3 pt-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Video</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t("post.videoLabel")}
+              </p>
               <div className="overflow-hidden rounded-2xl border bg-black ring-1 ring-border/40">
                 <video
                   src={videos[0]}
@@ -369,10 +388,10 @@ function PostCard({ post, viewerId = null }: PostCardProps) {
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <Link href={`/post/${post.slug}`} className="font-medium text-primary hover:underline">
-            View details
+            {t("post.viewDetails")}
           </Link>
           <span className="text-xs text-muted-foreground">•</span>
-          <span className="text-xs text-muted-foreground">Community post</span>
+          <span className="text-xs text-muted-foreground">{t("post.communityPost")}</span>
         </div>
       </CardContent>
     </Card>

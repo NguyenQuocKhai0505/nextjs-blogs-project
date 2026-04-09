@@ -15,7 +15,11 @@ interface SearchUser {
     avatar?: string | null
 }
 
-export function SearchInput() {
+type SearchInputProps = {
+  placeholder?: string
+}
+
+export function SearchInput({ placeholder = "Search User..." }: SearchInputProps) {
     const [query,setQuery] = useState("")
     const [results,setResults] = useState<SearchUser[]>([])
     const [loading, setLoading] = useState(false)
@@ -93,7 +97,7 @@ export function SearchInput() {
                 <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search User..."
+                placeholder={placeholder}
                 className="pl-10 pr-10"
                 onFocus={() => query.trim() && setShowResults(true)}/>
                 {

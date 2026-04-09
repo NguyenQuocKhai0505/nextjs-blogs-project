@@ -1,4 +1,5 @@
-import { Allow, IsOptional, IsString, MaxLength, MinLength } from "class-validator"
+import { Type } from "class-transformer"
+import { Allow, IsInt, IsOptional, IsString, MaxLength, Min, MinLength } from "class-validator"
 
 export class UpdatePostDto {
   @IsOptional()
@@ -29,5 +30,11 @@ export class UpdatePostDto {
   @IsString()
   @MaxLength(20000)
   videoUrls?: string | null
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  categoryId?: number
 }
 

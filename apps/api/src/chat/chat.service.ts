@@ -76,16 +76,14 @@ export class ChatService {
         ? [currentUserId, otherUserId]
         : [otherUserId, currentUserId]
 
-    const existing = await this.prisma.conversation.findFirst({
-      where: { user1Id: a, user2Id: b },
-    })
-    if (existing) return existing
-
-    return this.prisma.conversation.create({
-      data: {
-        user1Id: a,
-        user2Id: b,
+    // upsert avoids P2002 when two requests create the same pair at once, or if a row
+    // already exists but findFirst/create raced.
+    return this.prisma.conversation.upsert({
+      where: {
+        user1Id_user2Id: { user1Id: a, user2Id: b },
       },
+      create: { user1Id: a, user2Id: b },
+      update: {},
     })
   }
 

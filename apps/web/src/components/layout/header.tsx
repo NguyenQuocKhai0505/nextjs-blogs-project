@@ -7,26 +7,30 @@ import { useRouter } from "next/navigation"
 import ThemeToggle from "../theme/theme-toggle"
 import { SearchInput } from "../search/search-input"
 import { NotificationBell } from "../notifications/notification-bell"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { getAccessToken } from "@/lib/token"
 import JwtUserMenu from "@/components/auth/jwt-user-menu"
 import { useMe } from "@/lib/use-me"
+import { LanguageSwitcher } from "@/components/layout/language-switcher"
+import { useLocale } from "@/lib/i18n/locale-context"
 
 function Header(){
     const router = useRouter()
+    const { t } = useLocale()
     const [hasToken, setHasToken] = useState(false)
     useEffect(() => {
       setHasToken(!!getAccessToken())
     }, [])
     const { me } = useMe(hasToken)
     
-    const navItems =[{
-        label:"Create Post", href:"/post/create",
-    },{
-        label:"Chat", href:"/contact",
-    },{
-        label:"About Author", href:"/about",
-    }]
+    const navItems = useMemo(
+      () => [
+        { label: t("header.createPost"), href: "/post/create" },
+        { label: t("header.chat"), href: "/contact" },
+        { label: t("header.aboutAuthor"), href: "/about" },
+      ],
+      [t]
+    )
     return(
        <header className="sticky top-0 z-30 border-b bg-background/75 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-3 px-3 sm:px-6 lg:px-8">
@@ -52,14 +56,13 @@ function Header(){
                     }
                 </nav>
             </div>
-            <div className="flex items-center gap-4">
-                {/* Notification Bell */}
+            <div className="flex items-center gap-2 sm:gap-4">
+                <div className="hidden items-center gap-1 md:flex">
+                  <NotificationBell />
+                  <LanguageSwitcher />
+                </div>
                     <div className="hidden md:block">
-                        <NotificationBell/>
-                    </div>
-                {/*Search Box  */}
-                    <div className="hidden md:block">
-                        <SearchInput/>
+                        <SearchInput placeholder={t("header.searchPlaceholder")} />
                     </div>
                     <ThemeToggle/>
                     <div className="flex items-center gap-2 cursor-pointer ">
@@ -67,7 +70,8 @@ function Header(){
                             hasToken ? (
                               <JwtUserMenu
                                 avatarUrl={me?.avatarUrl}
-                                displayName={me?.name ?? "User"}
+                                displayName={me?.name ?? t("header.userFallback")}
+                                role={me?.role ?? null}
                               />
                             ) : (
                               <Button
@@ -75,7 +79,7 @@ function Header(){
                                 className="rounded-xl"
                                 onClick={() => router.push("/auth")}
                               >
-                                Login
+                                {t("header.login")}
                               </Button>
                             )
                         }

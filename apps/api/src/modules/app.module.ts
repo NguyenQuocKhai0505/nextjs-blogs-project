@@ -7,6 +7,7 @@ import { PostsModule } from "../posts/posts.module.js"
 import { UploadModule } from "../upload/upload.module.js"
 import { ChatModule } from "../chat/chat.module.js"
 import { UsersModule } from "../users/users.module.js"
+import { CategoriesModule } from "../categories/categories.module.js"
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { UsersModule } from "../users/users.module.js"
     UploadModule,
     ChatModule,
     UsersModule,
+    CategoriesModule,
   ],
   controllers: [HealthController],
 })

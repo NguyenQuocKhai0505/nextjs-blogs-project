@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { confirmToast } from "@/lib/confirm-toast"
 import { Trash2 } from "lucide-react"
 
 import { apiUrl } from "@/lib/api"
@@ -141,7 +142,13 @@ export default function CommentThread({
   }
 
   const onDelete = async (commentId: number) => {
-    if (!confirm("Delete this comment? Replies will be removed too.")) return
+    const ok = await confirmToast({
+      title: "Delete this comment?",
+      description: "Replies will be removed too.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+    })
+    if (!ok) return
     const res = await authFetch(`/posts/id/${postId}/comments/${commentId}`, {
       method: "DELETE",
     })

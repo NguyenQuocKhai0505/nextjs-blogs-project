@@ -1,0 +1,100 @@
+{
+  "header": {
+    "createPost": "Create Post",
+    "chat": "Chat",
+    "aboutAuthor": "About Author",
+    "login": "Login",
+    "userFallback": "User",
+    "searchPlaceholder": "Search User..."
+  },
+  "chat": {
+    "title": "Chats",
+    "mutualHint": "You can only message mutual friends (both follow each other). Follow from profiles, then open chat here or from the profile.",
+    "mutualFriends": "Mutual friends",
+    "searchFriendsPlaceholder": "Search friends to start chatting…",
+    "noMutualMatches": "No matching mutual friends.",
+    "noConversations": "No conversations yet. Follow someone and have them follow you back, then start a chat above.",
+    "sentImage": "Sent an image",
+    "sentVideo": "Sent a video",
+    "selectChat": "Select a chat",
+    "loading": "Loading…",
+    "noMessages": "No messages yet.",
+    "toastMutualOnly": "Only mutual friends can chat. Follow each other from profile pages first.",
+    "toastOpenFail": "Could not open chat.",
+    "toastMutualFromProfile": "Only mutual friends can chat. Visit their profile and follow each other first.",
+    "toastSendBlocked": "You can no longer message this user (mutual follow required).",
+    "pageLoading": "Loading chats…",
+    "inputPlaceholder": "Type a message…",
+    "sendAria": "Send message",
+    "inputImagePending": "Image will be sent",
+    "inputVideoPending": "Video will be sent",
+    "remove": "Remove"
+  },
+  "sidebar": {
+    "navigation": "Navigation",
+    "home": "Home",
+    "create": "Create",
+    "messages": "Messages",
+    "profile": "Profile",
+    "about": "About",
+    "quickActions": "Quick actions",
+    "quickActionsHint": "Post something new or jump into messages.",
+    "post": "Post",
+    "chat": "Chat"
+  },
+  "rail": {
+    "trending": "Trending",
+    "trendBuildTitle": "Build in public",
+    "trendBuildMeta": "12 new posts today",
+    "trendNextTitle": "Next.js 15 + React 19",
+    "trendNextMeta": "Hot topic",
+    "trendChatTitle": "Realtime chat",
+    "trendChatMeta": "Socket.IO tips",
+    "suggested": "Suggested",
+    "findPeople": "Find people to follow",
+    "findPeopleHint": "Search users and connect with creators.",
+    "discover": "Discover",
+    "creatorMode": "Creator mode",
+    "creatorHint": "Share updates regularly to grow your audience.",
+    "createPost": "Create a post"
+  },
+  "home": {
+    "feedTitle": "Home feed",
+    "feedSubtitle": "What people are sharing right now.",
+    "post": "Post",
+    "noPostsTitle": "No posts yet",
+    "noPostsHint": "Be the first to share an update with the community.",
+    "createFirstPost": "Create your first post"
+  },
+  "stories": {
+    "title": "Stories",
+    "subtitle": "Fresh updates",
+    "you": "You",
+    "design": "Design",
+    "dev": "Dev",
+    "travel": "Travel",
+    "music": "Music",
+    "food": "Food"
+  },
+  "composer": {
+    "title": "Create something",
+    "subtitle": "Share an update with text, photos, or videos.",
+    "createPost": "Create post",
+    "photo": "Photo",
+    "video": "Video",
+    "text": "Text"
+  },
+  "post": {
+    "signInToast": "Please sign in to continue.",
+    "reactionFail": "Could not update reaction.",
+    "deleteConfirm": "Delete this post permanently?",
+    "deleteFail": "Could not delete post.",
+    "deleted": "Post deleted",
+    "optionsAria": "Post options",
+    "editPost": "Edit post",
+    "deletePost": "Delete post",
+    "videoLabel": "Video",
+    "viewDetails": "View details",
+    "communityPost": "Community post"
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "header": {
+    "createPost": "게시물 작성",
+    "chat": "채팅",
+    "aboutAuthor": "작성자 소개",
+    "login": "로그인",
+    "userFallback": "사용자",
+    "searchPlaceholder": "사용자 검색..."
+  },
+  "chat": {
+    "title": "채팅",
+    "mutualHint": "서로 팔로우한 친구와만 메시지를 주고받을 수 있습니다. 프로필에서 팔로우한 뒤 여기나 프로필에서 채팅을 여세요.",
+    "mutualFriends": "서로 팔로우한 친구",
+    "searchFriendsPlaceholder": "채팅할 친구 검색…",
+    "noMutualMatches": "일치하는 친구가 없습니다.",
+    "noConversations": "대화가 없습니다. 서로 팔로우한 뒤 위에서 채팅을 시작하세요.",
+    "sentImage": "사진을 보냄",
+    "sentVideo": "동영상을 보냄",
+    "selectChat": "대화 선택",
+    "loading": "불러오는 중…",
+    "noMessages": "메시지가 없습니다.",
+    "toastMutualOnly": "서로 팔로우한 친구와만 채팅할 수 있습니다. 프로필에서 먼저 팔로우하세요.",
+    "toastOpenFail": "채팅을 열 수 없습니다.",
+    "toastMutualFromProfile": "서로 팔로우한 친구와만 채팅할 수 있습니다. 프로필에서 팔로우하세요.",
+    "toastSendBlocked": "더 이상 이 사용자에게 메시지를 보낼 수 없습니다(상호 팔로우 필요).",
+    "pageLoading": "채팅 불러오는 중…",
+    "inputPlaceholder": "메시지를 입력하세요…",
+    "sendAria": "메시지 보내기",
+    "inputImagePending": "전송할 이미지",
+    "inputVideoPending": "전송할 동영상",
+    "remove": "삭제"
+  },
+  "sidebar": {
+    "navigation": "메뉴",
+    "home": "홈",
+    "create": "만들기",
+    "messages": "메시지",
+    "profile": "프로필",
+    "about": "소개",
+    "quickActions": "빠른 작업",
+    "quickActionsHint": "새 게시물을 올리거나 메시지로 이동하세요.",
+    "post": "게시",
+    "chat": "채팅"
+  },
+  "rail": {
+    "trending": "트렌드",
+    "trendBuildTitle": "공개 제작",
+    "trendBuildMeta": "오늘 새 글 12개",
+    "trendNextTitle": "Next.js 15 + React 19",
+    "trendNextMeta": "인기 주제",
+    "trendChatTitle": "실시간 채팅",
+    "trendChatMeta": "Socket.IO 팁",
+    "suggested": "추천",
+    "findPeople": "팔로우할 사람 찾기",
+    "findPeopleHint": "사용자를 검색하고 크리에이터와 연결하세요.",
+    "discover": "둘러보기",
+    "creatorMode": "크리에이터 모드",
+    "creatorHint": "꾸준히 소식을 공유해 팔로워를 늘리세요.",
+    "createPost": "게시물 작성"
+  },
+  "home": {
+    "feedTitle": "홈 피드",
+    "feedSubtitle": "지금 사람들이 공유하는 글입니다.",
+    "post": "게시",
+    "noPostsTitle": "아직 게시물이 없습니다",
+    "noPostsHint": "커뮤니티에 가장 먼저 소식을 공유해 보세요.",
+    "createFirstPost": "첫 게시물 작성"
+  },
+  "stories": {
+    "title": "스토리",
+    "subtitle": "새 소식",
+    "you": "나",
+    "design": "디자인",
+    "dev": "개발",
+    "travel": "여행",
+    "music": "음악",
+    "food": "음식"
+  },
+  "composer": {
+    "title": "무언가 만들기",
+    "subtitle": "텍스트, 사진 또는 동영상으로 소식을 공유하세요.",
+    "createPost": "게시물 작성",
+    "photo": "사진",
+    "video": "동영상",
+    "text": "텍스트"
+  },
+  "post": {
+    "signInToast": "계속하려면 로그인하세요.",
+    "reactionFail": "반응을 업데이트할 수 없습니다.",
+    "deleteConfirm": "이 게시물을 영구적으로 삭제할까요?",
+    "deleteFail": "게시물을 삭제할 수 없습니다.",
+    "deleted": "게시물이 삭제되었습니다",
+    "optionsAria": "게시물 옵션",
+    "editPost": "게시물 수정",
+    "deletePost": "게시물 삭제",
+    "videoLabel": "동영상",
+    "viewDetails": "자세히 보기",
+    "communityPost": "커뮤니티 게시물"
+  }
+}

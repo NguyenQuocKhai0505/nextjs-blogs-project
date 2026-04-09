@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Image as ImageIcon, Video as VideoIcon, Send } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { apiUrl } from "@/lib/api"
+import { useLocale } from "@/lib/i18n/locale-context"
 
 type MessageInputProps = {
   onSend: (payload: { content?: string; imageUrl?: string; videoUrl?: string }) => void
@@ -12,6 +13,7 @@ type MessageInputProps = {
 }
 
 export default function MessageInput({ onSend, disabled }: MessageInputProps) {
+  const { t } = useLocale()
   const [value, setValue] = useState("")
   const [pendingMedia, setPendingMedia] = useState<{ type: "image" | "video"; url: string } | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -80,7 +82,7 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
   }
 
   return (
-    <div className="flex items-end gap-3 border-t px-4 py-3">
+    <div className="flex items-end gap-3 px-2 py-2 sm:px-0 sm:py-3">
       {/* Hidden file inputs */}
       <input
         ref={imageInputRef}
@@ -103,7 +105,7 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
             <div className="flex items-start justify-between gap-2">
               {pendingMedia.type === "image" ? (
                 <div className="flex flex-col gap-1">
-                  <span className="font-medium">Image will be sent</span>
+                  <span className="font-medium">{t("chat.inputImagePending")}</span>
                   <img
                     src={pendingMedia.url}
                     alt="Preview"
@@ -112,7 +114,7 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
                 </div>
               ) : (
                 <div className="flex flex-col gap-1">
-                  <span className="font-medium">Video will be sent</span>
+                  <span className="font-medium">{t("chat.inputVideoPending")}</span>
                   <video
                     src={pendingMedia.url}
                     controls
@@ -127,7 +129,7 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
                 className="self-start text-[11px] px-2 py-1"
                 onClick={() => setPendingMedia(null)}
               >
-                Remove
+                {t("chat.remove")}
               </Button>
             </div>
           </div>
@@ -159,7 +161,7 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
             value={value}
             onChange={event => setValue(event.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
+            placeholder={t("chat.inputPlaceholder")}
             rows={1}
             className={cn(
               "flex-1 resize-none rounded-2xl border bg-transparent px-4 py-2 text-sm shadow-sm focus-visible:border-primary",
@@ -173,7 +175,7 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
             className="rounded-full"
             onClick={handleSend}
             disabled={disabled || uploading || (!value.trim() && !pendingMedia)}
-            aria-label="Send message"
+            aria-label={t("chat.sendAria")}
           >
             <Send className="size-4" />
           </Button>

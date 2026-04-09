@@ -54,6 +54,7 @@ async function EditPostPage({
                                 slug: post.slug,
                                 imageUrls: post.imageUrls ?? null,
                                 videoUrls: post.videoUrls ?? null,
+                                categoryId: post.categoryId ?? null,
                             }}
                             mode="edit"
                         />

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useMemo } from "react"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -11,32 +12,39 @@ import {
   User,
   Bell,
   Info,
-  Compass,
 } from "lucide-react"
-
-const nav = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/post/create", label: "Create", icon: PlusSquare },
-  { href: "/contact", label: "Messages", icon: MessageCircle },
-  { href: "/profile", label: "Profile", icon: User },
-  { href: "/about", label: "About", icon: Info },
-]
+import { LanguageSwitcher } from "@/components/layout/language-switcher"
+import { useLocale } from "@/lib/i18n/locale-context"
 
 export default function LeftSidebar() {
   const pathname = usePathname()
+  const { t } = useLocale()
+
+  const nav = useMemo(
+    () => [
+      { href: "/", label: t("sidebar.home"), icon: Home },
+      { href: "/post/create", label: t("sidebar.create"), icon: PlusSquare },
+      { href: "/contact", label: t("sidebar.messages"), icon: MessageCircle },
+      { href: "/profile", label: t("sidebar.profile"), icon: User },
+      { href: "/about", label: t("sidebar.about"), icon: Info },
+    ],
+    [t]
+  )
 
   return (
     <div className="rounded-2xl border bg-card/50 p-3 backdrop-blur supports-[backdrop-filter]:bg-card/40">
       <div className="mb-3 flex items-center justify-between px-2">
-        <p className="text-sm font-semibold">Navigation</p>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Compass className="h-4 w-4" />
-          <Bell className="h-4 w-4" />
+        <p className="text-sm font-semibold">{t("sidebar.navigation")}</p>
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <LanguageSwitcher />
+          <span className="inline-flex p-1" aria-hidden>
+            <Bell className="h-4 w-4 opacity-60" />
+          </span>
         </div>
       </div>
 
       <div className="space-y-1">
-        {nav.map(item => {
+        {nav.map((item) => {
           const active = pathname === item.href
           const Icon = item.icon
           return (
@@ -59,20 +67,17 @@ export default function LeftSidebar() {
       </div>
 
       <div className="mt-4 rounded-xl border bg-background/60 p-3">
-        <p className="text-sm font-semibold">Quick actions</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Post something new or jump into messages.
-        </p>
+        <p className="text-sm font-semibold">{t("sidebar.quickActions")}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{t("sidebar.quickActionsHint")}</p>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <Button asChild size="sm" className="rounded-xl">
-            <Link href="/post/create">Post</Link>
+            <Link href="/post/create">{t("sidebar.post")}</Link>
           </Button>
           <Button asChild size="sm" variant="outline" className="rounded-xl">
-            <Link href="/contact">Chat</Link>
+            <Link href="/contact">{t("sidebar.chat")}</Link>
           </Button>
         </div>
       </div>
     </div>
   )
 }
-

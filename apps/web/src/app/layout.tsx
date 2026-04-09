@@ -3,6 +3,7 @@ import { Suspense } from "react"
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme/theme-provider"
+import { LocaleProvider } from "@/lib/i18n/locale-context"
 import { Toaster } from "sonner"
 
 const geistSans = Geist({
@@ -35,7 +36,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            <LocaleProvider>{children}</LocaleProvider>
           </ThemeProvider>
         </Suspense>
         <Toaster />

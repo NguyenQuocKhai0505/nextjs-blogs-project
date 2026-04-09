@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common"
+import type { Prisma } from "@prisma/client"
 import { PrismaService } from "../prisma/prisma.service.js"
 import { UpdateMeDto } from "./dto/update-me.dto.js"
 import { getMutualFriendIds } from "./follow.helpers.js"
@@ -10,7 +11,15 @@ export class UsersService {
   async getMe(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, email: true, avatarUrl: true, createdAt: true },
+      // Cast to avoid TS server stale Prisma types in some editors.
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatarUrl: true,
+        createdAt: true,
+        role: true,
+      } as Prisma.UserSelect,
     })
     if (!user) throw new NotFoundException("User not found")
     return user

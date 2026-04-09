@@ -6,6 +6,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Heart, MessageCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
+import { confirmToast } from "@/lib/confirm-toast"
 
 import { authFetch } from "@/lib/auth-fetch"
 import { getAccessToken } from "@/lib/token"
@@ -20,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export type PostDetailPayload = { 
+export type PostDetailPayload = {
   id: number
   title: string
   description: string
@@ -28,6 +29,8 @@ export type PostDetailPayload = {
   slug: string
   imageUrls: string | null
   videoUrls: string | null
+  categoryId: number | null
+  category: { id: number; name: string; slug: string } | null
   likeCount: number
   commentCount: number
   authorId: string
@@ -47,11 +50,11 @@ function parseMedia(media?: string | null): string[] {
 
 export default function PostDetailClient({
   post,
-  isAuthor,
+  canEdit,
   viewerId,
 }: {
   post: PostDetailPayload
-  isAuthor: boolean
+  canEdit: boolean
   viewerId: string | null
 }) {
   const router = useRouter()
@@ -112,7 +115,12 @@ export default function PostDetailClient({
   }
 
   const onDeletePost = async () => {
-    if (!confirm("Delete this post permanently?")) return
+    const ok = await confirmToast({
+      title: "Delete this post permanently?",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+    })
+    if (!ok) return
     const res = await authFetch(`/posts/${post.id}`, { method: "DELETE" })
     if (!res.ok) {
       toast.error("Could not delete post.")
@@ -147,7 +155,7 @@ export default function PostDetailClient({
           </div>
         </div>
 
-        {isAuthor ? (
+        {canEdit ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="shrink-0" aria-label="Post options">
@@ -177,6 +185,13 @@ export default function PostDetailClient({
 
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{post.title}</h1>
+        {post.category ? (
+          <p className="mt-2">
+            <span className="inline-flex rounded-full border bg-muted/60 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+              {post.category.name}
+            </span>
+          </p>
+        ) : null}
         {post.description ? (
           <p className="mt-2 text-muted-foreground">{post.description}</p>
         ) : null}
@@ -233,7 +248,7 @@ export default function PostDetailClient({
       <CommentThread
         postId={post.id}
         viewerId={viewerId}
-        isPostAuthor={isAuthor}
+        isPostAuthor={canEdit}
         anchorId="comments"
         onTotalChange={setCommentTotal}
       />

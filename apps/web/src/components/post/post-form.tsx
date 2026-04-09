@@ -9,37 +9,55 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useTransition } from "react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
-import { X, Link as LinkIcon, Loader2 } from "lucide-react"
+import { X, Link as LinkIcon, Loader2, Plus } from "lucide-react"
 import { apiUrl } from "@/lib/api"
 import { authFetch } from "@/lib/auth-fetch"
+import type { PostCategory } from "@/lib/types"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { getAccessToken } from "@/lib/token"
+import { useTheme } from "next-themes"
 
 //post form schema for validation
 const postSchema = z.object({
-    title: z.string().min(3,"Title must be at least 3 characters long").max(255,"Title must be less than 255 characters"),
-    description:z.string().min(5,"Description must be at least 5 characters long").max(255,"Description must be less than 255 characters long"),
-    content: z.string().min(10,"Content must be at least 10 characters long")
+  title: z
+    .string()
+    .min(3, "Title must be at least 3 characters long")
+    .max(255, "Title must be less than 255 characters"),
+  description: z
+    .string()
+    .min(5, "Description must be at least 5 characters long")
+    .max(255, "Description must be less than 255 characters long"),
+  content: z.string().min(10, "Content must be at least 10 characters long"),
+  categoryId: z
+    .string()
+    .min(1, "Select a category")
+    .transform((s) => Number.parseInt(s, 10))
+    .refine((n) => Number.isFinite(n) && n > 0, "Select a category"),
 })
 
-type PostFormValue = z.infer<typeof postSchema>
+type PostFormInput = z.input<typeof postSchema>
+type PostFormOutput = z.output<typeof postSchema>
 
 interface PostFormProps {
-    post?: {
-        id: number
-        title: string
-        description: string
-        content: string
-        slug: string
-        imageUrls?: string[] | string | null
-        videoUrls?: string[] | string | null
-    }
-    mode?: "create" | "edit"
+  post?: {
+    id: number
+    title: string
+    description: string
+    content: string
+    slug: string
+    imageUrls?: string[] | string | null
+    videoUrls?: string[] | string | null
+    categoryId?: number | null
+  }
+  mode?: "create" | "edit"
 }
 
 function PostForm({ post, mode = "create" }: PostFormProps){
     const [isPending,startTransition] = useTransition()
     const router = useRouter()
+    const { resolvedTheme } = useTheme()
     const parseMediaField = (media?: string[] | string | null) => {
         if (!media) return []
         if (Array.isArray(media)) return media
@@ -54,23 +72,143 @@ function PostForm({ post, mode = "create" }: PostFormProps){
     const [urlMediaType, setUrlMediaType] = useState<"image" | "video">("image")
     const [urlInput, setUrlInput] = useState("")
     const [isUploading,setIsUploading] = useState(false)
+    const [categories, setCategories] = useState<PostCategory[]>([])
+    const [viewerRole, setViewerRole] = useState<"USER" | "ADMIN" | null>(null)
+    const isAdmin = viewerRole === "ADMIN"
     const fileInputRef = useRef<HTMLInputElement>(null)
-    const {register,handleSubmit,formState:{errors}} = useForm<PostFormValue>({
+    const { register, handleSubmit, formState: { errors } } = useForm<
+      PostFormInput,
+      unknown,
+      PostFormOutput
+    >({
         resolver: zodResolver(postSchema),
         defaultValues:{
             title: post?.title || "",
             description: post?.description || "",
-            content: post?.content || ""
+            content: post?.content || "",
+            categoryId:
+              post?.categoryId != null && post.categoryId > 0
+                ? String(post.categoryId)
+                : "",
         }
     })
+
+    useEffect(() => {
+      let cancelled = false
+      void fetch(apiUrl("/categories"), { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : []))
+        .then((data: unknown) => {
+          if (cancelled) return
+          if (!Array.isArray(data)) {
+            setCategories([])
+            return
+          }
+          const parsed: PostCategory[] = data
+            .filter(
+              (row): row is Record<string, unknown> =>
+                row !== null && typeof row === "object"
+            )
+            .map((row) => ({
+              id: Number(row.id),
+              name: String(row.name ?? ""),
+              slug: String(row.slug ?? ""),
+              sortOrder: Number(row.sortOrder ?? 0),
+            }))
+            .filter((c) => Number.isFinite(c.id) && c.id > 0 && c.name.length > 0)
+          setCategories(parsed)
+        })
+        .catch(() => {
+          if (!cancelled) setCategories([])
+        })
+      return () => {
+        cancelled = true
+      }
+    }, [])
+
+    useEffect(() => {
+      const token = getAccessToken()
+      if (!token) {
+        setViewerRole(null)
+        return
+      }
+      let cancelled = false
+      void authFetch("/me", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((me: unknown) => {
+          if (cancelled) return
+          const role =
+            me && typeof me === "object" && "role" in me && (me as { role?: unknown }).role === "ADMIN"
+              ? "ADMIN"
+              : "USER"
+          setViewerRole(role)
+        })
+        .catch(() => {
+          if (!cancelled) setViewerRole(null)
+        })
+      return () => {
+        cancelled = true
+      }
+    }, [])
+
+    const [catDialogOpen, setCatDialogOpen] = useState(false)
+    const [catName, setCatName] = useState("")
+    const [catSlug, setCatSlug] = useState("")
+    const [catSortOrder, setCatSortOrder] = useState("0")
+
+    const createCategory = async () => {
+      if (!isAdmin) return
+      if (!catName.trim()) {
+        toast.error("Category name is required")
+        return
+      }
+      try {
+        const res = await authFetch("/categories", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            name: catName.trim(),
+            slug: catSlug.trim() ? catSlug.trim() : undefined,
+            sortOrder: Number.parseInt(catSortOrder || "0", 10) || 0,
+          }),
+        })
+        if (!res.ok) {
+          const err = await res.json().catch(() => null)
+          throw new Error(err?.message ?? "Request failed")
+        }
+        toast.success("Category created")
+        setCatDialogOpen(false)
+        setCatName("")
+        setCatSlug("")
+        setCatSortOrder("0")
+        // reload categories list from DB
+        const next = await fetch(apiUrl("/categories"), { cache: "no-store" })
+          .then((r) => (r.ok ? r.json() : []))
+          .catch(() => [])
+        if (Array.isArray(next)) {
+          const parsed: PostCategory[] = next
+            .filter((row): row is Record<string, unknown> => row !== null && typeof row === "object")
+            .map((row) => ({
+              id: Number(row.id),
+              name: String(row.name ?? ""),
+              slug: String(row.slug ?? ""),
+              sortOrder: Number(row.sortOrder ?? 0),
+            }))
+            .filter((c) => Number.isFinite(c.id) && c.id > 0 && c.name.length > 0)
+          setCategories(parsed)
+        }
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Create category failed")
+      }
+    }
     //SUBMIT FORM
-    const onFormSubmit = async(data:PostFormValue) =>{
+    const onFormSubmit = async (data: PostFormOutput) => {
         startTransition(async()=>{
             try{
                 const payload = {
                     title: data.title,
                     description: data.description,
                     content: data.content,
+                    categoryId: data.categoryId,
                     imageUrls: imageUrls.length ? JSON.stringify(imageUrls) : null,
                     videoUrls: videoUrls.length ? JSON.stringify(videoUrls) : null,
                 }
@@ -219,6 +357,100 @@ function PostForm({ post, mode = "create" }: PostFormProps){
                     <p className="text-sm text-red-700">{errors.title.message}</p>
                 }
             </div>
+            <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="categoryId">Category</Label>
+                  {isAdmin ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 rounded-xl"
+                      onClick={() => setCatDialogOpen(true)}
+                      disabled={isPending}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      New category
+                    </Button>
+                  ) : null}
+                </div>
+                <select
+                    id="categoryId"
+                    style={{ colorScheme: resolvedTheme === "dark" ? "dark" : "light" }}
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    {...register("categoryId")}
+                    disabled={isPending || categories.length === 0}
+                >
+                    <option value="">
+                        {categories.length === 0 ? "No categories — run DB migration" : "Select a category"}
+                    </option>
+                    {categories.map((c) => (
+                        <option key={c.id} value={String(c.id)}>
+                            {c.name}
+                        </option>
+                    ))}
+                </select>
+                {errors?.categoryId ? (
+                    <p className="text-sm text-red-700">{String(errors.categoryId.message)}</p>
+                ) : null}
+            </div>
+
+            <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Create category</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="cat-name">Name</Label>
+                    <Input
+                      id="cat-name"
+                      value={catName}
+                      onChange={(e) => setCatName(e.target.value)}
+                      disabled={isPending}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="cat-slug">Slug (optional)</Label>
+                    <Input
+                      id="cat-slug"
+                      value={catSlug}
+                      onChange={(e) => setCatSlug(e.target.value)}
+                      disabled={isPending}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="cat-sort">Sort order</Label>
+                    <Input
+                      id="cat-sort"
+                      value={catSortOrder}
+                      onChange={(e) => setCatSortOrder(e.target.value)}
+                      inputMode="numeric"
+                      disabled={isPending}
+                    />
+                  </div>
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-xl"
+                      onClick={() => setCatDialogOpen(false)}
+                      disabled={isPending}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      className="rounded-xl"
+                      onClick={() => void createCategory()}
+                      disabled={isPending || !catName.trim()}
+                    >
+                      Create
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
             {/* Description */}
             <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
@@ -278,7 +510,8 @@ function PostForm({ post, mode = "create" }: PostFormProps){
                         <select
                             value={urlMediaType}
                             onChange={(e) => setUrlMediaType(e.target.value as "image" | "video")}
-                            className="border rounded px-2 py-1 text-sm"
+                            style={{ colorScheme: resolvedTheme === "dark" ? "dark" : "light" }}
+                            className="border border-input bg-background text-foreground rounded px-2 py-1 text-sm"
                             disabled={isPending || isUploading}
                         >
                             <option value="image">Image</option>

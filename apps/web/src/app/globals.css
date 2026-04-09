@@ -121,6 +121,18 @@
   }
 }
 
+/* Better native scrollbars for horizontal category chips */
+.ks-scrollbar-x::-webkit-scrollbar {
+  height: 10px;
+}
+.ks-scrollbar-x::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--muted-foreground) 30%, transparent);
+  border-radius: 999px;
+}
+.ks-scrollbar-x::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .heart-mask {
   clip-path: polygon(
     50% 95%,

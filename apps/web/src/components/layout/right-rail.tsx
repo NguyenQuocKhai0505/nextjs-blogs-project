@@ -4,24 +4,27 @@ import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { TrendingUp, Sparkles, Users } from "lucide-react"
+import { useLocale } from "@/lib/i18n/locale-context"
 
 export default function RightRail() {
+  const { t } = useLocale()
+
   return (
     <div className="space-y-4">
       <Card className="rounded-2xl bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/40">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Trending</CardTitle>
+          <CardTitle className="text-base">{t("rail.trending")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          <TrendItem title="Build in public" meta="12 new posts today" />
-          <TrendItem title="Next.js 15 + React 19" meta="Hot topic" />
-          <TrendItem title="Realtime chat" meta="Socket.IO tips" />
+          <TrendItem title={t("rail.trendBuildTitle")} meta={t("rail.trendBuildMeta")} />
+          <TrendItem title={t("rail.trendNextTitle")} meta={t("rail.trendNextMeta")} />
+          <TrendItem title={t("rail.trendChatTitle")} meta={t("rail.trendChatMeta")} />
         </CardContent>
       </Card>
 
       <Card className="rounded-2xl bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/40">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Suggested</CardTitle>
+          <CardTitle className="text-base">{t("rail.suggested")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-start gap-3">
@@ -29,12 +32,10 @@ export default function RightRail() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium">Find people to follow</p>
-              <p className="text-xs text-muted-foreground">
-                Search users and connect with creators.
-              </p>
+              <p className="text-sm font-medium">{t("rail.findPeople")}</p>
+              <p className="text-xs text-muted-foreground">{t("rail.findPeopleHint")}</p>
               <Button asChild size="sm" variant="outline" className="mt-2 rounded-xl">
-                <Link href="/profile">Discover</Link>
+                <Link href="/profile">{t("rail.discover")}</Link>
               </Button>
             </div>
           </div>
@@ -45,15 +46,13 @@ export default function RightRail() {
         <CardContent className="p-4">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Sparkles className="h-4 w-4 text-primary" />
-            Creator mode
+            {t("rail.creatorMode")}
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Share updates regularly to grow your audience.
-          </p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("rail.creatorHint")}</p>
           <Button asChild size="sm" className="mt-3 w-full rounded-xl">
             <Link href="/post/create">
               <TrendingUp className="mr-2 h-4 w-4" />
-              Create a post
+              {t("rail.createPost")}
             </Link>
           </Button>
         </CardContent>
@@ -70,4 +69,3 @@ function TrendItem({ title, meta }: { title: string; meta: string }) {
     </div>
   )
 }
-

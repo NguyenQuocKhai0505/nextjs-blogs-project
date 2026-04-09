@@ -7,6 +7,7 @@ import { ContactUser } from "./contact-client"
 import { useSocket } from "@/contexts/socket-context"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
+import { confirmToast } from "@/lib/confirm-toast"
 import { MoreHorizontal } from "lucide-react"
 
 type ChatPanelProps = {
@@ -140,10 +141,15 @@ export default function ChatPanel({
               type="button"
               className="ml-3 rounded-full p-1 hover:bg-muted"
               onClick={() => {
-                const ok = window.confirm("Delete this conversation? This action cannot be undone.")
-                if (ok) {
-                  onDeleteConversation(conversationId)
-                }
+                void (async () => {
+                  const ok = await confirmToast({
+                    title: "Delete this conversation?",
+                    description: "This action cannot be undone.",
+                    confirmText: "Delete",
+                    cancelText: "Cancel",
+                  })
+                  if (ok) onDeleteConversation(conversationId)
+                })()
               }}
               aria-label="Conversation options"
             >

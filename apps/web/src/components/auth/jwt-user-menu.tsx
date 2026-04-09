@@ -12,16 +12,18 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { clearAccessToken } from "@/lib/token"
-import { LogOut, User as UserIcon } from "lucide-react"
+import { LogOut, Settings, User as UserIcon } from "lucide-react"
 
 type JwtUserMenuProps = {
   avatarUrl?: string | null
   displayName?: string | null
+  role?: "USER" | "ADMIN" | null
 }
 
 export default function JwtUserMenu({
   avatarUrl,
   displayName,
+  role = null,
 }: JwtUserMenuProps) {
   const router = useRouter()
   const initials =
@@ -49,6 +51,16 @@ export default function JwtUserMenu({
           <UserIcon className="h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
+
+        {role === "ADMIN" ? (
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onClick={() => router.push("/admin/categories")}
+          >
+            <Settings className="h-4 w-4" />
+            <span>Manage categories</span>
+          </DropdownMenuItem>
+        ) : null}
 
         <DropdownMenuSeparator />
 

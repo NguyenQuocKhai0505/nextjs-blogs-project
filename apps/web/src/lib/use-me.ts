@@ -9,6 +9,7 @@ export type Me = {
   email: string
   avatarUrl: string | null
   createdAt: string
+  role: "USER" | "ADMIN"
 }
 
 export function useMe(enabled: boolean) {
