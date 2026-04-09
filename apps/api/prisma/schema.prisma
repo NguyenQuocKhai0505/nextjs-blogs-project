@@ -22,8 +22,25 @@ model User {
   notifications        Notification[] @relation("NotificationUser")
   posts                Post[]
   sessions             Session[]
+  postLikes            PostLike[]
+  comments             Comment[]
+  following            Follow[]       @relation("UserFollowing")
+  followers            Follow[]       @relation("UserFollowers")
 
   @@map("user")
+}
+
+model Follow {
+  id          Int      @id @default(autoincrement())
+  followerId  String   @map("follower_id") @db.VarChar(255)
+  followingId String   @map("following_id") @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at")
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId], map: "follows_follower_following_unique")
+  @@index([followingId], map: "follows_following_id_idx")
+  @@map("follows")
 }
 
 model Session {
@@ -45,7 +62,7 @@ model Account {
   userId     String   @map("user_id") @db.VarChar(255)
   accountId  String   @map("account_id") @db.VarChar(255)
   providerId String   @map("provider_id") @db.VarChar(255)
-  password   String
+  password   String?
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @default(now()) @map("updated_at")
   user       User     @relation(fields: [userId], references: [id])
@@ -67,8 +84,38 @@ model Post {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @default(now()) @map("updated_at")
   author       User     @relation(fields: [authorId], references: [id])
+  likes        PostLike[]
+  comments     Comment[]
 
   @@map("posts")
+}
+
+model PostLike {
+  id        Int      @id @default(autoincrement())
+  postId    Int      @map("post_id")
+  userId    String   @map("user_id") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId], map: "post_likes_post_user_unique")
+  @@map("post_likes")
+}
+
+model Comment {
+  id        Int       @id @default(autoincrement())
+  postId    Int       @map("post_id")
+  authorId  String    @map("author_id") @db.VarChar(255)
+  content   String    @db.Text
+  parentId  Int?      @map("parent_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
+
+  @@index([parentId], map: "comments_parent_id_idx")
+  @@map("comments")
 }
 
 model Conversation {

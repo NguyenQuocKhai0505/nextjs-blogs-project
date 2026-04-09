@@ -4,15 +4,21 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "../ui/button"
 import { useRouter } from "next/navigation"
-import { useSession } from "@/lib/auth-client"
-import UserMenu from "../auth/user-menu"
 import ThemeToggle from "../theme/theme-toggle"
 import { SearchInput } from "../search/search-input"
 import { NotificationBell } from "../notifications/notification-bell"
+import { useEffect, useState } from "react"
+import { getAccessToken } from "@/lib/token"
+import JwtUserMenu from "@/components/auth/jwt-user-menu"
+import { useMe } from "@/lib/use-me"
 
 function Header(){
-    const {data:session,isPending} = useSession()
     const router = useRouter()
+    const [hasToken, setHasToken] = useState(false)
+    useEffect(() => {
+      setHasToken(!!getAccessToken())
+    }, [])
+    const { me } = useMe(hasToken)
     
     const navItems =[{
         label:"Create Post", href:"/post/create",
@@ -58,11 +64,20 @@ function Header(){
                     <ThemeToggle/>
                     <div className="flex items-center gap-2 cursor-pointer ">
                         {
-                            isPending ? null : session?.user ?
-                            <UserMenu user={session?.user}/> : 
-                            <Button variant = {"default"} className="rounded-xl" onClick={() => router.push("/auth")}>
-                            Login
-                        </Button>
+                            hasToken ? (
+                              <JwtUserMenu
+                                avatarUrl={me?.avatarUrl}
+                                displayName={me?.name ?? "User"}
+                              />
+                            ) : (
+                              <Button
+                                variant={"default"}
+                                className="rounded-xl"
+                                onClick={() => router.push("/auth")}
+                              >
+                                Login
+                              </Button>
+                            )
                         }
                     </div>
             </div>

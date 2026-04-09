@@ -8,6 +8,7 @@ import { Label } from "../ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Pencil, Upload, X } from "lucide-react"
 import { toast } from "sonner"
+import { authFetch } from "@/lib/auth-fetch"
 
 interface EditProfileDialogProps {
     currentName: string
@@ -67,27 +68,21 @@ export function EditProfileDialog({ currentName, currentEmail, currentAvatar }: 
         e.preventDefault()
         setIsPending(true)
         try{
-            //Upload file neu co 
-            let avatarFile: File | null = null
-            const fileInput = document.getElementById("avatar-file") as HTMLInputElement
-            if(fileInput?.files?.[0])
-            {
-                avatarFile = fileInput.files[0]
-            }
-            //Goi server action
-            const {updateProfileAction} = await import("@/actions/profile-action")
-            const result = await updateProfileAction({
+            const res = await authFetch("/me", {
+              method: "PATCH",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
                 name: name.trim(),
-                avatar: avatarPreview || null,
-                avatarFile: avatarFile
+                avatarUrl: avatarPreview || null,
+              }),
             })
 
-            if(result?.success){
-                toast.success(result.message || "Profile updated successfully")
+            if(res.ok){
+                toast.success("Profile updated successfully")
                 setOpen(false)
                 window.location.reload() //Refresh de hien thi data moi
             }else{
-                toast.error(result?.message || "Failed to update profile")
+                toast.error("Failed to update profile")
             }
         }catch(e){
             console.log("Error updating profile:",e)

@@ -1,41 +1,65 @@
-import PostContent from "@/components/post/post-content"
-import { auth } from "@/lib/auth"
-import { getPostBySlug } from "@/lib/db/queries"
-import { checkUserLiked } from "@/actions/like-actions"
-import { headers } from "next/headers"
 import { notFound } from "next/navigation"
 
-async function CreatPostPage({
-    params,
-}:{
-    params: Promise<{slug:string}>
-}){
-    const {slug} = await params
-    const post = await getPostBySlug(slug)
-    const session = await auth.api.getSession({
-        headers: await headers()
-    })
-    if(!post){
-        notFound()
-    }
+import { apiUrl } from "@/lib/api"
+import { getAccessTokenFromCookies } from "@/lib/server-token"
+import PostDetailClient, {
+  type PostDetailPayload,
+} from "@/components/post/post-detail-client"
 
-    //get author info
-    const isAuthor = session?.user?.id === post.authorId
-    
-    // Check user đã like post chưa
-    const initialLiked = await checkUserLiked(post.id)
+async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
 
-    return(
-        <main className="py-10">
-            <div className="max-w-4xl mx-auto">
-                <PostContent 
-                    post={post} 
-                    isAuthor={isAuthor}
-                    initialLiked={initialLiked}
-                    userId={session?.user?.id}
-                />
-            </div>
-        </main>
-    )
+  const token = await getAccessTokenFromCookies()
+  const me = token
+    ? await fetch(apiUrl("/me"), {
+        headers: { authorization: `Bearer ${token}` },
+        cache: "no-store",
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null)
+    : null
+
+  const post = await fetch(apiUrl(`/posts/${encodeURIComponent(slug)}`), {
+    cache: "no-store",
+  })
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null)
+
+  if (!post) {
+    notFound()
+  }
+
+  const isAuthor = me?.id && post?.authorId ? me.id === post.authorId : false
+
+  const payload: PostDetailPayload = {
+    id: post.id,
+    title: post.title,
+    description: post.description,
+    content: post.content,
+    slug: post.slug,
+    imageUrls: post.imageUrls ?? null,
+    videoUrls: post.videoUrls ?? null,
+    likeCount: post.likeCount ?? 0,
+    commentCount: post.commentCount ?? 0,
+    authorId: post.authorId,
+    createdAt:
+      typeof post.createdAt === "string"
+        ? post.createdAt
+        : new Date(post.createdAt).toISOString(),
+    author: {
+      id: post.author?.id ?? post.authorId,
+      name: post.author?.name ?? "User",
+      avatarUrl: post.author?.avatarUrl ?? null,
+    },
+  }
+
+  return (
+    <main className="py-10">
+      <div className="mx-auto max-w-4xl px-4">
+        <PostDetailClient post={payload} isAuthor={isAuthor} viewerId={me?.id ?? null} />
+      </div>
+    </main>
+  )
 }
-export default CreatPostPage
+
+export default PostPage

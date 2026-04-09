@@ -1,15 +1,10 @@
-import { auth } from "@/lib/auth"
-import { headers } from "next/headers"
 import { redirect, notFound } from "next/navigation"
-import { getPostByUserId, getUserById } from "@/lib/db/queries"
 import PostList from "@/components/post/post-list"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { FollowButton } from "@/components/profile/follow-button"
-import { checkFollowingAction, getFollowersStatsAction } from "@/actions/follow-actions"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { MessageCircle } from "lucide-react"
+import { apiUrl } from "@/lib/api"
+import ProfileFollowActions from "@/components/profile/profile-follow-actions"
+import { getAccessTokenFromCookies } from "@/lib/server-token"
 
 interface ProfilePageProps
 {
@@ -18,23 +13,26 @@ interface ProfilePageProps
 export default async function UserProfilePage({params}:ProfilePageProps)
 {
     const {userId} = await params
-    const session = await auth.api.getSession({headers:await headers()})
-    if(!session?.user) redirect("/auth")
+    const token = await getAccessTokenFromCookies()
+    if(!token) redirect("/auth")
 
-    const viewerId = session.user.id 
+    const me = await fetch(apiUrl("/me"), {
+      headers: { authorization: `Bearer ${token}` },
+      cache: "no-store",
+    }).then((r) => (r.ok ? r.json() : null))
+
+    const viewerId = me?.id as string | undefined
     const isOwnProfile = viewerId === userId
 
-    const userData = await getUserById(userId)
+    const userData = await fetch(apiUrl(`/users/${encodeURIComponent(userId)}`), {
+      cache: "no-store",
+    }).then((r) => (r.ok ? r.json() : null))
+
     if(!userData) notFound()
     
-    const [posts,stats,initalFollowing] = await Promise.all([
-        getPostByUserId(userId),
-        getFollowersStatsAction(userId),
-        isOwnProfile ? Promise.resolve(false) : checkFollowingAction(userId)
-    ])
-
-    const followerCount = stats.followers
-    const followingCount = stats.following
+    const posts = await fetch(apiUrl(`/posts/by-author/${encodeURIComponent(userId)}`), {
+      cache: "no-store",
+    }).then((r) => (r.ok ? r.json() : []))
 
     const getInitials = (name?:string)=>
         !name
@@ -56,7 +54,9 @@ export default async function UserProfilePage({params}:ProfilePageProps)
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <Avatar className="h-20 w-20">
-                                    {userData.avatar && <AvatarImage src={userData.avatar} alt={userData.name}/>}
+                                    {userData.avatarUrl ? (
+                                      <AvatarImage src={userData.avatarUrl} alt={userData.name} />
+                                    ) : null}
                                     <AvatarFallback className="text-2xl">{getInitials(userData.name)}</AvatarFallback>
                                 </Avatar>
                                 <div>
@@ -64,28 +64,12 @@ export default async function UserProfilePage({params}:ProfilePageProps)
                                     {userData.email && <p className="text-muted-foreground">{userData.email}</p>}
                                     <div className="flex items-center gap-4 mt-2">
                                     <Stat label={posts.length === 1 ? "post" : "posts"} value={posts.length} />
-                                    <Stat label={followerCount ===1 ? "follower" :"followers"} value={followerCount}/>
-                                    <Stat label="following" value={followingCount} />
                                     </div>
                                 </div>
                             </div>
-                            {!isOwnProfile && (
-                                <div className="flex gap-2">
-                                    <FollowButton
-                                        targetUserId={userId}
-                                        initialFollowing={Boolean(initalFollowing)}
-                                    />
-                                    <Button
-                                        asChild
-                                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm border-none"
-                                    >
-                                        <Link href={`/contact?userId=${userId}`}>
-                                            <MessageCircle className="mr-2 h-4 w-4" />
-                                            Chat
-                                        </Link>
-                                    </Button>
-                                </div>
-                            )}
+                            {!isOwnProfile ? (
+                              <ProfileFollowActions targetUserId={userId} isOwnProfile={false} />
+                            ) : null}
                         </div>
                     </CardHeader>
                 </Card>
@@ -102,7 +86,7 @@ export default async function UserProfilePage({params}:ProfilePageProps)
                         </CardContent>
                         </Card>
                     ) : (
-                        <PostList posts={posts} />
+                        <PostList posts={posts} viewerId={viewerId ?? null} />
                     )}
             </section>
             </div>

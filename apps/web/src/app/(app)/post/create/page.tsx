@@ -4,22 +4,15 @@
 export const dynamic = "force-dynamic"
 
 import { redirect } from "next/navigation"
-import { headers } from "next/headers"
 
 import PostForm from "@/components/post/post-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { auth } from "@/lib/auth"
+import { getAccessTokenFromCookies } from "@/lib/server-token"
 
 // Server-side route protection: only authenticated users can access /post/create.
 export default async function CreatePost() {
-  let session = null
-  try {
-    session = await auth.api.getSession({ headers: await headers() })
-  } catch (error) {
-    console.error("[CreatePost] Failed to get session", error)
-  }
-
-  if (!session?.user) {
+  const token = await getAccessTokenFromCookies()
+  if (!token) {
     redirect("/auth")
   }
 

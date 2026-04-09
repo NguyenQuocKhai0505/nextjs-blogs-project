@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength, MinLength } from "class-validator"
+import { Allow, IsOptional, IsString, MaxLength, MinLength } from "class-validator"
 
 export class UpdatePostDto {
   @IsOptional()
@@ -17,5 +17,17 @@ export class UpdatePostDto {
   @IsString()
   @MinLength(1)
   content?: string
+
+  @IsOptional()
+  @Allow()
+  @IsString()
+  @MaxLength(20000)
+  imageUrls?: string | null
+
+  @IsOptional()
+  @Allow()
+  @IsString()
+  @MaxLength(20000)
+  videoUrls?: string | null
 }
 

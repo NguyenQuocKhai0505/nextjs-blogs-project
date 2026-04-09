@@ -7,13 +7,13 @@ import { Button } from "../ui/button"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useTransition } from "react"
-import { CreatePost, UpdatePost } from "@/actions/post-action"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useState, useRef } from "react"
 import Image from "next/image"
 import { X, Link as LinkIcon, Loader2 } from "lucide-react"
 import { apiUrl } from "@/lib/api"
+import { authFetch } from "@/lib/auth-fetch"
 
 //post form schema for validation
 const postSchema = z.object({
@@ -67,40 +67,48 @@ function PostForm({ post, mode = "create" }: PostFormProps){
     const onFormSubmit = async(data:PostFormValue) =>{
         startTransition(async()=>{
             try{
-                const formData = new FormData()
-                formData.append("title",data.title)
-                formData.append("description",data.description)  
-                formData.append("content",data.content)
-
-                if(imageUrls.length>0){
-                    formData.append("imageUrls",JSON.stringify(imageUrls))
-                }
-                if(videoUrls.length>0){
-                    formData.append("videoUrls",JSON.stringify(videoUrls))
+                const payload = {
+                    title: data.title,
+                    description: data.description,
+                    content: data.content,
+                    imageUrls: imageUrls.length ? JSON.stringify(imageUrls) : null,
+                    videoUrls: videoUrls.length ? JSON.stringify(videoUrls) : null,
                 }
 
-                let res;
-                if (mode === "edit" && post) {
-                    formData.append("postId", post.id.toString())
-                    formData.append("slug", post.slug)
-                    res = await UpdatePost(formData)
-                } else {
-                    res = await CreatePost(formData)
+                const res = await (mode === "edit" && post
+                    ? authFetch(`/posts/${post.id}`, {
+                        method: "PATCH",
+                        headers: { "content-type": "application/json" },
+                        body: JSON.stringify(payload),
+                      })
+                    : authFetch("/posts", {
+                        method: "POST",
+                        headers: { "content-type": "application/json" },
+                        body: JSON.stringify(payload),
+                      }))
+
+                if (!res.ok) {
+                    const err = await res.json().catch(() => null)
+                    throw new Error(err?.message ?? "Request failed")
                 }
-                
-                if(res.success){
+                const out = await res.json()
+
+                if(out){
                     toast(mode === "edit" ? "Post updated successfully!" : "Post created successfully!")
-                    router.refresh()
                     if (mode === "edit") {
-                        router.push(`/post/${res.slug || post?.slug}`)
+                        router.push(`/post/${out.slug || post?.slug}`)
+                        router.refresh()
                     } else {
                         router.push("/")
+                        router.refresh()
                     }
-                }else{
-                    toast(res.message)
                 }
-            }catch{
-                toast(`Failed to ${mode === "edit" ? "update" : "create"} post!`)
+            }catch(e){
+                const msg =
+                  e instanceof Error && e.message
+                    ? e.message
+                    : `Failed to ${mode === "edit" ? "update" : "create"} post!`
+                toast.error(msg)
             }
         })
     }

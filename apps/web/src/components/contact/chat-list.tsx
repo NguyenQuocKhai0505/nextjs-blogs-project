@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { RefreshCcw, Search, MoreHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {ContactUser} from "./contact-client"
+import { authFetch } from "@/lib/auth-fetch"
 type ChatListProps = {
   contacts: ContactSummary[]
   selectedUserId: string | null
@@ -36,30 +37,34 @@ export default function ChatList({
     })
   },[contacts,searchTerm])
 
-  //Search user from API when search term changes 
-  useEffect(()=>{
-    const searchUser = async () =>{
-      if(!searchTerm.trim())
-      {
+  // Mutual friends only (same rule as main chat page).
+  useEffect(() => {
+    const searchUser = async () => {
+      if (!searchTerm.trim()) {
         setSearchResults([])
         return
       }
       setIsSearching(true)
-      try{
-        const res = await fetch(`/api/search-users?q=${encodeURIComponent(searchTerm.trim())}&limit=10`)
-        if(res.ok){
-          const data = await res.json()
-          setSearchResults(data.users || [])
+      try {
+        const res = await authFetch(
+          `/me/mutual-friends?q=${encodeURIComponent(searchTerm.trim())}`,
+          { cache: "no-store" }
+        )
+        if (res.ok) {
+          const data = (await res.json()) as ContactUser[]
+          setSearchResults(Array.isArray(data) ? data : [])
+        } else {
+          setSearchResults([])
         }
-      }catch(error)
-      {
-        console.error("Failed to search users:",error)
-        setIsSearching(false)
-      }finally{
+      } catch (error) {
+        console.error("Failed to search mutual friends:", error)
+        setSearchResults([])
+      } finally {
         setIsSearching(false)
       }
     }
-  },[searchTerm])
+    void searchUser()
+  }, [searchTerm])
   //Combine filtered contacts with search results 
   const displayContacts = useMemo(()=>{
     if(!searchTerm.trim()) return contacts
@@ -123,8 +128,11 @@ export default function ChatList({
                 type="button"
               >
                 <Avatar className="size-10">
-                  {contact.otherUser.avatar ? (
-                    <AvatarImage src={contact.otherUser.avatar} alt={contact.otherUser.name} />
+                  {contact.otherUser.avatarUrl || contact.otherUser.avatar ? (
+                    <AvatarImage
+                      src={contact.otherUser.avatarUrl ?? contact.otherUser.avatar ?? ""}
+                      alt={contact.otherUser.name}
+                    />
                   ) : null}
                   <AvatarFallback>
                     {contact.otherUser.name?.charAt(0).toUpperCase() ?? "U"}

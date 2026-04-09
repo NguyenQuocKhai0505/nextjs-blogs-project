@@ -1,5 +1,4 @@
 import PostList from "@/components/post/post-list"
-import { getAllPost } from "@/lib/db/queries"
 import { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -7,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { PenSquare } from "lucide-react"
 import StoriesBar from "@/components/feed/stories-bar"
 import ComposerCard from "@/components/feed/composer-card"
+import { apiUrl } from "@/lib/api"
+import { getAccessTokenFromCookies } from "@/lib/server-token"
 
 export const metadata: Metadata = {
   title: "My Social Network",
@@ -14,7 +15,19 @@ export const metadata: Metadata = {
 }
 
 export default async function Home() {
-  const posts = await getAllPost()
+  const token = await getAccessTokenFromCookies()
+  const me = token
+    ? await fetch(apiUrl("/me"), {
+        headers: { authorization: `Bearer ${token}` },
+        cache: "no-store",
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null)
+    : null
+
+  const posts = await fetch(apiUrl("/posts"), { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : []))
+    .catch(() => [])
   const hasPosts = posts.length > 0
 
   return (
@@ -37,7 +50,7 @@ export default async function Home() {
         </div>
 
         {hasPosts ? (
-          <PostList posts={posts} />
+          <PostList posts={posts} viewerId={me?.id ?? null} />
         ) : (
           <Card className="rounded-2xl border-dashed bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/40">
             <CardContent className="space-y-3 py-12 text-center">

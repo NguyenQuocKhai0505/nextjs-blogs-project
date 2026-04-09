@@ -1,42 +1,37 @@
-
-// This page also depends on request headers/session; force dynamic rendering to
-// bypass static prerender errors on Render.
 export const dynamic = "force-dynamic"
 
-import { headers } from "next/headers"
+import { Suspense } from "react"
 import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
-import { getConversations } from "@/lib/db/chat-queries"
-import ContactClient from "@/components/contact/contact-client" 
+import { getAccessTokenFromCookies } from "@/lib/server-token"
+import { apiUrl } from "@/lib/api"
+import ContactClient, {
+  type ConversationItem,
+} from "@/components/contact/contact-client"
 
-export default async function ContactPage()
-{
-    let session = null
-    try{
-        session = await auth.api.getSession({headers: await headers()})
-    }catch(error){
-        console.error("[ContactPage] Failed to get session", error)
-    }
+export default async function ContactPage() {
+  const token = await getAccessTokenFromCookies()
+  if (!token) redirect("/auth")
 
-    if(!session?.user) redirect ("/auth")
-    
-    try{
-        const conversation = await getConversations(session.user.id)
-        const serialized = conversation.map(conv => ({
-            ...conv,
-            updatedAt: conv.updatedAt?.toISOString?.() ?? new Date().toISOString(),
-            lastMessage: conv.lastMessage
-            ? {
-                ...conv.lastMessage,
-                createdAt: conv.lastMessage.createdAt?.toISOString?.() ?? "",
-            }
-            : null
-        }))
-        return (
-            <ContactClient currentUserId ={session.user.id} initialContacts={serialized}/>
-        )
-    }catch(error){
-        console.error("[ContactPage] Failed to load conversations", error)
-        redirect("/auth")
-    }
+  const conversations = await fetch(apiUrl("/conversations"), {
+    headers: { authorization: `Bearer ${token}` },
+    cache: "no-store",
+  })
+    .then((r) => (r.ok ? r.json() : []))
+    .catch(() => [])
+
+  return (
+    <main className="py-10">
+      <div className="mx-auto w-full max-w-4xl">
+        <Suspense
+          fallback={
+            <div className="rounded-xl border bg-card p-8 text-sm text-muted-foreground">
+              Loading chats…
+            </div>
+          }
+        >
+          <ContactClient initialConversations={conversations as ConversationItem[]} />
+        </Suspense>
+      </div>
+    </main>
+  )
 }

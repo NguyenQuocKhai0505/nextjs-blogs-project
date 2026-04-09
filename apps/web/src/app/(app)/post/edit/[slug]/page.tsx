@@ -1,9 +1,8 @@
 import PostForm from "@/components/post/post-form"
-import { auth } from "@/lib/auth"
-import { getPostBySlug } from "@/lib/db/queries"
-import { headers } from "next/headers"
 import { notFound, redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { apiUrl } from "@/lib/api"
+import { getAccessTokenFromCookies } from "@/lib/server-token"
 
 async function EditPostPage({
     params,
@@ -13,22 +12,25 @@ async function EditPostPage({
     // Lay slug tu params
     const { slug } = await params
     
-    // Lay post tu database
-    const post = await getPostBySlug(slug)
+    const post = await fetch(apiUrl(`/posts/${encodeURIComponent(slug)}`), {
+      cache: "no-store",
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null)
 
     // Kiem tra post ton tai
     if (!post) {
         notFound()
     }
 
-    // Kiem tra session (User da dang nhap hay chua)
-    const session = await auth.api.getSession({
-        headers: await headers()
-    })
+    const token = await getAccessTokenFromCookies()
+    if (!token) redirect("/auth")
+    const me = await fetch(apiUrl("/me"), {
+      headers: { authorization: `Bearer ${token}` },
+      cache: "no-store",
+    }).then((r) => (r.ok ? r.json() : null))
 
-    // KIEM TRA QUYEN - CHI CO AUTHOR MOI DUOC EDIT
-    // Sửa logic: Redirect nếu KHÔNG phải author (!== thay vì ===)
-    if (!session || session.user?.id !== post.authorId) {
+    if (!me || me.id !== post.authorId) {
         redirect("/")  // Khong co quyen truy cap => redirect ve homepage
     }
 
@@ -49,7 +51,9 @@ async function EditPostPage({
                                 title: post.title,
                                 description: post.description,
                                 content: post.content,
-                                slug: post.slug
+                                slug: post.slug,
+                                imageUrls: post.imageUrls ?? null,
+                                videoUrls: post.videoUrls ?? null,
                             }}
                             mode="edit"
                         />

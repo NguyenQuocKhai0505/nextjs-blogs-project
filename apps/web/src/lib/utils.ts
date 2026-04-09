@@ -14,10 +14,15 @@ export function slugify(text:string):string{
             .replace(/^-+|-+$/g, '')         // Xóa - ở đầu/cuối 
 }
 
-export function formatDate(date:Date):string{
-  return new Intl.DateTimeFormat("en-US",{
-    month:"long",
-    day:"numeric",
-    year:"numeric"
+export function formatDate(input: Date | string | number | null | undefined): string {
+  const date =
+    input instanceof Date ? input : input != null ? new Date(input) : new Date(NaN)
+  if (Number.isNaN(date.getTime())) {
+    return ""
+  }
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
   }).format(date)
 }

@@ -5,6 +5,8 @@ import { PrismaModule } from "../prisma/prisma.module.js"
 import { AuthModule } from "../auth/auth.module.js"
 import { PostsModule } from "../posts/posts.module.js"
 import { UploadModule } from "../upload/upload.module.js"
+import { ChatModule } from "../chat/chat.module.js"
+import { UsersModule } from "../users/users.module.js"
 
 @Module({
   imports: [
@@ -15,6 +17,8 @@ import { UploadModule } from "../upload/upload.module.js"
     AuthModule,
     PostsModule,
     UploadModule,
+    ChatModule,
+    UsersModule,
   ],
   controllers: [HealthController],
 })
