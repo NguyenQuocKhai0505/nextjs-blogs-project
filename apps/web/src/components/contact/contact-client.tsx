@@ -86,6 +86,12 @@ export type MessageItem = {
   sender: UserLite
 }
 
+/** UUID / user id compare (avoids subtle mismatch between JWT and API casing). */
+function userIdsEqual(a: string | undefined | null, b: string | undefined | null) {
+  if (a == null || b == null) return false
+  return a.trim().toLowerCase() === b.trim().toLowerCase()
+}
+
 function lastMessagePreview(
   m: ConversationItem["lastMessage"],
   t: (key: string) => string
@@ -301,7 +307,7 @@ export default function ContactClient({
         const copy = [...prev]
         const c = copy[idx]
         let unreadCount = c.unreadCount ?? 0
-        if (msg.senderId !== myId) {
+        if (!userIdsEqual(msg.senderId, myId)) {
           if (msg.conversationId === curActive) unreadCount = 0
           else unreadCount = unreadCount + 1
         }
@@ -326,7 +332,7 @@ export default function ContactClient({
 
       if (msg.conversationId === curActive) {
         setMessages((prev) => [...prev, msg])
-        if (msg.senderId !== myId) {
+        if (!userIdsEqual(msg.senderId, myId)) {
           void markConversationRead(msg.conversationId, msg.id)
         }
       }
@@ -536,7 +542,7 @@ export default function ContactClient({
                 {messages.map((m) => {
                   const viewerId = me?.id
                   const senderKey = m.senderId || m.sender?.id
-                  const isMine = Boolean(viewerId && senderKey && senderKey === viewerId)
+                  const isMine = userIdsEqual(viewerId, senderKey)
                   const isRevoked = Boolean(m.revokedAt)
                   const canRecall =
                     isMine &&
@@ -552,53 +558,53 @@ export default function ContactClient({
                     <div
                       key={m.id}
                       className={cn(
-                        "flex w-full items-end gap-2",
-                        isMine ? "flex-row justify-end" : "flex-row justify-start"
+                        "flex w-full",
+                        isMine ? "justify-end" : "justify-start"
                       )}
                     >
-                      {!isMine ? (
-                        <div className="relative mb-5 h-8 w-8 shrink-0 overflow-hidden rounded-full bg-muted ring-1 ring-border">
-                          {m.sender.avatarUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element -- remote user avatars
-                            <img
-                              src={m.sender.avatarUrl}
-                              alt=""
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-muted-foreground">
-                              {m.sender.name?.charAt(0)?.toUpperCase() ?? "?"}
-                            </span>
-                          )}
-                        </div>
-                      ) : null}
-                      <div
-                        className={cn(
-                          "flex max-w-[min(100%,34rem)] flex-col gap-1",
-                          isMine ? "items-end" : "items-start"
-                        )}
-                      >
+                      <div className="flex w-fit max-w-[min(88vw,22rem)] items-end gap-2 sm:max-w-[min(78%,26rem)]">
                         {!isMine ? (
-                          <span className="px-1 text-[11px] font-medium text-muted-foreground">
-                            {m.sender.name}
-                          </span>
+                          <div className="relative mb-5 h-8 w-8 shrink-0 overflow-hidden rounded-full bg-muted ring-1 ring-border">
+                            {m.sender.avatarUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element -- remote user avatars
+                              <img
+                                src={m.sender.avatarUrl}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-muted-foreground">
+                                {m.sender.name?.charAt(0)?.toUpperCase() ?? "?"}
+                              </span>
+                            )}
+                          </div>
                         ) : null}
                         <div
                           className={cn(
-                            "flex items-end gap-1",
-                            /* reverse: recall menu sits between bubble and center of thread */
-                            isMine ? "flex-row-reverse" : "flex-row"
+                            "flex min-w-0 flex-col gap-1",
+                            isMine ? "items-end" : "items-start"
                           )}
                         >
+                          {!isMine ? (
+                            <span className="max-w-full truncate px-1 text-[11px] font-medium text-muted-foreground">
+                              {m.sender.name}
+                            </span>
+                          ) : null}
                           <div
                             className={cn(
-                              "rounded-[18px] px-3.5 py-2 text-[15px] leading-snug shadow-sm",
-                              isMine
-                                ? "rounded-br-md bg-primary text-primary-foreground"
-                                : "rounded-bl-md bg-card text-card-foreground ring-1 ring-border/60",
-                              isRevoked && "italic opacity-90"
+                              "flex items-end gap-1",
+                              isMine ? "flex-row-reverse" : "flex-row"
                             )}
                           >
+                            <div
+                              className={cn(
+                                "max-w-full rounded-2xl px-3.5 py-2 text-[15px] leading-snug shadow-sm",
+                                isMine
+                                  ? "rounded-br-sm bg-primary text-primary-foreground"
+                                  : "rounded-bl-sm bg-muted/90 text-foreground ring-1 ring-border/50",
+                                isRevoked && "italic opacity-90"
+                              )}
+                            >
                             {isRevoked ? (
                               <p className="text-sm">{t("chat.messageRevoked")}</p>
                             ) : (
@@ -666,8 +672,11 @@ export default function ContactClient({
                         >
                           {timeLabel}
                         </span>
+                        </div>
+                        {isMine ? (
+                          <div className="mb-5 h-8 w-8 shrink-0" aria-hidden />
+                        ) : null}
                       </div>
-                      {isMine ? <div className="mb-5 w-8 shrink-0" aria-hidden /> : null}
                     </div>
                   )
                 })}
