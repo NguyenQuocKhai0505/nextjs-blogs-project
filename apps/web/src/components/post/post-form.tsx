@@ -309,7 +309,7 @@ function PostForm({ post, mode = "create" }: PostFormProps){
     
         setIsUploading(true)
         try {
-            const response = await fetch(apiUrl("/upload"), {
+            const response = await fetch(apiUrl("/upload/from-url"), {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -317,8 +317,19 @@ function PostForm({ post, mode = "create" }: PostFormProps){
                 body: JSON.stringify({ mediaUrl: urlInput.trim(), mediaType: urlMediaType })
             })
     
-            const result = await response.json()
+            const result = await response.json().catch(() => ({}))
     
+            if (!response.ok) {
+                const msg =
+                    typeof result?.message === "string"
+                        ? result.message
+                        : Array.isArray(result?.message)
+                          ? result.message.join(", ")
+                          : "Failed to upload media from URL"
+                toast.error(msg)
+                return
+            }
+
             if (result.success) {
                 const newImages: string[] = result.imageUrls ?? []
                 const newVideos: string[] = result.videoUrls ?? []

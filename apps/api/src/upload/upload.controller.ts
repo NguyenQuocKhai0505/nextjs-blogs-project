@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Post,
   UploadedFiles,
@@ -7,6 +8,8 @@ import {
 } from "@nestjs/common"
 import { FilesInterceptor } from "@nestjs/platform-express"
 import { v2 as cloudinary } from "cloudinary"
+
+import { UploadFromUrlDto } from "./dto/upload-from-url.dto.js"
 
 const IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"]
 const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"]
@@ -95,6 +98,48 @@ export class UploadController {
       success: true,
       imageUrls,
       videoUrls,
+    }
+  }
+
+  /** Fetch remote file and upload to Cloudinary (used by post form “paste URL”). */
+  @Post("from-url")
+  async uploadFromUrl(@Body() dto: UploadFromUrlDto) {
+    const resourceType: MediaType = dto.mediaType === "video" ? "video" : "image"
+
+    try {
+      const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
+        cloudinary.uploader.upload(
+          dto.mediaUrl,
+          {
+            resource_type: resourceType,
+            folder: "blog-posts",
+            ...(resourceType === "image" && {
+              transformation: [
+                { width: 1920, height: 1080, crop: "limit" },
+                { quality: "auto" },
+              ],
+            }),
+          },
+          (error, res) => {
+            if (error) return reject(error)
+            if (!res?.secure_url) return reject(new Error("Upload failed"))
+            resolve({ secure_url: res.secure_url })
+          }
+        )
+      })
+
+      const url = result.secure_url
+      return {
+        success: true,
+        imageUrls: resourceType === "image" ? [url] : [],
+        videoUrls: resourceType === "video" ? [url] : [],
+      }
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === "object" && "message" in err && typeof (err as { message: unknown }).message === "string"
+          ? (err as { message: string }).message
+          : "Could not upload from this URL"
+      throw new BadRequestException(msg)
     }
   }
 }
