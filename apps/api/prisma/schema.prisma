@@ -37,6 +37,8 @@ model User {
   name                 String         @db.VarChar(255)
   email                String         @unique @db.VarChar(255)
   avatarUrl            String?        @map("avatar_url")
+  /** Short public bio / tiểu sử (optional). */
+  bio                  String?        @db.Text @map("bio")
   emailVerified        Boolean        @default(false) @map("email_verified")
   role                 UserRole       @default(USER) @map("role")
   createdAt            DateTime       @default(now()) @map("created_at")

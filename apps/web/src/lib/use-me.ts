@@ -8,6 +8,7 @@ export type Me = {
   name: string
   email: string
   avatarUrl: string | null
+  bio?: string | null
   createdAt: string
   role: "USER" | "ADMIN"
 }

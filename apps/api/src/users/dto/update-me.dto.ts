@@ -15,5 +15,10 @@ export class UpdateMeDto {
   @IsString()
   @MaxLength(5000)
   avatarUrl?: string | null
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  bio?: string | null
 }
 

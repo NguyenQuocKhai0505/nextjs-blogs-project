@@ -26,6 +26,7 @@ export class UsersService {
         name: true,
         email: true,
         avatarUrl: true,
+        bio: true,
         createdAt: true,
         role: true,
       } as Prisma.UserSelect,
@@ -44,21 +45,40 @@ export class UsersService {
       dto.email = email
     }
 
+    const bio =
+      dto.bio === undefined
+        ? undefined
+        : dto.bio === null
+          ? null
+          : dto.bio.trim() === ""
+            ? null
+            : dto.bio.trim()
+
     return this.prisma.user.update({
       where: { id: userId },
       data: {
         ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
         ...(dto.email !== undefined ? { email: dto.email } : {}),
         ...(dto.avatarUrl !== undefined ? { avatarUrl: dto.avatarUrl } : {}),
+        ...(bio !== undefined ? { bio } : {}),
+        updatedAt: new Date(),
       },
-      select: { id: true, name: true, email: true, avatarUrl: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatarUrl: true,
+        bio: true,
+        createdAt: true,
+        role: true,
+      },
     })
   }
 
   async getUserPublic(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, avatarUrl: true, createdAt: true, role: true },
+      select: { id: true, name: true, avatarUrl: true, bio: true, createdAt: true, role: true },
     })
     if (!user) throw new NotFoundException("User not found")
     return user
