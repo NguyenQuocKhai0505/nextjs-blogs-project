@@ -18,6 +18,9 @@ import type { PostCategory } from "@/lib/types"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { getAccessToken } from "@/lib/token"
 import { useTheme } from "next-themes"
+import { PostVideo } from "@/components/media/post-video"
+import { isEmbedProviderUrl } from "@/lib/embed-video"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 //post form schema for validation
 const postSchema = z.object({
@@ -300,13 +303,30 @@ function PostForm({ post, mode = "create" }: PostFormProps){
             }
         }
     }
-    //UPLOAD URL
+    //UPLOAD URL (images + direct video files go through API; YouTube/Vimeo added locally — same player as the feed)
     const handleUrlUpload = async () => {
-        if (!urlInput.trim()) {
+        const trimmed = urlInput.trim()
+        if (!trimmed) {
             toast.error("Please enter a media URL")
             return
         }
-    
+
+        if (urlMediaType === "image" && isEmbedProviderUrl(trimmed)) {
+            toast.error("That link is a video embed. Switch to the Video tab to add it.")
+            return
+        }
+
+        if (urlMediaType === "video" && isEmbedProviderUrl(trimmed)) {
+            if (videoUrls.includes(trimmed)) {
+                toast.info("This video link is already in the list")
+                return
+            }
+            setVideoUrls((prev) => [...prev, trimmed])
+            setUrlInput("")
+            toast.success("Video added — it plays inline on your post (YouTube / Vimeo).")
+            return
+        }
+
         setIsUploading(true)
         try {
             const response = await fetch(apiUrl("/upload/from-url"), {
@@ -314,11 +334,11 @@ function PostForm({ post, mode = "create" }: PostFormProps){
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ mediaUrl: urlInput.trim(), mediaType: urlMediaType })
+                body: JSON.stringify({ mediaUrl: trimmed, mediaType: urlMediaType })
             })
-    
+
             const result = await response.json().catch(() => ({}))
-    
+
             if (!response.ok) {
                 const msg =
                     typeof result?.message === "string"
@@ -333,14 +353,18 @@ function PostForm({ post, mode = "create" }: PostFormProps){
             if (result.success) {
                 const newImages: string[] = result.imageUrls ?? []
                 const newVideos: string[] = result.videoUrls ?? []
-                if(newImages.length){
-                    setImageUrls(prev => [...prev, ...newImages])
+                if (newImages.length) {
+                    setImageUrls((prev) => [...prev, ...newImages])
                 }
-                if(newVideos.length){
-                    setVideoUrls(prev => [...prev, ...newVideos])
+                if (newVideos.length) {
+                    setVideoUrls((prev) => [...prev, ...newVideos])
                 }
                 setUrlInput("")
-                toast.success(`${urlMediaType === "image" ? "Image" : "Video"} uploaded from URL successfully!`)
+                toast.success(
+                    urlMediaType === "image"
+                        ? "Image added from URL."
+                        : "Video file added from URL — hosted and playable on the site."
+                )
             } else {
                 toast.error(result.error || "Failed to upload media from URL")
             }
@@ -515,52 +539,70 @@ function PostForm({ post, mode = "create" }: PostFormProps){
                     </p>
                 </div>
 
-                {/* Upload từ URL */}
-                <div className="space-y-2">
-                    <div className="flex gap-2">
-                        <select
-                            value={urlMediaType}
-                            onChange={(e) => setUrlMediaType(e.target.value as "image" | "video")}
-                            style={{ colorScheme: resolvedTheme === "dark" ? "dark" : "light" }}
-                            className="border border-input bg-background text-foreground rounded px-2 py-1 text-sm"
-                            disabled={isPending || isUploading}
-                        >
-                            <option value="image">Image</option>
-                            <option value="video">Video</option>
-                        </select>
+                {/* Add from URL */}
+                <Tabs
+                    value={urlMediaType}
+                    onValueChange={(v) => setUrlMediaType(v as "image" | "video")}
+                    className="rounded-xl border border-border/80 bg-muted/20 p-3"
+                >
+                    <TabsList className="h-9 w-full max-w-md">
+                        <TabsTrigger value="image" className="flex-1" disabled={isPending}>
+                            Image link
+                        </TabsTrigger>
+                        <TabsTrigger value="video" className="flex-1" disabled={isPending}>
+                            Video link
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="image" className="mt-3 space-y-2">
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                            Paste a direct link to an image file (for example ending in .jpg or .png). We download it and
+                            host it for your post.
+                        </p>
+                    </TabsContent>
+                    <TabsContent value="video" className="mt-3 space-y-2">
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                            <span className="font-medium text-foreground/90">YouTube or Vimeo</span> — paste the page
+                            URL; it embeds and plays inside your site (no heavy upload).{" "}
+                            <span className="font-medium text-foreground/90">Direct file</span> — paste a .mp4 / .webm
+                            URL to store it on our CDN like a file upload.
+                        </p>
+                    </TabsContent>
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
                         <Input
                             type="url"
-                            placeholder={`Paste ${urlMediaType} URL here...`}
+                            placeholder={
+                                urlMediaType === "image"
+                                    ? "https://example.com/photo.jpg"
+                                    : "YouTube, Vimeo, or direct .mp4 / .webm URL"
+                            }
                             value={urlInput}
                             onChange={(e) => setUrlInput(e.target.value)}
                             disabled={isPending || isUploading}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
                                     e.preventDefault()
-                                    handleUrlUpload()
+                                    void handleUrlUpload()
                                 }
                             }}
                             className="flex-1"
+                            style={{ colorScheme: resolvedTheme === "dark" ? "dark" : "light" }}
                         />
                         <Button
                             type="button"
-                            onClick={handleUrlUpload}
+                            onClick={() => void handleUrlUpload()}
                             disabled={isPending || isUploading || !urlInput.trim()}
-                            variant="outline"
-                            className="flex items-center gap-2"
+                            variant="secondary"
+                            className="shrink-0 gap-2 sm:min-w-[7rem]"
                         >
                             {isUploading ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
                                 <LinkIcon className="h-4 w-4" />
                             )}
-                            Upload
+                            Add
                         </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                        Paste the URL, choose media type, then click upload
-                    </p>
-                </div>
+                </Tabs>
 
                 {/* Image Preview Grid */}
                 {imageUrls.length > 0 && (
@@ -595,14 +637,17 @@ function PostForm({ post, mode = "create" }: PostFormProps){
                 {/* Video Preview Grid */}
                 {videoUrls.length > 0 && (
                     <div className="space-y-2">
-                        <p className="text-sm font-medium">Uploaded Videos ({videoUrls.length})</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <p className="text-sm font-medium">Videos ({videoUrls.length})</p>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             {videoUrls.map((url, index) => (
-                                <div key={index} className="relative group rounded-lg overflow-hidden border">
-                                    <video
+                                <div
+                                    key={index}
+                                    className="relative group aspect-video max-h-72 w-full overflow-hidden rounded-xl border bg-black shadow-sm"
+                                >
+                                    <PostVideo
                                         src={url}
-                                        controls
-                                        className="w-full h-52 bg-black"
+                                        frameClassName="h-full w-full"
+                                        className="h-full w-full"
                                     />
                                     <Button
                                         type="button"

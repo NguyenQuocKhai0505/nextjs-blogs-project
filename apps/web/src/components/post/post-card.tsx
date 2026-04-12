@@ -23,6 +23,7 @@ import CommentThreadDialog from "./comment-thread-dialog"
 import { useLocale } from "@/lib/i18n/locale-context"
 import { confirmToast } from "@/lib/confirm-toast"
 import Lightbox from "@/components/media/lightbox"
+import { PostVideo } from "@/components/media/post-video"
 
 function parseMediaField(media?: string | string[] | null): string[] {
   if (!media) return []
@@ -397,12 +398,11 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
                 {t("post.videoLabel")}
               </p>
               <div className="overflow-hidden rounded-2xl border bg-black ring-1 ring-border/40">
-                <video
+                <PostVideo
                   src={videos[0]}
-                  className="aspect-video w-full max-h-[min(420px,70vh)] object-contain"
-                  controls
                   muted
-                  playsInline
+                  frameClassName="aspect-video w-full max-h-[min(420px,70vh)]"
+                  className="w-full"
                 />
               </div>
             </div>

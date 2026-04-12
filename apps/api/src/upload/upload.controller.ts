@@ -10,6 +10,7 @@ import { FilesInterceptor } from "@nestjs/platform-express"
 import { v2 as cloudinary } from "cloudinary"
 
 import { UploadFromUrlDto } from "./dto/upload-from-url.dto.js"
+import { isPassthroughEmbedVideoUrl } from "./embed-video-url.js"
 
 const IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"]
 const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"]
@@ -105,6 +106,14 @@ export class UploadController {
   @Post("from-url")
   async uploadFromUrl(@Body() dto: UploadFromUrlDto) {
     const resourceType: MediaType = dto.mediaType === "video" ? "video" : "image"
+
+    if (resourceType === "video" && isPassthroughEmbedVideoUrl(dto.mediaUrl)) {
+      return {
+        success: true,
+        imageUrls: [] as string[],
+        videoUrls: [dto.mediaUrl.trim()],
+      }
+    }
 
     try {
       const result = await new Promise<{ secure_url: string }>((resolve, reject) => {

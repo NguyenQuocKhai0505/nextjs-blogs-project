@@ -8,6 +8,7 @@ import { Heart, MessageCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-rea
 import { toast } from "sonner"
 import { confirmToast } from "@/lib/confirm-toast"
 import Lightbox from "@/components/media/lightbox"
+import { PostVideo } from "@/components/media/post-video"
 
 import { authFetch } from "@/lib/auth-fetch"
 import { getAccessToken } from "@/lib/token"
@@ -256,7 +257,11 @@ export default function PostDetailClient({
                 key={i}
                 className="overflow-hidden rounded-2xl border bg-black shadow-sm ring-1 ring-border/40"
               >
-                <video src={src} controls className="aspect-video w-full max-h-[70vh] object-contain" playsInline />
+                <PostVideo
+                  src={src}
+                  frameClassName="aspect-video w-full max-h-[70vh]"
+                  className="w-full"
+                />
               </div>
             ))}
           </div>
