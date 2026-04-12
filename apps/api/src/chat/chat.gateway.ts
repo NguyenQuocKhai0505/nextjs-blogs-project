@@ -10,10 +10,11 @@ import { JwtService } from "@nestjs/jwt"
 import type { Server, Socket } from "socket.io"
 import { ChatEvents } from "./chat.events.js"
 import { PrismaService } from "../prisma/prisma.service.js"
+import { webOrigin } from "../common/web-origin.js"
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.WEB_URL ?? "http://localhost:3000",
+    origin: webOrigin(),
     credentials: true,
   },
 })
