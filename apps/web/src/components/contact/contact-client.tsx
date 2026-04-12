@@ -534,7 +534,9 @@ export default function ContactClient({
             ) : (
               <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 xl:max-w-5xl">
                 {messages.map((m) => {
-                  const isMine = Boolean(me?.id && m.senderId === me.id)
+                  const viewerId = me?.id
+                  const senderKey = m.senderId || m.sender?.id
+                  const isMine = Boolean(viewerId && senderKey && senderKey === viewerId)
                   const isRevoked = Boolean(m.revokedAt)
                   const canRecall =
                     isMine &&
@@ -551,7 +553,7 @@ export default function ContactClient({
                       key={m.id}
                       className={cn(
                         "flex w-full items-end gap-2",
-                        isMine ? "flex-row-reverse justify-end" : "flex-row justify-start"
+                        isMine ? "flex-row justify-end" : "flex-row justify-start"
                       )}
                     >
                       {!isMine ? (
@@ -569,9 +571,7 @@ export default function ContactClient({
                             </span>
                           )}
                         </div>
-                      ) : (
-                        <div className="w-8 shrink-0" aria-hidden />
-                      )}
+                      ) : null}
                       <div
                         className={cn(
                           "flex max-w-[min(100%,34rem)] flex-col gap-1",
@@ -586,6 +586,7 @@ export default function ContactClient({
                         <div
                           className={cn(
                             "flex items-end gap-1",
+                            /* reverse: recall menu sits between bubble and center of thread */
                             isMine ? "flex-row-reverse" : "flex-row"
                           )}
                         >
@@ -666,6 +667,7 @@ export default function ContactClient({
                           {timeLabel}
                         </span>
                       </div>
+                      {isMine ? <div className="mb-5 w-8 shrink-0" aria-hidden /> : null}
                     </div>
                   )
                 })}
