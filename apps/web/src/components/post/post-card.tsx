@@ -73,20 +73,28 @@ function PostMediaGrid({
 
   if (n === 1) {
     return (
-      <button
-        type="button"
-        className={`${cellClass} aspect-[16/9] w-full`}
-        onClick={() => onOpen(0)}
-        aria-label="Open image"
-      >
-        <Img src={imageUrls[0]} alt="" sizes="(max-width: 768px) 100vw, 640px" priority />
-      </button>
+      <div className="mx-auto w-full max-w-2xl rounded-xl border border-border/70 bg-muted/40 p-2.5 shadow-sm ring-1 ring-border/30">
+        <button
+          type="button"
+          className="group relative block aspect-[16/9] w-full overflow-hidden rounded-lg bg-background/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          onClick={() => onOpen(0)}
+          aria-label="Open image"
+        >
+          <Img
+            src={imageUrls[0]}
+            alt=""
+            sizes="(max-width: 768px) 88vw, 640px"
+            priority
+            className="object-contain object-center transition-transform duration-300 group-hover:scale-[1.01]"
+          />
+        </button>
+      </div>
     )
   }
 
   if (n === 2) {
     return (
-      <div className="grid h-[220px] grid-cols-2 gap-0.5 bg-border">
+      <div className="grid h-[220px] grid-cols-2 gap-0.5 overflow-hidden rounded-xl bg-border ring-1 ring-border/50">
         {imageUrls.slice(0, 2).map((src, i) => (
           <button
             key={i}
@@ -104,7 +112,7 @@ function PostMediaGrid({
 
   if (n === 3) {
     return (
-      <div className="grid h-[280px] grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] gap-0.5 bg-border">
+      <div className="grid h-[280px] grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] gap-0.5 overflow-hidden rounded-xl bg-border ring-1 ring-border/50">
         <button
           type="button"
           className={`${cellClass} row-span-2`}
@@ -125,7 +133,7 @@ function PostMediaGrid({
 
   if (n === 4) {
     return (
-      <div className="grid h-[300px] grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] grid-rows-2 gap-0.5 bg-border">
+      <div className="grid h-[300px] grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] grid-rows-2 gap-0.5 overflow-hidden rounded-xl bg-border ring-1 ring-border/50">
         <button type="button" className={cellClass} onClick={() => onOpen(0)} aria-label="Open image">
           <Img src={imageUrls[0]} alt="" sizes="(max-width: 768px) 55vw, 360px" priority />
         </button>
@@ -147,7 +155,7 @@ function PostMediaGrid({
   const extra = n > 5 ? n - 5 : 0
 
   return (
-    <div className="flex h-[320px] gap-0.5 bg-border">
+    <div className="flex h-[320px] gap-0.5 overflow-hidden rounded-xl bg-border ring-1 ring-border/50">
       <div className="flex min-w-0 flex-[1.55] flex-col gap-0.5">
         {left.map((src, i) => (
           <button
@@ -374,7 +382,7 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
       </CardHeader>
 
       {hasMedia ? (
-        <div className="border-t border-border/60">
+        <div className="border-t border-border/60 px-4 py-3 sm:px-5">
           {images.length > 0 ? (
             <PostMediaGrid
               imageUrls={images}
@@ -384,7 +392,7 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
               }}
             />
           ) : videos[0] ? (
-            <div className="space-y-2 p-3 pt-4">
+            <div className="space-y-2 -mx-1 sm:-mx-0">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {t("post.videoLabel")}
               </p>

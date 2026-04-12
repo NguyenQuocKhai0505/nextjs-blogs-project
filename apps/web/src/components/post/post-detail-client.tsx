@@ -208,19 +208,39 @@ export default function PostDetailClient({
       </div>
 
       {images.length > 0 ? (
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div
+          className={
+            images.length === 1
+              ? "mx-auto w-full max-w-3xl rounded-xl border border-border/70 bg-muted/40 p-2.5 shadow-sm ring-1 ring-border/30"
+              : "grid gap-3 sm:grid-cols-2"
+          }
+        >
           {images.map((src, i) => (
             <button
               key={i}
               type="button"
-              className="group relative aspect-video overflow-hidden rounded-2xl border bg-muted text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className={
+                images.length === 1
+                  ? "group relative aspect-video w-full overflow-hidden rounded-lg bg-background/70 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  : "group relative aspect-video overflow-hidden rounded-xl border border-border/60 bg-muted/25 text-left shadow-sm ring-1 ring-border/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              }
               onClick={() => {
                 setLightboxIndex(i)
                 setLightboxOpen(true)
               }}
               aria-label="Open image"
             >
-              <Image src={src} alt="" fill className="object-cover transition-transform duration-300 group-hover:scale-[1.02]" sizes="(max-width: 768px) 100vw, 50vw" />
+              <Image
+                src={src}
+                alt=""
+                fill
+                className={
+                  images.length === 1
+                    ? "object-contain object-center transition-transform duration-300 group-hover:scale-[1.01]"
+                    : "object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                }
+                sizes={images.length === 1 ? "(max-width: 768px) 92vw, 768px" : "(max-width: 768px) 100vw, 50vw"}
+              />
               <span className="pointer-events-none absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
             </button>
           ))}
