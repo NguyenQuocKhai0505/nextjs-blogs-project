@@ -12,6 +12,11 @@ type MessageInputProps = {
   disabled?: boolean
 }
 
+function PendingImagePreview({ url, className }: { url: string; className?: string }) {
+  // eslint-disable-next-line @next/next/no-img-element -- blob / object URL preview
+  return <img src={url} alt="Preview" className={className} />
+}
+
 export default function MessageInput({ onSend, disabled }: MessageInputProps) {
   const { t } = useLocale()
   const [value, setValue] = useState("")
@@ -106,9 +111,8 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
               {pendingMedia.type === "image" ? (
                 <div className="flex flex-col gap-1">
                   <span className="font-medium">{t("chat.inputImagePending")}</span>
-                  <img
-                    src={pendingMedia.url}
-                    alt="Preview"
+                  <PendingImagePreview
+                    url={pendingMedia.url}
                     className="max-h-28 w-auto rounded-md object-cover"
                   />
                 </div>

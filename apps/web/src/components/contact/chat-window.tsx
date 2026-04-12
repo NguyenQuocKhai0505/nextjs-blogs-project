@@ -69,6 +69,7 @@ export default function ChatWindow({ messages, currentUserId, loading, onDeleteM
                     )}
                   >
                     {message.imageUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element -- remote chat URLs (Cloudinary etc.)
                       <img
                         src={message.imageUrl}
                         alt="image"

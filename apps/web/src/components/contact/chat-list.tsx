@@ -27,8 +27,7 @@ export default function ChatList({
 }: ChatListProps) {
   const { t } = useLocale()
   const [searchTerm, setSearchTerm] = useState("")
-  const [searchResults,setSearchResults] = useState<ContactUser[]>([])
-  const [isSearching,setIsSearching] = useState(false)
+  const [searchResults, setSearchResults] = useState<ContactUser[]>([])
 
   /** Legacy list UI is 1:1 only; group chats are handled on the main /contact page. */
   const directOnly = useMemo(
@@ -53,7 +52,6 @@ export default function ChatList({
         setSearchResults([])
         return
       }
-      setIsSearching(true)
       try {
         const res = await authFetch(
           `/me/mutual-friends?q=${encodeURIComponent(searchTerm.trim())}`,
@@ -68,8 +66,6 @@ export default function ChatList({
       } catch (error) {
         console.error("Failed to search mutual friends:", error)
         setSearchResults([])
-      } finally {
-        setIsSearching(false)
       }
     }
     void searchUser()

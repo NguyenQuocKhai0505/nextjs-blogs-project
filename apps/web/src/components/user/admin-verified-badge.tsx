@@ -12,10 +12,11 @@ export function AdminVerifiedBadge({
   label: string
 }) {
   return (
-    <BadgeCheck
-      className={cn("size-[1.15em] shrink-0 text-sky-500 dark:text-sky-400", className)}
-      aria-label={label}
-      title={label}
-    />
+    <span className="inline-flex shrink-0" title={label}>
+      <BadgeCheck
+        className={cn("size-[1.15em] text-sky-500 dark:text-sky-400", className)}
+        aria-label={label}
+      />
+    </span>
   )
 }
