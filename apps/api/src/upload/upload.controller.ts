@@ -23,6 +23,29 @@ function getResourceType(mime: string): MediaType {
   return "image"
 }
 
+const EXT_TO_MIME: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  mp4: "video/mp4",
+  mov: "video/quicktime",
+  webm: "video/webm",
+  m4v: "video/mp4",
+}
+
+/** Browsers sometimes send octet-stream or empty MIME; infer from filename. */
+function effectiveMime(originalname: string, mimetype: string): string {
+  const allowed = new Set([...IMAGE_TYPES, ...VIDEO_TYPES])
+  if (allowed.has(mimetype)) return mimetype
+  const dot = originalname.lastIndexOf(".")
+  const ext = dot >= 0 ? originalname.slice(dot + 1).toLowerCase() : ""
+  const fromExt = EXT_TO_MIME[ext]
+  if (fromExt && allowed.has(fromExt)) return fromExt
+  return mimetype
+}
+
 @Controller("upload")
 export class UploadController {
   constructor() {
@@ -56,11 +79,12 @@ export class UploadController {
 
     const uploads = await Promise.all(
       files.map(async file => {
-        if (!allowedTypes.has(file.mimetype)) {
+        const mime = effectiveMime(file.originalname, file.mimetype)
+        if (!allowedTypes.has(mime)) {
           throw new BadRequestException(`Invalid file type: ${file.originalname}`)
         }
 
-        const resourceType = getResourceType(file.mimetype)
+        const resourceType = getResourceType(mime)
         const maxSize = resourceType === "video" ? 50 * 1024 * 1024 : 10 * 1024 * 1024
         if (file.size > maxSize) {
           throw new BadRequestException(

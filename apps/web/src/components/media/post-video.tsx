@@ -3,6 +3,26 @@
 import { cn } from "@/lib/utils"
 import { parseVideoSource } from "@/lib/embed-video"
 
+function youtubeEmbedUrl(videoId: string): string {
+  const q = new URLSearchParams({
+    modestbranding: "1",
+    rel: "0",
+    iv_load_policy: "3",
+    playsinline: "1",
+  })
+  return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?${q}`
+}
+
+function vimeoEmbedUrl(videoId: string): string {
+  const q = new URLSearchParams({
+    title: "0",
+    byline: "0",
+    portrait: "0",
+    badge: "0",
+  })
+  return `https://player.vimeo.com/video/${encodeURIComponent(videoId)}?${q}`
+}
+
 type PostVideoProps = {
   src: string
   className?: string
@@ -19,7 +39,7 @@ export function PostVideo({ src, className, frameClassName, muted }: PostVideoPr
     return (
       <div className={cn("relative w-full overflow-hidden", frameClassName, className)}>
         <iframe
-          src={`https://www.youtube.com/embed/${encodeURIComponent(parsed.id)}`}
+          src={youtubeEmbedUrl(parsed.id)}
           className="absolute inset-0 h-full w-full border-0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
@@ -34,7 +54,7 @@ export function PostVideo({ src, className, frameClassName, muted }: PostVideoPr
     return (
       <div className={cn("relative w-full overflow-hidden", frameClassName, className)}>
         <iframe
-          src={`https://player.vimeo.com/video/${encodeURIComponent(parsed.id)}`}
+          src={vimeoEmbedUrl(parsed.id)}
           className="absolute inset-0 h-full w-full border-0"
           allow="autoplay; fullscreen; picture-in-picture"
           allowFullScreen

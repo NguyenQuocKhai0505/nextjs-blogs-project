@@ -254,51 +254,83 @@ function PostForm({ post, mode = "create" }: PostFormProps){
         })
     }
     //UPLOAD FILE
-    const handleFileUpload = async (e:React.ChangeEvent<HTMLInputElement>) =>{
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || [])
-        if(files.length === 0) return 
-        const IMAGE_TYPES = ["image/jpeg","image/jpg","image/png","image/webp","image/gif"]
-        const VIDEO_TYPES = ["video/mp4","video/quicktime","video/webm"]
+        if (files.length === 0) return
+        const IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"]
+        const VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"]
         const MAX_IMAGE_SIZE = 10 * 1024 * 1024 // 10MB
         const MAX_VIDEO_SIZE = 50 * 1024 * 1024 // 50MB
 
-        for(const file of files){
-            const isImage = IMAGE_TYPES.includes(file.type)
-            const isVideo = VIDEO_TYPES.includes(file.type)
-            if(!isImage && !isVideo){
+        const extKind = (name: string): "image" | "video" | null => {
+            const m = name.toLowerCase().match(/\.([a-z0-9]+)$/)
+            const ext = m?.[1] ?? ""
+            if (["jpg", "jpeg", "png", "webp", "gif"].includes(ext)) return "image"
+            if (["mp4", "mov", "webm", "m4v"].includes(ext)) return "video"
+            return null
+        }
+
+        for (const file of files) {
+            const byMimeImage = IMAGE_TYPES.includes(file.type)
+            const byMimeVideo = VIDEO_TYPES.includes(file.type)
+            const byExt = !file.type ? extKind(file.name) : null
+            const isImage = byMimeImage || byExt === "image"
+            const isVideo = byMimeVideo || byExt === "video"
+            if (!isImage && !isVideo) {
                 toast.error(`File ${file.name} is not a supported format`)
                 return
             }
             const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE
-            if(file.size > maxSize){
+            if (file.size > maxSize) {
                 toast.error(`File ${file.name} exceeds ${isVideo ? "50MB" : "10MB"} limit`)
-                return 
+                return
             }
         }
         setIsUploading(true)
 
-        try{
+        try {
             const formData = new FormData()
-            files.forEach(file =>{
+            files.forEach((file) => {
                 formData.append("files", file)
             })
-            const response = await fetch(apiUrl("/upload"),{
-                method:"POST",
-                body:formData
+            const response = await fetch(apiUrl("/upload"), {
+                method: "POST",
+                body: formData,
             })
-            const result = await response.json()
+            const result = await response.json().catch(() => ({}))
 
-            if(result.success){
-                setImageUrls(prev => [...prev, ...result.imageUrls])
-                toast.success(`${result.imageUrls.length} image(s) uploaded successfully`)
-            }else{
-                toast.error(result.error || "Failed to upload images")
+            if (!response.ok) {
+                const msg =
+                    typeof result?.message === "string"
+                        ? result.message
+                        : Array.isArray(result?.message)
+                          ? result.message.join(", ")
+                          : "Upload failed"
+                toast.error(msg)
+                return
             }
-        }catch{
-            toast.error("Failed to upload images")
-        }finally{
+
+            if (result.success) {
+                const newImages: string[] = result.imageUrls ?? []
+                const newVideos: string[] = result.videoUrls ?? []
+                if (newImages.length) setImageUrls((prev) => [...prev, ...newImages])
+                if (newVideos.length) setVideoUrls((prev) => [...prev, ...newVideos])
+                const parts: string[] = []
+                if (newImages.length) parts.push(`${newImages.length} image(s)`)
+                if (newVideos.length) parts.push(`${newVideos.length} video(s)`)
+                if (parts.length) {
+                    toast.success(`Uploaded: ${parts.join(", ")}`)
+                } else {
+                    toast.error("Server returned no media URLs")
+                }
+            } else {
+                toast.error(result.error || "Upload failed")
+            }
+        } catch {
+            toast.error("Upload failed")
+        } finally {
             setIsUploading(false)
-            if(fileInputRef.current){
+            if (fileInputRef.current) {
                 fileInputRef.current.value = ""
             }
         }
