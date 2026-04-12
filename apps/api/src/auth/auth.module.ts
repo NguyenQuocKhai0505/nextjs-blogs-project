@@ -9,7 +9,7 @@ import { GoogleStrategy } from "./strategies/google.strategies.js"
   imports: [JwtModule.register({}), PassportModule.register({ session: false })],
   controllers: [AuthController],
   providers: [AuthService, GoogleStrategy],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}
 

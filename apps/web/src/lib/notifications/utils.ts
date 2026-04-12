@@ -1,19 +1,36 @@
-export type ClientNotificationMeta = {
-  slug?: string
-  postId?: number
-  conversationId?: number
-  commentPreview?: string
-  messagePreview?: string
+/**
+ * New notifications system (Postgres/Prisma):
+ * - Backend REST: /app-notifications
+ * - Backend socket events: notif:new, notif:unread_count (namespace /ws)
+ *
+ * We keep the UI types here to avoid leaking Prisma types into the web app.
+ */
+export type AppNotificationType =
+  | "POST_LIKED"
+  | "POST_COMMENTED"
+  | "FOLLOWED"
+  | "SYSTEM"
+
+export type AppNotificationTargetKind = "post" | "comment" | "user" | "system"
+
+export type AppNotificationMeta = {
+  postTitle?: string
+  commentId?: number
   [key: string]: unknown
 }
 
-export type ClientNotification = {
+export type AppNotification = {
   id: number
-  type: string
-  meta: ClientNotificationMeta
-  read: boolean
+  type: AppNotificationType | string
+  targetKind: AppNotificationTargetKind | string
+  targetId: string
+  targetSlug?: string | null
+  meta: AppNotificationMeta
+  readAt?: string | null
   createdAt: string
-  actor: { id: string; name: string; avatar?: string | null }
+  updatedAt: string
+  actorCount: number
+  actorIds: unknown
 }
 
 export type NotificationToastPayload = {
@@ -24,51 +41,49 @@ export type NotificationToastPayload = {
 }
 
 const notificationCopy: Record<string, string> = {
-  like: "liked your post",
-  comment: "commented on your post",
-  follow: "started following you",
-  message: "sent you a message",
+  POST_LIKED: "liked your post",
+  POST_COMMENTED: "commented on your post",
+  FOLLOWED: "started following you",
+  SYSTEM: "sent you a notification",
 }
 
-export function getNotificationText(notification: ClientNotification): string {
-  const actorName = notification.actor?.name ?? "Someone"
+export function isRead(notification: AppNotification): boolean {
+  return !!notification.readAt
+}
+
+export function getNotificationText(notification: AppNotification): string {
+  // We aggregate actors on backend; if you later enrich meta with actor snapshots,
+  // you can render real names here. For now keep it simple and consistent.
+  const who = notification.actorCount > 1 ? `${notification.actorCount} people` : "Someone"
   const actionText = notificationCopy[notification.type] ?? "triggered an activity"
-  return `${actorName} ${actionText}`
+  return `${who} ${actionText}`
 }
 
-export function getNotificationNavigatePath(notification: ClientNotification): string {
-  switch (notification.type) {
-    case "like":
-    case "comment":
-      if (notification.meta?.slug) return `/post/${notification.meta.slug}`
-      if (notification.meta?.postId) return `/post/${notification.meta.postId}`
-      return "/"
-    case "follow":
-      return `/profile/${notification.actor.id}`
-    case "message":
-      if (notification.meta?.conversationId) return `/contact?conversation=${notification.meta.conversationId}`
-      return `/contact?user=${notification.actor.id}`
-    default:
-      return "/"
+export function getNotificationNavigatePath(notification: AppNotification): string {
+  if (notification.targetKind === "post") {
+    if (notification.targetSlug) return `/post/${notification.targetSlug}`
+    return "/"
   }
+  if (notification.targetKind === "user") {
+    // targetId is the userId for FOLLOWED
+    return `/profile/${notification.targetId}`
+  }
+  return "/"
 }
 
-export function getNotificationToastPayload(notification: ClientNotification): NotificationToastPayload {
+export function getNotificationToastPayload(notification: AppNotification): NotificationToastPayload {
   const base = getNotificationText(notification)
   let description: string | undefined
 
   switch (notification.type) {
-    case "like":
+    case "POST_LIKED":
       description = "Open the post to see more details."
       break
-    case "comment":
-      description = notification.meta?.commentPreview ?? "View the conversation to read the comment."
+    case "POST_COMMENTED":
+      description = "Open the post to read the comment."
       break
-    case "follow":
+    case "FOLLOWED":
       description = "Check their profile to follow back."
-      break
-    case "message":
-      description = notification.meta?.messagePreview ?? "Jump into the chat to continue the conversation."
       break
     default:
       description = "See more details inside the app."
@@ -80,7 +95,7 @@ export function getNotificationToastPayload(notification: ClientNotification): N
     title: base,
     description,
     actionPath,
-    actionLabel: notification.type === "message" ? "Reply" : "View",
+    actionLabel: "View",
   }
 }
 

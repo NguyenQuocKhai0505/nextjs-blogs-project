@@ -17,7 +17,15 @@ import { confirmToast } from "@/lib/confirm-toast"
 
 type Mode = "create" | "edit"
 
-export default function CategoriesBar({ viewerRole }: { viewerRole: "USER" | "ADMIN" | null }) {
+export default function CategoriesBar({
+  viewerRole,
+  selectedCategoryIds,
+  onSelectedCategoryIdsChange,
+}: {
+  viewerRole: "USER" | "ADMIN" | null
+  selectedCategoryIds: number[]
+  onSelectedCategoryIdsChange: (next: number[]) => void
+}) {
   const isAdmin = viewerRole === "ADMIN"
   const [categories, setCategories] = useState<PostCategory[]>([])
   const [busy, setBusy] = useState(false)
@@ -59,6 +67,13 @@ export default function CategoriesBar({ viewerRole }: { viewerRole: "USER" | "AD
     setSlug("")
     setSortOrder("0")
     setOpen(true)
+  }
+
+  const toggleCategory = (id: number) => {
+    const set = new Set(selectedCategoryIds)
+    if (set.has(id)) set.delete(id)
+    else set.add(id)
+    onSelectedCategoryIdsChange([...set])
   }
 
   const openEdit = (c: PostCategory) => {
@@ -173,16 +188,36 @@ export default function CategoriesBar({ viewerRole }: { viewerRole: "USER" | "AD
           ref={scrollerRef}
           className="ks-scrollbar-x mt-3 flex gap-2 overflow-x-auto pb-2 pr-1 [scrollbar-width:thin]"
         >
+          <button
+            type="button"
+            onClick={() => onSelectedCategoryIdsChange([])}
+            className={cn(
+              "shrink-0 rounded-full border px-3 py-1.5 text-sm transition-colors",
+              selectedCategoryIds.length === 0
+                ? "bg-primary text-primary-foreground border-primary/30"
+                : "bg-background/60 hover:bg-background/80"
+            )}
+          >
+            All
+          </button>
           {categories.map((c) => (
             <div
               key={c.id}
               className={cn(
-                "group relative flex shrink-0 items-center gap-2 rounded-full border bg-background/60 px-3 py-1.5 text-sm",
-                "hover:bg-background/80"
+                "group relative flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
+                selectedCategoryIds.includes(c.id)
+                  ? "border-primary/40 bg-primary/10 text-foreground"
+                  : "bg-background/60 hover:bg-background/80"
               )}
               title={c.slug}
             >
-              <span className="max-w-[180px] truncate">{c.name}</span>
+              <button
+                type="button"
+                className="max-w-[180px] truncate"
+                onClick={() => toggleCategory(c.id)}
+              >
+                {c.name}
+              </button>
 
               {isAdmin ? (
                 <>

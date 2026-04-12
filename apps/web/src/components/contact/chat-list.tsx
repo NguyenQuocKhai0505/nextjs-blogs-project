@@ -2,6 +2,7 @@
 
 import { useMemo, useState,useEffect } from "react"
 import { ContactSummary } from "./contact-client"
+import { useLocale } from "@/lib/i18n/locale-context"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -24,18 +25,26 @@ export default function ChatList({
   onRefresh,
   onDeleteConversation,
 }: ChatListProps) {
+  const { t } = useLocale()
   const [searchTerm, setSearchTerm] = useState("")
   const [searchResults,setSearchResults] = useState<ContactUser[]>([])
   const [isSearching,setIsSearching] = useState(false)
+
+  /** Legacy list UI is 1:1 only; group chats are handled on the main /contact page. */
+  const directOnly = useMemo(
+    () => contacts.filter((c): c is ContactSummary & { otherUser: ContactUser } => c.otherUser != null),
+    [contacts]
+  )
+
   const filteredContacts = useMemo(()=>{
-    if(!searchTerm.trim()) return contacts
+    if(!searchTerm.trim()) return directOnly
     const keyword = searchTerm.toLowerCase()
-    return contacts.filter(contacts => {
-      const name = contacts.otherUser.name?.toLowerCase() ?? ""
-      const email = contacts.otherUser.email?.toLocaleLowerCase() ?? ""
+    return directOnly.filter((row) => {
+      const name = row.otherUser.name?.toLowerCase() ?? ""
+      const email = row.otherUser.email?.toLocaleLowerCase() ?? ""
       return name.includes(keyword) || email.includes(keyword)
     })
-  },[contacts,searchTerm])
+  },[directOnly,searchTerm])
 
   // Mutual friends only (same rule as main chat page).
   useEffect(() => {
@@ -67,9 +76,9 @@ export default function ChatList({
   }, [searchTerm])
   //Combine filtered contacts with search results 
   const displayContacts = useMemo(()=>{
-    if(!searchTerm.trim()) return contacts
+    if(!searchTerm.trim()) return directOnly
 
-    const contactIds = new Set(contacts.map(c => c.otherUser.id))
+    const contactIds = new Set(directOnly.map(c => c.otherUser.id))
     const newUsersFromSearch = searchResults
       .filter(user => !contactIds.has(user.id)) //loai bo user da co trong contacts
       .map(user => ({
@@ -80,7 +89,7 @@ export default function ChatList({
         unreadCount: 0,
       }))
       return [...filteredContacts,...newUsersFromSearch]
-  },[filteredContacts,searchResults,searchTerm])
+  },[directOnly, filteredContacts,searchResults,searchTerm])
   return (
     <aside className="border-r bg-muted/40 p-4">
       <div className="mb-4 flex items-center justify-between">
@@ -88,7 +97,7 @@ export default function ChatList({
           <p className="text-sm font-semibold uppercase text-muted-foreground">
             Contacts
           </p>
-          <p className="text-2xl font-bold">{contacts.length}</p>
+          <p className="text-2xl font-bold">{directOnly.length}</p>
         </div>
         <Button variant="ghost" size="icon-sm" onClick={onRefresh}>
           <RefreshCcw className="size-4" />
@@ -141,7 +150,9 @@ export default function ChatList({
                 <div className="flex min-w-0 flex-1 flex-col">
                   <p className="truncate text-sm font-semibold">{contact.otherUser.name}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {contact.lastMessage?.content ?? "Say hi 👋"}
+                    {contact.lastMessage?.revokedAt
+                      ? t("chat.revokedPreview")
+                      : (contact.lastMessage?.content ?? "Say hi 👋")}
                   </p>
                 </div>
                 {contact.unreadCount ? (

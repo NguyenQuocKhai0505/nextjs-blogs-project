@@ -11,6 +11,7 @@
     "postinstall": "node scripts/fix-prisma-client-link.mjs"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@nestjs/common": "^11.1.6",
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.1.6",
@@ -18,6 +19,7 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.6",
     "@nestjs/platform-socket.io": "^11.1.18",
+    "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^11.1.18",
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { Heart, MessageCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { confirmToast } from "@/lib/confirm-toast"
+import Lightbox from "@/components/media/lightbox"
 
 import { authFetch } from "@/lib/auth-fetch"
 import { getAccessToken } from "@/lib/token"
@@ -60,6 +61,8 @@ export default function PostDetailClient({
   const router = useRouter()
   const images = parseMedia(post.imageUrls)
   const videos = parseMedia(post.videoUrls)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
 
   const [likeCount, setLikeCount] = useState(post.likeCount)
   const [liked, setLiked] = useState(false)
@@ -133,6 +136,13 @@ export default function PostDetailClient({
 
   return (
     <div className="space-y-6">
+      <Lightbox
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
+        images={images}
+        index={lightboxIndex}
+        onIndexChange={setLightboxIndex}
+      />
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 gap-3">
           <Link
@@ -200,9 +210,19 @@ export default function PostDetailClient({
       {images.length > 0 ? (
         <div className="grid gap-2 sm:grid-cols-2">
           {images.map((src, i) => (
-            <div key={i} className="relative aspect-video overflow-hidden rounded-2xl border bg-muted">
-              <Image src={src} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
-            </div>
+            <button
+              key={i}
+              type="button"
+              className="group relative aspect-video overflow-hidden rounded-2xl border bg-muted text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => {
+                setLightboxIndex(i)
+                setLightboxOpen(true)
+              }}
+              aria-label="Open image"
+            >
+              <Image src={src} alt="" fill className="object-cover transition-transform duration-300 group-hover:scale-[1.02]" sizes="(max-width: 768px) 100vw, 50vw" />
+              <span className="pointer-events-none absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
+            </button>
           ))}
         </div>
       ) : null}

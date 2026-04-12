@@ -12,6 +12,26 @@ enum UserRole {
   @@map("user_role")
 }
 
+enum NotificationType{
+  POST_LIKED
+  POST_COMMENTED 
+  FOLLOWED
+  SYSTEM
+}
+
+enum NotificationTargetKind{
+  post
+  comment
+  user
+  system
+}
+
+enum ConversationKind {
+  DIRECT
+  GROUP
+  @@map("conversation_kind")
+}
+
 model User {
   id                   String         @id @db.VarChar(255)
   name                 String         @db.VarChar(255)
@@ -33,6 +53,9 @@ model User {
   comments             Comment[]
   following            Follow[]       @relation("UserFollowing")
   followers            Follow[]       @relation("UserFollowers")
+  conversationMembers     ConversationMember[]
+  conversationReadStates ConversationReadState[]
+  conversationHides       ConversationHide[]
 
   @@map("user")
 }
@@ -129,17 +152,63 @@ model Comment {
 }
 
 model Conversation {
-  id        Int       @id @default(autoincrement())
-  user1Id   String    @map("user1_id") @db.VarChar(255)
-  user2Id   String    @map("user2_id") @db.VarChar(255)
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @default(now()) @map("updated_at")
-  user1     User      @relation("User1", fields: [user1Id], references: [id])
-  user2     User      @relation("User2", fields: [user2Id], references: [id])
-  messages  Message[]
+  id        Int              @id @default(autoincrement())
+  kind      ConversationKind @default(DIRECT) @map("kind")
+  title     String?          @map("title") @db.VarChar(255)
+  user1Id   String?          @map("user1_id") @db.VarChar(255)
+  user2Id   String?          @map("user2_id") @db.VarChar(255)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @default(now()) @map("updated_at")
+  user1     User?            @relation("User1", fields: [user1Id], references: [id])
+  user2     User?            @relation("User2", fields: [user2Id], references: [id])
+  messages   Message[]
+  members    ConversationMember[]
+  readStates ConversationReadState[]
+  hides      ConversationHide[]
 
-  @@unique([user1Id, user2Id], map: "conversations_user1_user2_unique")
   @@map("conversations")
+}
+
+/** User hid this conversation from their inbox (others unaffected). */
+model ConversationHide {
+  id               Int          @id @default(autoincrement())
+  userId           String       @map("user_id") @db.VarChar(255)
+  conversationId   Int          @map("conversation_id")
+  hiddenAt         DateTime     @default(now()) @map("hidden_at")
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation     Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conversationId], map: "conversation_hides_user_conv_unique")
+  @@index([conversationId], map: "conversation_hides_conv_idx")
+  @@map("conversation_hides")
+}
+
+model ConversationMember {
+  id             Int          @id @default(autoincrement())
+  conversationId Int          @map("conversation_id")
+  userId         String       @map("user_id") @db.VarChar(255)
+  joinedAt       DateTime     @default(now()) @map("joined_at")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId], map: "conversation_members_conv_user_unique")
+  @@map("conversation_members")
+}
+
+/** Per-user read cursor for a conversation (DIRECT + GROUP). Unread = inbound messages with id > lastReadMessageId. */
+model ConversationReadState {
+  id                Int      @id @default(autoincrement())
+  userId            String   @map("user_id") @db.VarChar(255)
+  conversationId    Int      @map("conversation_id")
+  lastReadMessageId Int      @default(0) @map("last_read_message_id")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conversationId], map: "conversation_read_state_user_conv_unique")
+  @@index([conversationId], map: "conversation_read_state_conv_idx")
+  @@map("conversation_read_states")
 }
 
 model Message {
@@ -150,6 +219,7 @@ model Message {
   imageUrl       String?      @map("image_url")
   videoUrl       String?      @map("video_url")
   read           Boolean      @default(false)
+  revokedAt      DateTime?    @map("revoked_at")
   createdAt      DateTime     @default(now()) @map("created_at")
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation(fields: [senderId], references: [id])
@@ -179,4 +249,32 @@ model Category {
   posts     Post[]
 
   @@map("categories")
+}
+
+
+model AppNotification {
+  id          Int      @id @default(autoincrement())
+  recipientId String   @map("recipient_id") @db.VarChar(255)
+  // Aggregation fields
+  actorIds    Json     @default("[]") @map("actor_ids")   // store string[]
+  actorCount  Int      @default(0) @map("actor_count")
+  type        NotificationType
+  targetKind  NotificationTargetKind @map("target_kind")
+  targetId    String   @map("target_id") @db.VarChar(255)
+  targetSlug  String?  @map("target_slug") @db.VarChar(255)
+  meta        Json     @default("{}")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  @@index([recipientId, createdAt(sort: Desc)], map: "app_notif_recipient_created_idx")
+  @@index([recipientId, readAt, updatedAt(sort: Desc)], map: "app_notif_recipient_read_updated_idx")
+  @@index([recipientId, type, targetKind, targetId, readAt], map: "app_notif_agg_lookup_idx")
+  @@map("app_notifications")
+}
+model AppNotificationCounter {
+  userId     String   @id @map("user_id") @db.VarChar(255)
+  unread     Int      @default(0)
+  lastReadAt DateTime? @map("last_read_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  @@map("app_notification_counters")
 }

@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation"
 import PostList from "@/components/post/post-list"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { ProfileNameWithBadge } from "@/components/user/profile-name-with-badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { apiUrl } from "@/lib/api"
 import ProfileFollowActions from "@/components/profile/profile-follow-actions"
@@ -60,7 +61,7 @@ export default async function UserProfilePage({params}:ProfilePageProps)
                                     <AvatarFallback className="text-2xl">{getInitials(userData.name)}</AvatarFallback>
                                 </Avatar>
                                 <div>
-                                    <CardTitle className="text-3xl mb-1">{userData.name}</CardTitle>
+                                    <ProfileNameWithBadge name={userData.name} role={userData.role} />
                                     {userData.email && <p className="text-muted-foreground">{userData.email}</p>}
                                     <div className="flex items-center gap-4 mt-2">
                                     <Stat label={posts.length === 1 ? "post" : "posts"} value={posts.length} />

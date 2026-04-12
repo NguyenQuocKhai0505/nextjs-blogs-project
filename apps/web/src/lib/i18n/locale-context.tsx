@@ -13,14 +13,23 @@ import { useRouter } from "next/navigation"
 
 import en from "@/messages/en.json"
 import ko from "@/messages/ko.json"
+import vi from "@/messages/vi.json"
 
-export type Locale = "en" | "ko"
+export type Locale = "en" | "ko" | "vi"
+
+/** BCP 47 tags for `Date#toLocaleString` / `toLocaleTimeString`. */
+export const localeBcp47: Record<Locale, string> = {
+  en: "en-US",
+  ko: "ko-KR",
+  vi: "vi-VN",
+}
 
 const STORAGE_KEY = "ksocial-locale"
 
 const catalogs: Record<Locale, Record<string, unknown>> = {
   en: en as Record<string, unknown>,
   ko: ko as Record<string, unknown>,
+  vi: vi as Record<string, unknown>,
 }
 
 function lookup(obj: unknown, path: string): string {
@@ -49,7 +58,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY) as Locale | null
-      if (stored === "ko" || stored === "en") {
+      if (stored === "ko" || stored === "en" || stored === "vi") {
         setLocaleState(stored)
       }
     } catch {
@@ -60,7 +69,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!ready) return
-    document.documentElement.lang = locale === "ko" ? "ko" : "en"
+    document.documentElement.lang = localeBcp47[locale].split("-")[0] ?? "en"
   }, [locale, ready])
 
   const setLocale = useCallback(
@@ -71,7 +80,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       } catch {
         /* ignore */
       }
-      document.documentElement.lang = next === "ko" ? "ko" : "en"
+      document.documentElement.lang = localeBcp47[next].split("-")[0] ?? "en"
       router.refresh()
     },
     [router]

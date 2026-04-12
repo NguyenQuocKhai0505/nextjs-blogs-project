@@ -6,6 +6,7 @@ import Header from "./header"
 import LeftSidebar from "./left-sidebar"
 import RightRail from "./right-rail"
 import MobileBottomNav from "./mobile-bottom-nav"
+import { AiChatWidget } from "@/components/ai/ai-chat-widget"
 
 export default function AppShell({
   children,
@@ -37,6 +38,7 @@ export default function AppShell({
       </div>
 
       <MobileBottomNav />
+      <AiChatWidget />
     </div>
   )
 }

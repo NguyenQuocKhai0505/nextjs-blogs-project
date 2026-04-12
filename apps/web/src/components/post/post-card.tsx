@@ -22,6 +22,7 @@ import { toast } from "sonner"
 import CommentThreadDialog from "./comment-thread-dialog"
 import { useLocale } from "@/lib/i18n/locale-context"
 import { confirmToast } from "@/lib/confirm-toast"
+import Lightbox from "@/components/media/lightbox"
 
 function parseMediaField(media?: string | string[] | null): string[] {
   if (!media) return []
@@ -36,17 +37,16 @@ function parseMediaField(media?: string | string[] | null): string[] {
 
 function PostMediaGrid({
   imageUrls,
-  postSlug,
+  onOpen,
 }: {
   imageUrls: string[]
-  postSlug: string
+  onOpen: (index: number) => void
 }) {
-  const href = `/post/${postSlug}`
   const n = imageUrls.length
   if (n === 0) return null
 
   const cellClass =
-    "relative block min-h-0 min-w-0 overflow-hidden bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    "group relative block min-h-0 min-w-0 overflow-hidden bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 
   const Img = ({
     src,
@@ -65,7 +65,7 @@ function PostMediaGrid({
       src={src}
       alt={alt}
       fill
-      className={className ?? "object-cover"}
+      className={className ?? "object-cover transition-transform duration-300 group-hover:scale-[1.02]"}
       sizes={sizes}
       priority={priority}
     />
@@ -73,9 +73,14 @@ function PostMediaGrid({
 
   if (n === 1) {
     return (
-      <Link href={href} className={`${cellClass} aspect-[16/9] w-full`}>
+      <button
+        type="button"
+        className={`${cellClass} aspect-[16/9] w-full`}
+        onClick={() => onOpen(0)}
+        aria-label="Open image"
+      >
         <Img src={imageUrls[0]} alt="" sizes="(max-width: 768px) 100vw, 640px" priority />
-      </Link>
+      </button>
     )
   }
 
@@ -83,9 +88,15 @@ function PostMediaGrid({
     return (
       <div className="grid h-[220px] grid-cols-2 gap-0.5 bg-border">
         {imageUrls.slice(0, 2).map((src, i) => (
-          <Link key={i} href={href} className={cellClass}>
+          <button
+            key={i}
+            type="button"
+            className={cellClass}
+            onClick={() => onOpen(i)}
+            aria-label="Open image"
+          >
             <Img src={src} alt="" sizes="(max-width: 768px) 50vw, 320px" priority={i === 0} />
-          </Link>
+          </button>
         ))}
       </div>
     )
@@ -94,15 +105,20 @@ function PostMediaGrid({
   if (n === 3) {
     return (
       <div className="grid h-[280px] grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] gap-0.5 bg-border">
-        <Link href={href} className={`${cellClass} row-span-2`}>
+        <button
+          type="button"
+          className={`${cellClass} row-span-2`}
+          onClick={() => onOpen(0)}
+          aria-label="Open image"
+        >
           <Img src={imageUrls[0]} alt="" sizes="(max-width: 768px) 60vw, 400px" priority />
-        </Link>
-        <Link href={href} className={cellClass}>
+        </button>
+        <button type="button" className={cellClass} onClick={() => onOpen(1)} aria-label="Open image">
           <Img src={imageUrls[1]} alt="" sizes="(max-width: 768px) 40vw, 260px" />
-        </Link>
-        <Link href={href} className={cellClass}>
+        </button>
+        <button type="button" className={cellClass} onClick={() => onOpen(2)} aria-label="Open image">
           <Img src={imageUrls[2]} alt="" sizes="(max-width: 768px) 40vw, 260px" />
-        </Link>
+        </button>
       </div>
     )
   }
@@ -110,18 +126,18 @@ function PostMediaGrid({
   if (n === 4) {
     return (
       <div className="grid h-[300px] grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] grid-rows-2 gap-0.5 bg-border">
-        <Link href={href} className={cellClass}>
+        <button type="button" className={cellClass} onClick={() => onOpen(0)} aria-label="Open image">
           <Img src={imageUrls[0]} alt="" sizes="(max-width: 768px) 55vw, 360px" priority />
-        </Link>
-        <Link href={href} className={cellClass}>
+        </button>
+        <button type="button" className={cellClass} onClick={() => onOpen(1)} aria-label="Open image">
           <Img src={imageUrls[1]} alt="" sizes="(max-width: 768px) 45vw, 280px" />
-        </Link>
-        <Link href={href} className={cellClass}>
+        </button>
+        <button type="button" className={cellClass} onClick={() => onOpen(2)} aria-label="Open image">
           <Img src={imageUrls[2]} alt="" sizes="(max-width: 768px) 55vw, 360px" />
-        </Link>
-        <Link href={href} className={cellClass}>
+        </button>
+        <button type="button" className={cellClass} onClick={() => onOpen(3)} aria-label="Open image">
           <Img src={imageUrls[3]} alt="" sizes="(max-width: 768px) 45vw, 280px" />
-        </Link>
+        </button>
       </div>
     )
   }
@@ -134,23 +150,36 @@ function PostMediaGrid({
     <div className="flex h-[320px] gap-0.5 bg-border">
       <div className="flex min-w-0 flex-[1.55] flex-col gap-0.5">
         {left.map((src, i) => (
-          <Link key={i} href={href} className={`${cellClass} min-h-0 flex-1`}>
+          <button
+            key={i}
+            type="button"
+            className={`${cellClass} min-h-0 flex-1`}
+            onClick={() => onOpen(i)}
+            aria-label="Open image"
+          >
             <Img src={src} alt="" sizes="(max-width: 768px) 58vw, 420px" priority={i === 0} />
-          </Link>
+          </button>
         ))}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         {right.map((src, i) => {
           const isLast = i === 2
+          const idx = 2 + i
           return (
-            <Link key={i} href={href} className={`${cellClass} relative min-h-0 flex-1`}>
+            <button
+              key={i}
+              type="button"
+              className={`${cellClass} relative min-h-0 flex-1`}
+              onClick={() => onOpen(idx)}
+              aria-label="Open image"
+            >
               <Img src={src} alt="" sizes="(max-width: 768px) 42vw, 300px" />
               {isLast && extra > 0 ? (
                 <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/55 text-2xl font-semibold text-white">
                   +{extra}
                 </span>
               ) : null}
-            </Link>
+            </button>
           )
         })}
       </div>
@@ -176,6 +205,8 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
 
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [commentCount, setCommentCount] = useState(post.commentCount ?? 0)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
 
   useEffect(() => {
     setLikeCount(post.likeCount ?? 0)
@@ -249,6 +280,13 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
 
   return (
     <>
+    <Lightbox
+      open={lightboxOpen}
+      onOpenChange={setLightboxOpen}
+      images={images}
+      index={lightboxIndex}
+      onIndexChange={setLightboxIndex}
+    />
     <Card className="overflow-hidden rounded-2xl border bg-card/50 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/40">
       <CardHeader className="space-y-0 pb-3">
         <div className="flex items-start gap-3">
@@ -338,7 +376,13 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
       {hasMedia ? (
         <div className="border-t border-border/60">
           {images.length > 0 ? (
-            <PostMediaGrid imageUrls={images} postSlug={post.slug} />
+            <PostMediaGrid
+              imageUrls={images}
+              onOpen={(idx) => {
+                setLightboxIndex(idx)
+                setLightboxOpen(true)
+              }}
+            />
           ) : videos[0] ? (
             <div className="space-y-2 p-3 pt-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

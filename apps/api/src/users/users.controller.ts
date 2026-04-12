@@ -36,6 +36,16 @@ export class UsersController {
     return this.users.updateMe(userId, dto)
   }
 
+  /** Must be registered before `users/:id` so "discover" is not parsed as an id. */
+  @Get("users/discover")
+  discoverUsers(
+    @Query("q") q: string = "",
+    @Query("limit") limitRaw: string = "80"
+  ) {
+    const limit = Number(limitRaw)
+    return this.users.discoverUsers(q, Number.isFinite(limit) ? limit : 80)
+  }
+
   @Get("users/:id/relationship")
   @UseGuards(JwtAuthGuard)
   relationship(@CurrentUserId() viewerId: string, @Param("id") targetId: string) {

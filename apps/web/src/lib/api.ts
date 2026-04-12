@@ -1,9 +1,32 @@
+
 export function apiBaseUrl() {
-  const raw = process.env.NEXT_PUBLIC_API_URL
-  // Expected: http://localhost:4000/v1
-  if (raw) return raw.replace(/\/+$/, "")
-  // Dev-friendly default to avoid falling back to Next routes like /auth/google (404).
-  // Use 127.0.0.1 to avoid IPv6 (::1) connection issues on some Windows setups.
+  const raw = process.env.NEXT_PUBLIC_API_URL?.trim()
+  if (raw) {
+    let base = raw.replace(/\/+$/, "")
+    try {
+      const u = new URL(base)
+      const p = (u.pathname || "").replace(/\/+$/, "") || ""
+      if (p === "" || p === "/") {
+        base = `${base.replace(/\/+$/, "")}/v1`
+      }
+    } catch {
+      if (!base.endsWith("/v1")) base = `${base}/v1`
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const u = new URL(base)
+        if (u.port === "3000") {
+          console.warn(
+            "[api] NEXT_PUBLIC_API_URL points to port 3000 (Next.js). Use the Nest API URL, e.g. http://127.0.0.1:4000/v1 — otherwise you will see errors like \"Cannot POST /v1/ai/chat\"."
+          )
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    return base
+  }
+
   if (process.env.NODE_ENV !== "production") return "http://127.0.0.1:4000/v1"
   return ""
 }

@@ -7,6 +7,8 @@ import {
 import type { Prisma } from "@prisma/client"
 import { UserRole } from "@prisma/client"
 import { PrismaService } from "../prisma/prisma.service.js"
+import { NotificationsGateway } from "../notifications/notifications.gateway.js"
+import { NotificationsService } from "../notifications/notifications.service.js"
 import { CreateCommentDto } from "./dto/create-comment.dto.js"
 import { CreatePostDto } from "./dto/create-post.dto.js"
 import { UpdatePostDto } from "./dto/update-post.dto.js"
@@ -27,7 +29,11 @@ const postAuthorCategoryInclude = {
 
 @Injectable()
 export class PostsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+    private readonly notifGateway: NotificationsGateway
+  ) {}
 
   private async assertCategoryExists(categoryId: number) {
     const row = await this.prisma.category.findUnique({ where: { id: categoryId } })
@@ -69,8 +75,18 @@ export class PostsService {
     }
   }
 
-  async list() {
+  async list(opts?: { categoryIds?: number[]; days?: number }) {
+    const where: Prisma.PostWhereInput = {}
+    if (opts?.categoryIds?.length) {
+      where.categoryId = { in: opts.categoryIds }
+    }
+    if (opts?.days) {
+      const from = new Date(Date.now() - opts.days * 24 * 60 * 60 * 1000)
+      where.createdAt = { gte: from }
+    }
+
     return this.prisma.post.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       include: postAuthorCategoryInclude,
     })
@@ -199,6 +215,21 @@ export class PostsService {
           data: { likeCount: { increment: 1 } },
         }),
       ])
+
+      // Create + emit notification only when it's a new like.
+      const created = await this.notifications.createOrAggregate({
+        recipientId: post.authorId,
+        actorId: userId,
+        type: "POST_LIKED",
+        targetKind: "post",
+        targetId: String(post.id),
+        targetSlug: post.slug,
+        meta: { postTitle: post.title },
+      })
+      if (created?.notif) {
+        this.notifGateway.emitNewNotification(post.authorId, created.notif)
+        this.notifGateway.emitUnreadCount(post.authorId, created.unread)
+      }
     }
 
     const updated = await this.prisma.post.findUnique({
@@ -233,7 +264,7 @@ export class PostsService {
         throw new BadRequestException("You can only reply to top-level comments")
       }
     }
-    return this.prisma.$transaction(async (tx) => {
+    const comment = await this.prisma.$transaction(async (tx) => {
       const comment = await tx.comment.create({
         data: {
           postId,
@@ -249,6 +280,22 @@ export class PostsService {
       })
       return comment
     })
+
+    const created = await this.notifications.createOrAggregate({
+      recipientId: post.authorId,
+      actorId: userId,
+      type: "POST_COMMENTED",
+      targetKind: "post",
+      targetId: String(post.id),
+      targetSlug: post.slug,
+      meta: { postTitle: post.title, commentId: comment.id },
+    })
+    if (created?.notif) {
+      this.notifGateway.emitNewNotification(post.authorId, created.notif)
+      this.notifGateway.emitUnreadCount(post.authorId, created.unread)
+    }
+
+    return comment
   }
 
   async deleteComment(commentId: number, userId: string) {

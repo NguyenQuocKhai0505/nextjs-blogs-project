@@ -1,20 +1,39 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { io, Socket } from "socket.io-client"
 import { toast } from "sonner"
-import { MessageCircle, Search } from "lucide-react"
+import { MessageCircle, MoreVertical, Search } from "lucide-react"
 
 import { apiSocketUrl } from "@/lib/api"
 import { getAccessToken } from "@/lib/token"
 import { authFetch } from "@/lib/auth-fetch"
 import MessageInput from "@/components/contact/message-input"
+import { CreateGroupDialog } from "@/components/contact/create-group-dialog"
 import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
 import { useMe } from "@/lib/use-me"
-import { useLocale } from "@/lib/i18n/locale-context"
+import { localeBcp47, useLocale } from "@/lib/i18n/locale-context"
+
+const RECALL_WINDOW_MS = 15 * 60 * 1000
 
 type UserLite = {
   id: string
@@ -27,7 +46,11 @@ type UserLite = {
 
 export type ConversationItem = {
   id: number
-  otherUser: UserLite
+  kind?: "DIRECT" | "GROUP"
+  title?: string | null
+  otherUser: UserLite | null
+  /** Inbound messages not yet “read” for this viewer (see API read cursor). */
+  unreadCount?: number
   updatedAt: string
   lastMessage: {
     id: number
@@ -36,8 +59,14 @@ export type ConversationItem = {
     content: string | null
     imageUrl: string | null
     videoUrl: string | null
+    revokedAt?: string | null
     createdAt: string
   } | null
+}
+
+function conversationLabel(c: ConversationItem): string {
+  if (c.kind === "GROUP" && c.title?.trim()) return c.title.trim()
+  return c.otherUser?.name ?? "Chat"
 }
 
 // Legacy exports to keep older chat components compiling.
@@ -52,8 +81,21 @@ export type MessageItem = {
   imageUrl: string | null
   videoUrl: string | null
   read: boolean
+  revokedAt?: string | null
   createdAt: string
   sender: UserLite
+}
+
+function lastMessagePreview(
+  m: ConversationItem["lastMessage"],
+  t: (key: string) => string
+): string {
+  if (!m) return "—"
+  if (m.revokedAt) return t("chat.revokedPreview")
+  if (m.content?.trim()) return m.content
+  if (m.imageUrl) return t("chat.sentImage")
+  if (m.videoUrl) return t("chat.sentVideo")
+  return "—"
 }
 
 export default function ContactClient({
@@ -72,20 +114,81 @@ export default function ContactClient({
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [friendQuery, setFriendQuery] = useState("")
   const [friendHits, setFriendHits] = useState<UserLite[]>([])
+  const [hideConfirmId, setHideConfirmId] = useState<number | null>(null)
   const { me } = useMe(true)
   const { t, locale } = useLocale()
+
+  const activeIdRef = useRef(activeId)
+  useEffect(() => {
+    activeIdRef.current = activeId
+  }, [activeId])
+  const meRef = useRef(me)
+  useEffect(() => {
+    meRef.current = me
+  }, [me])
 
   useEffect(() => {
     setConversations(initialConversations)
   }, [initialConversations])
 
-  async function reloadConversations() {
+  const markConversationRead = useCallback(
+    async (conversationId: number, lastReadMessageId: number) => {
+      if (lastReadMessageId < 1) return
+      const res = await authFetch(`/conversations/${conversationId}/read`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ lastReadMessageId }),
+      })
+      if (!res.ok) return
+      setConversations((prev) =>
+        prev.map((c) => (c.id === conversationId ? { ...c, unreadCount: 0 } : c))
+      )
+    },
+    []
+  )
+
+  const reloadConversations = useCallback(async () => {
     const listRes = await authFetch("/conversations", { cache: "no-store" })
-    if (!listRes.ok) return
+    if (!listRes.ok) return undefined
     const list = (await listRes.json()) as ConversationItem[]
     setConversations(list)
     return list
-  }
+  }, [])
+
+  const recallMessage = useCallback(
+    async (messageId: number) => {
+      const res = await authFetch(`/messages/${messageId}/recall`, {
+        method: "POST",
+      })
+      if (res.ok) {
+        toast.success(t("chat.toastRecallOk"))
+        return
+      }
+      if (res.status === 400) {
+        toast.error(t("chat.toastRecallExpired"))
+      } else {
+        toast.error(t("chat.toastRecallFail"))
+      }
+    },
+    [t]
+  )
+
+  const confirmHideConversation = useCallback(async () => {
+    if (hideConfirmId == null) return
+    const id = hideConfirmId
+    setHideConfirmId(null)
+    const res = await authFetch(`/conversations/${id}`, { method: "DELETE" })
+    if (!res.ok) {
+      toast.error(t("chat.toastHideFail"))
+      return
+    }
+    toast.success(t("chat.toastConversationHidden"))
+    const list = await reloadConversations()
+    if (activeIdRef.current === id) {
+      setMessages([])
+      setActiveId(list?.[0]?.id ?? null)
+    }
+  }, [hideConfirmId, reloadConversations, t])
 
   async function openChatWith(otherUserId: string) {
     const res = await authFetch("/conversations", {
@@ -102,7 +205,9 @@ export default function ContactClient({
       return
     }
     const list = await reloadConversations()
-    const conv = list?.find((c) => c.otherUser.id === otherUserId)
+    const conv = list?.find(
+      (c) => c.kind !== "GROUP" && c.otherUser?.id === otherUserId
+    )
     if (conv) setActiveId(conv.id)
   }
 
@@ -121,7 +226,9 @@ export default function ContactClient({
         toast.error(t("chat.toastMutualFromProfile"))
       } else if (res.ok) {
         const list = await reloadConversations()
-        const conv = list?.find((c) => c.otherUser.id === uid.trim())
+        const conv = list?.find(
+          (c) => c.kind !== "GROUP" && c.otherUser?.id === uid.trim()
+        )
         if (conv) setActiveId(conv.id)
       }
       router.replace("/contact", { scroll: false })
@@ -129,7 +236,7 @@ export default function ContactClient({
     return () => {
       cancelled = true
     }
-  }, [searchParams, router, t])
+  }, [searchParams, router, t, reloadConversations])
 
   useEffect(() => {
     const q = friendQuery.trim()
@@ -176,14 +283,26 @@ export default function ContactClient({
     })
 
     socket.on("message:created", (msg: MessageItem) => {
+      const myId = meRef.current?.id
+      const curActive = activeIdRef.current
+
       setConversations((prev) => {
         const idx = prev.findIndex((c) => c.id === msg.conversationId)
-        if (idx < 0) return prev
+        if (idx < 0) {
+          void reloadConversations()
+          return prev
+        }
         const copy = [...prev]
         const c = copy[idx]
+        let unreadCount = c.unreadCount ?? 0
+        if (msg.senderId !== myId) {
+          if (msg.conversationId === curActive) unreadCount = 0
+          else unreadCount = unreadCount + 1
+        }
         copy[idx] = {
           ...c,
           updatedAt: msg.createdAt,
+          unreadCount,
           lastMessage: {
             id: msg.id,
             conversationId: msg.conversationId,
@@ -191,6 +310,7 @@ export default function ContactClient({
             content: msg.content,
             imageUrl: msg.imageUrl,
             videoUrl: msg.videoUrl,
+            revokedAt: msg.revokedAt ?? null,
             createdAt: msg.createdAt,
           },
         }
@@ -198,15 +318,47 @@ export default function ContactClient({
         return copy
       })
 
-      if (msg.conversationId === activeId) {
+      if (msg.conversationId === curActive) {
         setMessages((prev) => [...prev, msg])
+        if (msg.senderId !== myId) {
+          void markConversationRead(msg.conversationId, msg.id)
+        }
       }
+    })
+
+    socket.on("message:revoked", (msg: MessageItem) => {
+      setMessages((prev) =>
+        prev.map((x) => (x.id === msg.id ? { ...x, ...msg } : x))
+      )
+      setConversations((prev) => {
+        const idx = prev.findIndex((c) => c.id === msg.conversationId)
+        if (idx < 0) return prev
+        const c = prev[idx]
+        if (c.lastMessage?.id !== msg.id) return prev
+        const nowIso = new Date().toISOString()
+        const copy = [...prev]
+        copy[idx] = {
+          ...c,
+          updatedAt: nowIso,
+          lastMessage: c.lastMessage
+            ? {
+                ...c.lastMessage,
+                content: msg.content,
+                imageUrl: msg.imageUrl,
+                videoUrl: msg.videoUrl,
+                revokedAt: msg.revokedAt ?? c.lastMessage.revokedAt ?? null,
+              }
+            : null,
+        }
+        copy.sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))
+        return copy
+      })
     })
 
     return () => {
       socket?.disconnect()
     }
-  }, [activeId, conversations])
+  }, [activeId, conversations, reloadConversations, markConversationRead])
 
   useEffect(() => {
     if (!activeId) return
@@ -220,6 +372,10 @@ export default function ContactClient({
         if (!res.ok) throw new Error("Failed to load messages")
         const data = (await res.json()) as MessageItem[]
         if (!cancelled) setMessages(data)
+        if (!cancelled && data.length > 0) {
+          const maxId = Math.max(...data.map((m) => m.id))
+          void markConversationRead(activeId, maxId)
+        }
       } catch {
         if (!cancelled) setMessages([])
       } finally {
@@ -229,7 +385,7 @@ export default function ContactClient({
     return () => {
       cancelled = true
     }
-  }, [activeId])
+  }, [activeId, markConversationRead])
 
   async function send(payload: {
     content?: string
@@ -251,7 +407,17 @@ export default function ContactClient({
     <div className="grid gap-3 sm:gap-4 lg:grid-cols-[minmax(240px,26%)_minmax(0,1fr)] xl:grid-cols-[minmax(260px,24%)_minmax(0,1fr)]">
       <Card className="flex flex-col overflow-hidden lg:min-h-[72vh]">
         <div className="border-b px-4 py-3">
-          <p className="text-sm font-semibold">{t("chat.title")}</p>
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-semibold">{t("chat.title")}</p>
+            <CreateGroupDialog
+              onCreated={async (conversationId) => {
+                const list = await reloadConversations()
+                if (list?.some((c) => c.id === conversationId)) {
+                  setActiveId(conversationId)
+                }
+              }}
+            />
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">{t("chat.mutualHint")}</p>
         </div>
         <div className="border-b px-4 py-3">
@@ -290,30 +456,67 @@ export default function ContactClient({
           {conversations.length === 0 ? (
             <div className="p-4 text-sm text-muted-foreground">{t("chat.noConversations")}</div>
           ) : (
-            conversations.map((c) => (
-              <button
-                key={c.id}
-                className={cn(
-                  "w-full border-b px-4 py-3 text-left hover:bg-accent",
-                  activeId === c.id && "bg-accent"
-                )}
-                onClick={() => setActiveId(c.id)}
-              >
-                <div className="text-sm font-medium">{c.otherUser.name}</div>
-                <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                  {c.lastMessage?.content ??
-                    (c.lastMessage?.imageUrl ? t("chat.sentImage") : null) ??
-                    (c.lastMessage?.videoUrl ? t("chat.sentVideo") : "—")}
+            conversations.map((c) => {
+              const unread = c.unreadCount ?? 0
+              return (
+                <div
+                  key={c.id}
+                  className={cn(
+                    "flex w-full items-stretch border-b hover:bg-accent/80",
+                    activeId === c.id && "bg-accent"
+                  )}
+                >
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 px-4 py-3 text-left"
+                    onClick={() => setActiveId(c.id)}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium">{conversationLabel(c)}</div>
+                        <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                          {lastMessagePreview(c.lastMessage, t)}
+                        </div>
+                      </div>
+                      {unread > 0 ? (
+                        <span className="mt-0.5 inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+                          {unread > 99 ? "99+" : unread}
+                        </span>
+                      ) : null}
+                    </div>
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-auto shrink-0 rounded-none px-3"
+                        aria-label={t("chat.conversationMenuAria")}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => setHideConfirmId(c.id)}
+                      >
+                        {t("chat.deleteConversation")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-              </button>
-            ))
+              )
+            })
           )}
         </div>
       </Card>
 
       <Card className="flex min-h-[70vh] flex-col overflow-hidden lg:min-h-[72vh]">
         <div className="border-b px-4 py-3 text-sm font-semibold">
-          {activeConversation ? activeConversation.otherUser.name : t("chat.selectChat")}
+          {activeConversation ? conversationLabel(activeConversation) : t("chat.selectChat")}
         </div>
         <div className="flex min-h-0 flex-1 flex-col bg-muted/20">
           <div className="flex-1 overflow-y-auto px-2 py-4 sm:px-4 md:px-6">
@@ -325,15 +528,17 @@ export default function ContactClient({
               <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 xl:max-w-5xl">
                 {messages.map((m) => {
                   const isMine = Boolean(me?.id && m.senderId === me.id)
-                  const timeLabel = new Date(m.createdAt).toLocaleString(
-                    locale === "ko" ? "ko-KR" : "en-US",
-                    {
-                      month: "numeric",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    }
-                  )
+                  const isRevoked = Boolean(m.revokedAt)
+                  const canRecall =
+                    isMine &&
+                    !isRevoked &&
+                    Date.now() - new Date(m.createdAt).getTime() <= RECALL_WINDOW_MS
+                  const timeLabel = new Date(m.createdAt).toLocaleString(localeBcp47[locale], {
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })
                   return (
                     <div
                       key={m.id}
@@ -373,35 +578,76 @@ export default function ContactClient({
                         ) : null}
                         <div
                           className={cn(
-                            "rounded-[18px] px-3.5 py-2 text-[15px] leading-snug shadow-sm",
-                            isMine
-                              ? "rounded-br-md bg-primary text-primary-foreground"
-                              : "rounded-bl-md bg-card text-card-foreground ring-1 ring-border/60"
+                            "flex items-end gap-1",
+                            isMine ? "flex-row-reverse" : "flex-row"
                           )}
                         >
-                          {m.content ? (
-                            <p className="whitespace-pre-wrap break-words">{m.content}</p>
-                          ) : null}
-                          {m.imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={m.imageUrl}
-                              alt="attachment"
-                              className={cn(
-                                "max-h-64 w-full max-w-full rounded-lg object-contain",
-                                m.content ? "mt-2" : ""
-                              )}
-                            />
-                          ) : null}
-                          {m.videoUrl ? (
-                            <video
-                              src={m.videoUrl}
-                              controls
-                              className={cn(
-                                "max-h-64 w-full max-w-full rounded-lg",
-                                m.content || m.imageUrl ? "mt-2" : ""
-                              )}
-                            />
+                          <div
+                            className={cn(
+                              "rounded-[18px] px-3.5 py-2 text-[15px] leading-snug shadow-sm",
+                              isMine
+                                ? "rounded-br-md bg-primary text-primary-foreground"
+                                : "rounded-bl-md bg-card text-card-foreground ring-1 ring-border/60",
+                              isRevoked && "italic opacity-90"
+                            )}
+                          >
+                            {isRevoked ? (
+                              <p className="text-sm">{t("chat.messageRevoked")}</p>
+                            ) : (
+                              <>
+                                {m.content ? (
+                                  <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                                ) : null}
+                                {m.imageUrl ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={m.imageUrl}
+                                    alt="attachment"
+                                    className={cn(
+                                      "max-h-64 w-full max-w-full rounded-lg object-contain",
+                                      m.content ? "mt-2" : ""
+                                    )}
+                                  />
+                                ) : null}
+                                {m.videoUrl ? (
+                                  <video
+                                    src={m.videoUrl}
+                                    controls
+                                    className={cn(
+                                      "max-h-64 w-full max-w-full rounded-lg",
+                                      m.content || m.imageUrl ? "mt-2" : ""
+                                    )}
+                                  />
+                                ) : null}
+                              </>
+                            )}
+                          </div>
+                          {canRecall ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn(
+                                    "h-8 w-8 shrink-0",
+                                    isMine
+                                      ? "text-primary-foreground/80 hover:bg-primary-foreground/15 hover:text-primary-foreground"
+                                      : ""
+                                  )}
+                                  aria-label={t("chat.messageMenuAria")}
+                                >
+                                  <MoreVertical className="size-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align={isMine ? "end" : "start"}>
+                                <DropdownMenuItem
+                                  onClick={() => void recallMessage(m.id)}
+                                >
+                                  {t("chat.recallMessage")}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           ) : null}
                         </div>
                         <span
@@ -426,6 +672,28 @@ export default function ContactClient({
           </div>
         </div>
       </Card>
+
+      <AlertDialog
+        open={hideConfirmId !== null}
+        onOpenChange={(open) => {
+          if (!open) setHideConfirmId(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("chat.deleteConversationTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("chat.deleteConversationDescription")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("chat.deleteConversationCancel")}</AlertDialogCancel>
+            <Button variant="destructive" onClick={() => void confirmHideConversation()}>
+              {t("chat.deleteConversationConfirm")}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

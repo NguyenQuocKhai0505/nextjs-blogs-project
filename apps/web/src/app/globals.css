@@ -133,6 +133,20 @@
   background: transparent;
 }
 
+@keyframes ks-ai-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.ks-ai-float {
+  animation: ks-ai-float 2.6s ease-in-out infinite;
+}
+
 .heart-mask {
   clip-path: polygon(
     50% 95%,

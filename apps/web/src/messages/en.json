@@ -7,6 +7,9 @@
     "userFallback": "User",
     "searchPlaceholder": "Search User..."
   },
+  "user": {
+    "adminVerified": "Verified admin"
+  },
   "chat": {
     "title": "Chats",
     "mutualHint": "You can only message mutual friends (both follow each other). Follow from profiles, then open chat here or from the profile.",
@@ -28,7 +31,36 @@
     "sendAria": "Send message",
     "inputImagePending": "Image will be sent",
     "inputVideoPending": "Video will be sent",
-    "remove": "Remove"
+    "remove": "Remove",
+    "createGroup": "Create group",
+    "createGroupTitle": "New group chat",
+    "groupNameLabel": "Group name",
+    "groupNamePlaceholder": "e.g. Study squad",
+    "groupNameRequired": "Enter a group name.",
+    "groupMembersLabel": "Add mutual friends",
+    "groupMembersHint": "Only people who follow you back can be added.",
+    "groupFilterPlaceholder": "Filter list…",
+    "groupPickOne": "Select at least one friend.",
+    "groupCancel": "Cancel",
+    "createGroupSubmit": "Create",
+    "createGroupBusy": "Creating…",
+    "groupCreateFail": "Could not create group.",
+    "groupCreateSuccess": "Group created",
+    "deleteConversation": "Remove from inbox",
+    "deleteConversationTitle": "Remove this chat?",
+    "deleteConversationDescription": "The chat disappears from your list. The other person still has the history unless they remove it too. A new message brings the chat back for you.",
+    "deleteConversationCancel": "Cancel",
+    "deleteConversationConfirm": "Remove",
+    "conversationMenuAria": "Conversation options",
+    "messageMenuAria": "Message options",
+    "recallMessage": "Recall message",
+    "messageRevoked": "This message was recalled.",
+    "revokedPreview": "Message recalled",
+    "toastRecallOk": "Message recalled",
+    "toastRecallFail": "Could not recall message",
+    "toastRecallExpired": "Recall time has expired",
+    "toastConversationHidden": "Chat removed from your inbox",
+    "toastHideFail": "Could not remove chat"
   },
   "sidebar": {
     "navigation": "Navigation",
@@ -57,6 +89,14 @@
     "creatorMode": "Creator mode",
     "creatorHint": "Share updates regularly to grow your audience.",
     "createPost": "Create a post"
+  },
+  "discover": {
+    "title": "Discover people",
+    "subtitle": "Browse everyone on Ksocial or search by name.",
+    "searchPlaceholder": "Search by name…",
+    "browseHint": "Showing users in alphabetical order — type to narrow the list.",
+    "listTitle": "People",
+    "empty": "No users match your search."
   },
   "home": {
     "feedTitle": "Home feed",

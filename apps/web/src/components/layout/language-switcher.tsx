@@ -45,6 +45,12 @@ export function LanguageSwitcher() {
         >
           한국어
         </DropdownMenuItem>
+        <DropdownMenuItem
+          className={cn(locale === "vi" && "bg-accent")}
+          onClick={() => select("vi")}
+        >
+          Tiếng Việt
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

@@ -1,12 +1,18 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common"
 import type { Prisma } from "@prisma/client"
 import { PrismaService } from "../prisma/prisma.service.js"
+import { NotificationsGateway } from "../notifications/notifications.gateway.js"
+import { NotificationsService } from "../notifications/notifications.service.js"
 import { UpdateMeDto } from "./dto/update-me.dto.js"
 import { getMutualFriendIds } from "./follow.helpers.js"
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+    private readonly notifGateway: NotificationsGateway
+  ) {}
 
   async getMe(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -49,7 +55,7 @@ export class UsersService {
   async getUserPublic(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, avatarUrl: true, createdAt: true },
+      select: { id: true, name: true, avatarUrl: true, createdAt: true, role: true },
     })
     if (!user) throw new NotFoundException("User not found")
     return user
@@ -73,6 +79,31 @@ export class UsersService {
     })
   }
 
+  /**
+   * Browse + search for the discover page: empty `q` returns up to `limit` users (name asc).
+   * Does not expose email (public directory).
+   */
+  async discoverUsers(q: string, limit: number) {
+    const take = Math.min(Math.max(limit || 50, 1), 100)
+    const query = q.trim()
+    const where: Prisma.UserWhereInput =
+      query.length > 0
+        ? {
+            OR: [
+              { name: { contains: query, mode: "insensitive" } },
+              { email: { contains: query, mode: "insensitive" } },
+            ],
+          }
+        : {}
+
+    return this.prisma.user.findMany({
+      where,
+      take,
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, avatarUrl: true, role: true },
+    })
+  }
+
   async follow(viewerId: string, targetId: string) {
     if (viewerId === targetId) {
       throw new BadRequestException("Cannot follow yourself")
@@ -86,6 +117,20 @@ export class UsersService {
       create: { followerId: viewerId, followingId: targetId },
       update: {},
     })
+
+    const created = await this.notifications.createOrAggregate({
+      recipientId: targetId,
+      actorId: viewerId,
+      type: "FOLLOWED",
+      targetKind: "user",
+      targetId: targetId,
+      meta: {},
+    })
+    if (created?.notif) {
+      this.notifGateway.emitNewNotification(targetId, created.notif)
+      this.notifGateway.emitUnreadCount(targetId, created.unread)
+    }
+
     return { success: true }
   }
 

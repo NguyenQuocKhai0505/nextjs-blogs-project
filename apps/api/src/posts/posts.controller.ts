@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post as HttpPost,
+  Query,
   UseGuards,
 } from "@nestjs/common"
 import { PostsService } from "./posts.service.js"
@@ -21,8 +22,16 @@ export class PostsController {
   constructor(private readonly posts: PostsService) {}
 
   @Get()
-  list() {
-    return this.posts.list()
+  list(@Query("categoryIds") categoryIdsRaw?: string, @Query("days") daysRaw?: string) {
+    const ids = (categoryIdsRaw ?? "")
+      .split(",")
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isFinite(n) && n > 0)
+    const days = Number(daysRaw)
+    return this.posts.list({
+      categoryIds: ids.length ? ids : undefined,
+      days: Number.isFinite(days) && days > 0 ? days : undefined,
+    })
   }
 
   @Get("by-author/:authorId")

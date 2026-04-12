@@ -35,7 +35,7 @@ export default function RightRail() {
               <p className="text-sm font-medium">{t("rail.findPeople")}</p>
               <p className="text-xs text-muted-foreground">{t("rail.findPeopleHint")}</p>
               <Button asChild size="sm" variant="outline" className="mt-2 rounded-xl">
-                <Link href="/profile">{t("rail.discover")}</Link>
+                <Link href="/discover">{t("rail.discover")}</Link>
               </Button>
             </div>
           </div>

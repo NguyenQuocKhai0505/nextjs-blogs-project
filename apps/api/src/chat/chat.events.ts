@@ -12,5 +12,9 @@ export class ChatEvents {
   messageCreated(conversationId: number, payload: unknown) {
     this.io?.to(`conv:${conversationId}`).emit("message:created", payload)
   }
+
+  messageRevoked(conversationId: number, payload: unknown) {
+    this.io?.to(`conv:${conversationId}`).emit("message:revoked", payload)
+  }
 }
 

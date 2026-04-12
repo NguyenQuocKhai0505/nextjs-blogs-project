@@ -8,7 +8,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { getNotificationText, getNotificationNavigatePath } from "@/lib/notifications/utils"
+import { getNotificationText, getNotificationNavigatePath, isRead } from "@/lib/notifications/utils"
 
 export function NotificationBell() {
   const router = useRouter()
@@ -17,7 +17,6 @@ export function NotificationBell() {
     unreadCount,
     isLoading,
     markAllAsRead,
-    markAsRead,
     refreshNotifications,
   } = useNotification()
   const [open, setOpen] = useState(false)
@@ -32,8 +31,7 @@ export function NotificationBell() {
     }
   }
 
-  const handleNavigate = (id: number, path: string) => {
-    markAsRead([id]).catch(() => {})
+  const handleNavigate = (path: string) => {
     router.push(path)
     setOpen(false)
   }
@@ -68,14 +66,14 @@ export function NotificationBell() {
               key={notification.id}
               className={cn(
                 "flex flex-col gap-1 py-3 focus:bg-muted",
-                notification.read ? "opacity-60" : ""
+                isRead(notification) ? "opacity-60" : ""
               )}
-              onClick={() => handleNavigate(notification.id, getNotificationNavigatePath(notification))}
+              onClick={() => handleNavigate(getNotificationNavigatePath(notification))}
             >
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={notification.actor.avatar ?? ""} alt={notification.actor.name} />
-                  <AvatarFallback>{notification.actor.name?.slice(0, 2).toUpperCase() ?? "U"}</AvatarFallback>
+                  <AvatarImage src={""} alt={"Notification"} />
+                  <AvatarFallback>{"N"}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <p className="text-sm font-medium leading-tight">{getNotificationText(notification)}</p>

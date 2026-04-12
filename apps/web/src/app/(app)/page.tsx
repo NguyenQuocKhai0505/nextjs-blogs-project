@@ -1,8 +1,5 @@
 import { Metadata } from "next"
-import CategoriesBar from "@/components/feed/categories-bar"
-import ComposerCard from "@/components/feed/composer-card"
-import HomeFeedSection from "@/components/feed/home-feed-section"
-import type { FeedPost } from "@/lib/types"
+import HomeClient from "@/components/feed/home-client"
 import { apiUrl } from "@/lib/api"
 import { getAccessTokenFromCookies } from "@/lib/server-token"
 
@@ -22,18 +19,10 @@ export default async function Home() {
         .catch(() => null)
     : null
 
-  const posts = await fetch(apiUrl("/posts"), { cache: "no-store" })
-    .then((r) => (r.ok ? r.json() : []))
-    .catch(() => [])
   return (
-    <div className="space-y-4">
-      <CategoriesBar viewerRole={(me?.role as "USER" | "ADMIN" | undefined) ?? null} />
-      <ComposerCard />
-      <HomeFeedSection
-        posts={posts as FeedPost[]}
-        viewerId={me?.id ?? null}
-        viewerRole={(me?.role as "USER" | "ADMIN" | undefined) ?? null}
-      />
-    </div>
+    <HomeClient
+      viewerId={me?.id ?? null}
+      viewerRole={(me?.role as "USER" | "ADMIN" | undefined) ?? null}
+    />
   )
 }

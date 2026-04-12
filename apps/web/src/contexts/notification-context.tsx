@@ -2,18 +2,20 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react"
 import { toast } from "sonner"
-import { useSocket } from "@/contexts/socket-context"
+import { io } from "socket.io-client"
+import { apiSocketUrl } from "@/lib/api"
+import { authFetch } from "@/lib/auth-fetch"
+import { getAccessToken } from "@/lib/token"
 import {
-  ClientNotification,
+  AppNotification,
   getNotificationToastPayload,
 } from "@/lib/notifications/utils"
 
 type NotificationContextValue = {
-  notifications: ClientNotification[]
+  notifications: AppNotification[]
   unreadCount: number
   isLoading: boolean
   markAllAsRead: () => Promise<void>
-  markAsRead: (ids: number[]) => Promise<void>
   refreshNotifications: () => Promise<void>
 }
 
@@ -22,42 +24,38 @@ const NotificationContext = createContext<NotificationContextValue>({
   unreadCount: 0,
   isLoading: true,
   markAllAsRead: async () => {},
-  markAsRead: async () => {},
   refreshNotifications: async () => {},
 })
 
 async function fetchNotifications() {
-  const res = await fetch("/api/notifications", {
-    cache: "no-store",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  })
-  if (!res.ok) return []
-  const data = await res.json()
-  return data?.notifications ?? []
+  const res = await authFetch("/app-notifications?take=20", { cache: "no-store" })
+  if (!res.ok) return [] as AppNotification[]
+  const data = (await res.json()) as { items?: AppNotification[] }
+  return Array.isArray(data?.items) ? data.items : []
 }
 
-async function patchNotifications(ids?: number[]) {
-  await fetch("/api/notifications", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(ids ? { ids } : {}),
-  })
+async function fetchUnreadCount() {
+  const res = await authFetch("/app-notifications/unread-count", { cache: "no-store" })
+  if (!res.ok) return 0
+  const data = (await res.json()) as { unread?: number }
+  return typeof data?.unread === "number" ? data.unread : 0
+}
+
+async function markAllRead() {
+  await authFetch("/app-notifications/mark-all-read", { method: "POST" })
 }
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const { socket } = useSocket()
-  const [notifications, setNotifications] = useState<ClientNotification[]>([])
+  const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
 
   const refreshNotifications = useCallback(async () => {
     setIsLoading(true)
     try {
-      const data = await fetchNotifications()
-      setNotifications(data)
-      setUnreadCount(data.filter((n: ClientNotification) => !n.read).length)
+      const [items, unread] = await Promise.all([fetchNotifications(), fetchUnreadCount()])
+      setNotifications(items)
+      setUnreadCount(unread)
     } finally {
       setIsLoading(false)
     }
@@ -68,58 +66,54 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [refreshNotifications])
 
   useEffect(() => {
-    if (!socket) return
+    const token = getAccessToken()
+    const url = apiSocketUrl()
+    if (!token || !url) return
 
-    const handleNotification = (payload: ClientNotification) => {
-      setNotifications(prev => [payload, ...prev.filter(n => n.id !== payload.id)].slice(0, 50))
-      if (!payload.read) {
-        setUnreadCount(count => count + 1)
-      }
+    const s = io(url + "/ws", {
+      transports: ["websocket"],
+      auth: { token },
+    })
+
+    const onNew = (payload: AppNotification) => {
+      setNotifications((prev) => [payload, ...prev.filter((n) => n.id !== payload.id)].slice(0, 50))
       showNotificationToast(payload)
     }
 
-    socket.on("notification", handleNotification)
-    return () => {
-      socket.off("notification", handleNotification)
+    const onUnread = (payload: { unread?: number }) => {
+      const n = typeof payload?.unread === "number" ? payload.unread : 0
+      setUnreadCount(n)
     }
-  }, [socket])
+
+    s.on("notif:new", onNew)
+    s.on("notif:unread_count", onUnread)
+
+    return () => {
+      s.off("notif:new", onNew)
+      s.off("notif:unread_count", onUnread)
+      s.disconnect()
+    }
+  }, [])
 
   const markAllAsRead = useCallback(async () => {
     if (!notifications.length || unreadCount === 0) return
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+    // Optimistic: mark all read locally.
+    const nowIso = new Date().toISOString()
+    setNotifications((prev) => prev.map((n) => ({ ...n, readAt: n.readAt ?? nowIso })))
     setUnreadCount(0)
     try {
-      await patchNotifications()
+      await markAllRead()
+      // In case server recalculates differently, refresh count.
+      const unread = await fetchUnreadCount()
+      setUnreadCount(unread)
     } catch (err) {
       console.error("Failed to mark all as read", err)
     }
   }, [notifications.length, unreadCount])
 
-  const markAsRead = useCallback(async (ids: number[]) => {
-    if (!ids.length) return
-    const targetIds = new Set(ids)
-    setNotifications(prev => {
-      let newlyRead = 0
-      const next = prev.map(n => {
-        if (targetIds.has(n.id) && !n.read) {
-          newlyRead++
-          return { ...n, read: true }
-        }
-        return n
-      })
-      if (newlyRead) setUnreadCount(count => Math.max(0, count - newlyRead))
-      return next
-    })
-    try {
-      await patchNotifications(ids)
-    } catch (err) {
-      console.error("Failed to mark as read", err)
-    }
-  }, [])
-
   const value = useMemo(
-    () => ({ notifications, unreadCount, isLoading, markAllAsRead, markAsRead, refreshNotifications }),
-    [notifications, unreadCount, isLoading, markAllAsRead, markAsRead, refreshNotifications]
+    () => ({ notifications, unreadCount, isLoading, markAllAsRead, refreshNotifications }),
+    [notifications, unreadCount, isLoading, markAllAsRead, refreshNotifications]
   )
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>
@@ -129,7 +123,7 @@ export function useNotification() {
   return useContext(NotificationContext)
 }
 
-function showNotificationToast(notification: ClientNotification) {
+function showNotificationToast(notification: AppNotification) {
   const payload = getNotificationToastPayload(notification)
   const actionPath = payload.actionPath
 
