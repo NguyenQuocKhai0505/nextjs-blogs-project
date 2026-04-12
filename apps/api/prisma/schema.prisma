@@ -41,6 +41,8 @@ model User {
   role                 UserRole       @default(USER) @map("role")
   createdAt            DateTime       @default(now()) @map("created_at")
   updatedAt            DateTime       @default(now()) @map("updated_at")
+  /** Last activity ping (socket or POST /me/presence). Used for “online / last seen”. */
+  lastSeenAt           DateTime?      @map("last_seen_at")
   accounts             Account[]
   conversationsAsUser1 Conversation[] @relation("User1")
   conversationsAsUser2 Conversation[] @relation("User2")

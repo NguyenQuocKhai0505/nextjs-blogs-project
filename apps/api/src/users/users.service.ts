@@ -6,6 +6,9 @@ import { NotificationsService } from "../notifications/notifications.service.js"
 import { UpdateMeDto } from "./dto/update-me.dto.js"
 import { getMutualFriendIds } from "./follow.helpers.js"
 
+/** lastSeenAt within this window counts as “online”. */
+export const PRESENCE_ONLINE_MS = 3 * 60 * 1000
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -194,6 +197,46 @@ export class UsersService {
       take: 40,
       select: { id: true, name: true, email: true, avatarUrl: true },
     })
+  }
+
+  async touchLastSeen(userId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { lastSeenAt: new Date() },
+    })
+    return { ok: true as const }
+  }
+
+  async listMutualFriendsWithPresence(viewerId: string) {
+    const mutual = await getMutualFriendIds(this.prisma, viewerId)
+    const ids = [...mutual]
+    if (ids.length === 0) return []
+
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: ids } },
+      take: 80,
+      select: { id: true, name: true, avatarUrl: true, lastSeenAt: true },
+    })
+
+    const now = Date.now()
+    const rows = users.map((u) => ({
+      id: u.id,
+      name: u.name,
+      avatarUrl: u.avatarUrl,
+      lastSeenAt: u.lastSeenAt?.toISOString() ?? null,
+      isOnline:
+        u.lastSeenAt != null && now - u.lastSeenAt.getTime() < PRESENCE_ONLINE_MS,
+    }))
+
+    rows.sort((a, b) => {
+      if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1
+      const ta = a.lastSeenAt ? new Date(a.lastSeenAt).getTime() : 0
+      const tb = b.lastSeenAt ? new Date(b.lastSeenAt).getTime() : 0
+      if (tb !== ta) return tb - ta
+      return a.name.localeCompare(b.name)
+    })
+
+    return rows
   }
 }
 

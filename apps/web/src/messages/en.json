@@ -5,7 +5,8 @@
     "aboutAuthor": "About Author",
     "login": "Login",
     "userFallback": "User",
-    "searchPlaceholder": "Search User..."
+    "searchPlaceholder": "Search User...",
+    "searchViewAll": "View all in Discover"
   },
   "user": {
     "adminVerified": "Verified admin"
@@ -76,12 +77,22 @@
   },
   "rail": {
     "trending": "Trending",
-    "trendBuildTitle": "Build in public",
-    "trendBuildMeta": "12 new posts today",
-    "trendNextTitle": "Next.js 15 + React 19",
-    "trendNextMeta": "Hot topic",
-    "trendChatTitle": "Realtime chat",
-    "trendChatMeta": "Socket.IO tips",
+    "trendingSubtitle": "Top categories on the feed",
+    "trendingPostMeta": "{count} posts · last {days} days",
+    "trendingEmpty": "No category has enough posts in the last week. Be the first to publish.",
+    "trendingEmptyCta": "Create a post",
+    "friendsTitle": "Friends",
+    "friendsSubtitle": "Mutual follows — online in the last few minutes",
+    "friendsOnline": "Online",
+    "friendsOfflineUnknown": "Offline",
+    "friendsOfflineJustNow": "Active just now",
+    "friendsOfflineMinutes": "Active {n} min ago",
+    "friendsOfflineHours": "Active {n} h ago",
+    "friendsOfflineDays": "Active {n} d ago",
+    "friendsEmpty": "No mutual friends yet. Follow someone and have them follow you back.",
+    "friendsSignInHint": "Sign in to see friends here.",
+    "friendsChatAria": "Open chat",
+    "friendsShowing": "Showing {shown} of {total} — open Messages for more",
     "suggested": "Suggested",
     "findPeople": "Find people to follow",
     "findPeopleHint": "Search users and connect with creators.",

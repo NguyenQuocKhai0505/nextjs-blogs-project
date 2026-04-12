@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import Header from "./header"
 import LeftSidebar from "./left-sidebar"
 import RightRail from "./right-rail"
+import { PresenceHeartbeat } from "./presence-heartbeat"
 import MobileBottomNav from "./mobile-bottom-nav"
 import { AiChatWidget } from "@/components/ai/ai-chat-widget"
 
@@ -37,6 +38,7 @@ export default function AppShell({
         </div>
       </div>
 
+      <PresenceHeartbeat />
       <MobileBottomNav />
       <AiChatWidget />
     </div>

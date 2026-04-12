@@ -5,7 +5,8 @@
     "aboutAuthor": "Giới thiệu tác giả",
     "login": "Đăng nhập",
     "userFallback": "Người dùng",
-    "searchPlaceholder": "Tìm người dùng..."
+    "searchPlaceholder": "Tìm người dùng...",
+    "searchViewAll": "Xem tất cả trong Khám phá"
   },
   "user": {
     "adminVerified": "Quản trị viên đã xác minh"
@@ -76,12 +77,22 @@
   },
   "rail": {
     "trending": "Xu hướng",
-    "trendBuildTitle": "Build in public",
-    "trendBuildMeta": "12 bài mới hôm nay",
-    "trendNextTitle": "Next.js 15 + React 19",
-    "trendNextMeta": "Chủ đề hot",
-    "trendChatTitle": "Chat thời gian thực",
-    "trendChatMeta": "Mẹo Socket.IO",
+    "trendingSubtitle": "Danh mục nhiều bài nhất",
+    "trendingPostMeta": "{count} bài · {days} ngày qua",
+    "trendingEmpty": "Chưa có danh mục nào đủ bài trong tuần. Hãy đăng bài đầu tiên.",
+    "trendingEmptyCta": "Tạo bài viết",
+    "friendsTitle": "Bạn bè",
+    "friendsSubtitle": "Follow lẫn nhau — online nếu hoạt động vài phút trước",
+    "friendsOnline": "Đang online",
+    "friendsOfflineUnknown": "Offline",
+    "friendsOfflineJustNow": "Vừa hoạt động",
+    "friendsOfflineMinutes": "Hoạt động {n} phút trước",
+    "friendsOfflineHours": "Hoạt động {n} giờ trước",
+    "friendsOfflineDays": "Hoạt động {n} ngày trước",
+    "friendsEmpty": "Chưa có bạn chung follow. Follow người khác và được họ follow lại.",
+    "friendsSignInHint": "Đăng nhập để xem bạn bè ở đây.",
+    "friendsChatAria": "Mở chat",
+    "friendsShowing": "Hiển thị {shown}/{total} — mở Tin nhắn để xem thêm",
     "suggested": "Gợi ý",
     "findPeople": "Tìm người để follow",
     "findPeopleHint": "Tìm người dùng và kết nối với creator.",

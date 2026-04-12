@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 
 import CategoriesBar from "@/components/feed/categories-bar"
 import ComposerCard from "@/components/feed/composer-card"
@@ -19,11 +20,22 @@ export default function HomeClient({
   viewerRole: "USER" | "ADMIN" | null
 }) {
   const { resolvedTheme } = useTheme()
+  const searchParams = useSearchParams()
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([])
   const [days, setDays] = useState<DayFilter>(0)
 
   const [posts, setPosts] = useState<FeedPost[]>([])
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const raw = searchParams.get("categoryIds")?.trim()
+    if (!raw) return
+    const ids = raw
+      .split(",")
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isFinite(n) && n > 0)
+    if (ids.length) setSelectedCategoryIds(ids)
+  }, [searchParams])
 
   const query = useMemo(() => {
     const qs = new URLSearchParams()

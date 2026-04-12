@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import ThemeToggle from "../theme/theme-toggle"
 import { SearchInput } from "../search/search-input"
 import { NotificationBell } from "../notifications/notification-bell"
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { getAccessToken } from "@/lib/token"
 import JwtUserMenu from "@/components/auth/jwt-user-menu"
 import { useMe } from "@/lib/use-me"
@@ -61,8 +61,14 @@ function Header(){
                   <NotificationBell />
                   <LanguageSwitcher />
                 </div>
-                    <div className="hidden md:block">
-                        <SearchInput placeholder={t("header.searchPlaceholder")} />
+                    <div className="hidden md:block min-w-[200px] max-w-sm flex-1">
+                        <Suspense
+                          fallback={
+                            <div className="h-10 w-full max-w-sm animate-pulse rounded-md bg-muted" />
+                          }
+                        >
+                          <SearchInput placeholder={t("header.searchPlaceholder")} />
+                        </Suspense>
                     </div>
                     <ThemeToggle/>
                     <div className="flex items-center gap-2 cursor-pointer ">

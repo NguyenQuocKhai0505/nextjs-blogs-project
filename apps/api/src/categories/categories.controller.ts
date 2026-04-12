@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from "@nestjs/common"
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from "@nestjs/common"
 
 import { CategoriesService } from "./categories.service.js"
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard.js"
@@ -9,6 +20,20 @@ import { UpdateCategoryDto } from "./dto/update-category.dto.js"
 @Controller("categories")
 export class CategoriesController {
   constructor(private readonly categories: CategoriesService) {}
+
+  /** Top categories by post volume (public). */
+  @Get("trending")
+  trending(
+    @Query("days") daysRaw?: string,
+    @Query("limit") limitRaw?: string
+  ) {
+    const days = Number(daysRaw)
+    const limit = Number(limitRaw)
+    return this.categories.findTrending(
+      Number.isFinite(days) && days > 0 ? days : 7,
+      Number.isFinite(limit) && limit > 0 ? limit : 5
+    )
+  }
 
   @Get()
   list() {

@@ -268,6 +268,7 @@ export default function ContactClient({
 
   useEffect(() => {
     let socket: Socket | null = null
+    let presenceIv: ReturnType<typeof setInterval> | null = null
     const token = getAccessToken()
     const url = apiSocketUrl()
     if (!token || !url) return
@@ -280,6 +281,11 @@ export default function ContactClient({
     socket.on("connect", () => {
       const ids = conversations.map((c) => c.id)
       socket?.emit("conversations:join", { conversationIds: ids })
+      socket?.emit("presence:ping")
+      if (presenceIv) clearInterval(presenceIv)
+      presenceIv = setInterval(() => {
+        socket?.emit("presence:ping")
+      }, 60_000)
     })
 
     socket.on("message:created", (msg: MessageItem) => {
@@ -356,6 +362,7 @@ export default function ContactClient({
     })
 
     return () => {
+      if (presenceIv) clearInterval(presenceIv)
       socket?.disconnect()
     }
   }, [activeId, conversations, reloadConversations, markConversationRead])

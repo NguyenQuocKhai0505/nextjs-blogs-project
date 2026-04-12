@@ -5,7 +5,8 @@
     "aboutAuthor": "작성자 소개",
     "login": "로그인",
     "userFallback": "사용자",
-    "searchPlaceholder": "사용자 검색..."
+    "searchPlaceholder": "사용자 검색...",
+    "searchViewAll": "둘러보기에서 전체 보기"
   },
   "user": {
     "adminVerified": "인증된 관리자"
@@ -76,12 +77,22 @@
   },
   "rail": {
     "trending": "트렌드",
-    "trendBuildTitle": "공개 제작",
-    "trendBuildMeta": "오늘 새 글 12개",
-    "trendNextTitle": "Next.js 15 + React 19",
-    "trendNextMeta": "인기 주제",
-    "trendChatTitle": "실시간 채팅",
-    "trendChatMeta": "Socket.IO 팁",
+    "trendingSubtitle": "피드에서 글이 많은 카테고리",
+    "trendingPostMeta": "글 {count}개 · 최근 {days}일",
+    "trendingEmpty": "최근 일주일간 카테고리별 글이 없습니다. 첫 글을 올려 보세요.",
+    "trendingEmptyCta": "글 작성",
+    "friendsTitle": "친구",
+    "friendsSubtitle": "맞팔 친구 — 최근 몇 분 내 활동 시 온라인",
+    "friendsOnline": "온라인",
+    "friendsOfflineUnknown": "오프라인",
+    "friendsOfflineJustNow": "방금 활동",
+    "friendsOfflineMinutes": "{n}분 전 활동",
+    "friendsOfflineHours": "{n}시간 전 활동",
+    "friendsOfflineDays": "{n}일 전 활동",
+    "friendsEmpty": "맞팔 친구가 없습니다. 서로 팔로우하면 여기에 표시됩니다.",
+    "friendsSignInHint": "로그인하면 친구 목록을 볼 수 있습니다.",
+    "friendsChatAria": "채팅 열기",
+    "friendsShowing": "{shown}/{total}명 표시 — 메시지에서 더 보기",
     "suggested": "추천",
     "findPeople": "팔로우할 사람 찾기",
     "findPeopleHint": "사용자를 검색하고 크리에이터와 연결하세요.",

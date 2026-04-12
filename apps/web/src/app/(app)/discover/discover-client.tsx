@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Search, Loader2, Users } from "lucide-react"
 
@@ -33,9 +34,10 @@ function initials(name: string) {
 
 export default function DiscoverClient() {
   const { t } = useLocale()
+  const searchParams = useSearchParams()
   const hasToken = !!getAccessToken()
   const { me } = useMe(hasToken)
-  const [query, setQuery] = useState("")
+  const [query, setQuery] = useState(() => searchParams.get("q")?.trim() ?? "")
   const [debounced, setDebounced] = useState("")
   const [users, setUsers] = useState<DiscoverUser[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,6 +46,11 @@ export default function DiscoverClient() {
     const id = setTimeout(() => setDebounced(query.trim()), 300)
     return () => clearTimeout(id)
   }, [query])
+
+  useEffect(() => {
+    const q = searchParams.get("q")?.trim()
+    if (q != null && q.length > 0) setQuery(q)
+  }, [searchParams])
 
   const load = useCallback(async (q: string) => {
     setLoading(true)

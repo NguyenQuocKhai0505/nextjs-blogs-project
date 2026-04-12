@@ -23,6 +23,52 @@ export class CategoriesService {
     })
   }
 
+  /**
+   * Categories with the most posts in the last `days` (for sidebar “trending”).
+   */
+  async findTrending(days = 7, limit = 5) {
+    const d = Math.min(Math.max(Math.floor(days), 1), 90)
+    const l = Math.min(Math.max(Math.floor(limit), 1), 20)
+    const since = new Date()
+    since.setTime(since.getTime() - d * 86_400_000)
+
+    const grouped = await this.prisma.post.groupBy({
+      by: ["categoryId"],
+      where: {
+        categoryId: { not: null },
+        createdAt: { gte: since },
+      },
+      _count: { id: true },
+      orderBy: { _count: { id: "desc" } },
+      take: l,
+    })
+
+    const ids = grouped
+      .map((g) => g.categoryId)
+      .filter((id): id is number => id != null)
+    if (ids.length === 0) return []
+
+    const cats = await this.prisma.category.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, name: true, slug: true },
+    })
+    const byId = new Map(cats.map((c) => [c.id, c]))
+
+    return grouped
+      .map((g) => {
+        if (g.categoryId == null) return null
+        const c = byId.get(g.categoryId)
+        if (!c) return null
+        return {
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+          postCount: g._count.id,
+        }
+      })
+      .filter((row): row is { id: number; name: string; slug: string; postCount: number } => row != null)
+  }
+
   private async assertAdmin(userId: string) {
     const u = await this.prisma.user.findUnique({
       where: { id: userId },

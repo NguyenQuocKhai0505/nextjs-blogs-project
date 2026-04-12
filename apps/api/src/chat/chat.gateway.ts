@@ -1,6 +1,7 @@
 import {
   ConnectedSocket,
   MessageBody,
+  OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -8,6 +9,7 @@ import {
 import { JwtService } from "@nestjs/jwt"
 import type { Server, Socket } from "socket.io"
 import { ChatEvents } from "./chat.events.js"
+import { PrismaService } from "../prisma/prisma.service.js"
 
 @WebSocketGateway({
   cors: {
@@ -15,17 +17,29 @@ import { ChatEvents } from "./chat.events.js"
     credentials: true,
   },
 })
-export class ChatGateway {
+export class ChatGateway implements OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server
 
   constructor(
     private readonly jwt: JwtService,
-    private readonly events: ChatEvents
+    private readonly events: ChatEvents,
+    private readonly prisma: PrismaService
   ) {}
 
   afterInit() {
     this.events.setServer(this.server)
+  }
+
+  private touchPresence(userId: string) {
+    void this.prisma.user
+      .update({
+        where: { id: userId },
+        data: { lastSeenAt: new Date() },
+      })
+      .catch(() => {
+        /* ignore */
+      })
   }
 
   handleConnection(client: Socket) {
@@ -41,9 +55,15 @@ export class ChatGateway {
       if (!payload?.sub || payload.typ !== "access") return client.disconnect(true)
       client.data.userId = payload.sub
       client.join(`user:${payload.sub}`)
+      this.touchPresence(payload.sub)
     } catch {
       client.disconnect(true)
     }
+  }
+
+  handleDisconnect(client: Socket) {
+    const uid = client.data?.userId as string | undefined
+    if (uid) this.touchPresence(uid)
   }
 
   @SubscribeMessage("conversations:join")
@@ -59,5 +79,11 @@ export class ChatGateway {
     }
     return { ok: true }
   }
-}
 
+  @SubscribeMessage("presence:ping")
+  presencePing(@ConnectedSocket() client: Socket) {
+    const uid = client.data?.userId as string | undefined
+    if (uid) this.touchPresence(uid)
+    return { ok: true as const }
+  }
+}

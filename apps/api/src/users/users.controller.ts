@@ -24,10 +24,23 @@ export class UsersController {
     return this.users.getMe(userId)
   }
 
+  /** Mutual friends + online / lastSeen for sidebar (register before `me/mutual-friends`). */
+  @Get("me/mutual-friends/status")
+  @UseGuards(JwtAuthGuard)
+  mutualFriendsStatus(@CurrentUserId() userId: string) {
+    return this.users.listMutualFriendsWithPresence(userId)
+  }
+
   @Get("me/mutual-friends")
   @UseGuards(JwtAuthGuard)
   mutualFriends(@CurrentUserId() userId: string, @Query("q") q?: string) {
     return this.users.listMutualFriends(userId, q ?? "")
+  }
+
+  @Post("me/presence")
+  @UseGuards(JwtAuthGuard)
+  presencePing(@CurrentUserId() userId: string) {
+    return this.users.touchLastSeen(userId)
   }
 
   @Patch("me")
