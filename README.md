@@ -56,6 +56,8 @@ npx prisma generate
 | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Kiến trúc hệ thống, module, dữ liệu |
 | [docs/API.md](./docs/API.md) | REST API (`/v1`) và ghi chú Socket.IO chat |
 | [docs/DEPLOY.md](./docs/DEPLOY.md) | Hướng dẫn deploy production |
+| [docs/PRESENTATION-EN.md](./docs/PRESENTATION-EN.md) | Gợi ý thuyết trình / demo (tiếng Anh, Markdown) |
+| [docs/PRESENTATION-EN.docx](./docs/PRESENTATION-EN.docx) | Cùng nội dung — file Word (`.docx`) |
 
 ## Giấy phép & đóng góp
 
