@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "lint": "node -e \"process.exit(0)\"",
+    "prisma:generate": "prisma generate && node scripts/fix-prisma-client-link.mjs",
     "postinstall": "node scripts/fix-prisma-client-link.mjs"
   },
   "dependencies": {

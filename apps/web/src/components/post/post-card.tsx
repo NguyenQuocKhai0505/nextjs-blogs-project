@@ -7,7 +7,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { formatDate } from "@/lib/utils"
-import { Heart, MessageCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { MessageCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
 import { Button } from "../ui/button"
 import {
   DropdownMenu,
@@ -24,6 +24,7 @@ import { useLocale } from "@/lib/i18n/locale-context"
 import { confirmToast } from "@/lib/confirm-toast"
 import Lightbox from "@/components/media/lightbox"
 import { PostVideo } from "@/components/media/post-video"
+import { ReactionPicker } from "@/components/post/reaction-picker"
 
 function parseMediaField(media?: string | string[] | null): string[] {
   if (!media) return []
@@ -208,41 +209,14 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
   const videos = parseMediaField(post.videoUrls)
   const hasMedia = images.length > 0 || videos.length > 0
 
-  const [likeCount, setLikeCount] = useState(post.likeCount ?? 0)
-  const [liked, setLiked] = useState(false)
-  const [likeBusy, setLikeBusy] = useState(false)
-
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [commentCount, setCommentCount] = useState(post.commentCount ?? 0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
 
   useEffect(() => {
-    setLikeCount(post.likeCount ?? 0)
-  }, [post.id, post.likeCount])
-
-  useEffect(() => {
     setCommentCount(post.commentCount ?? 0)
   }, [post.id, post.commentCount])
-
-  useEffect(() => {
-    const token = getAccessToken()
-    if (!token) {
-      setLiked(false)
-      return
-    }
-    let cancelled = false
-    ;(async () => {
-      const res = await authFetch(`/posts/id/${post.id}/liked`, { cache: "no-store" })
-      if (!res.ok || cancelled) return
-      const data = (await res.json()) as { liked?: boolean; likeCount?: number }
-      if (typeof data.liked === "boolean") setLiked(data.liked)
-      if (typeof data.likeCount === "number") setLikeCount(data.likeCount)
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [post.id])
 
   const requireAuth = () => {
     if (!getAccessToken()) {
@@ -251,24 +225,6 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
       return false
     }
     return true
-  }
-
-  const onToggleLike = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!requireAuth()) return
-    setLikeBusy(true)
-    try {
-      const res = await authFetch(`/posts/id/${post.id}/like`, { method: "POST" })
-      if (!res.ok) throw new Error("fail")
-      const data = (await res.json()) as { liked: boolean; likeCount: number }
-      setLiked(data.liked)
-      setLikeCount(data.likeCount)
-    } catch {
-      toast.error(t("post.reactionFail"))
-    } finally {
-      setLikeBusy(false)
-    }
   }
 
   const onDeletePost = async () => {
@@ -412,17 +368,11 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
 
       <CardContent className="space-y-3 pt-3 pb-4">
         <div className="flex flex-wrap items-center gap-2 border-t border-border/40 pt-3">
-          <Button
-            type="button"
-            variant={liked ? "default" : "outline"}
-            size="sm"
-            className="h-8 gap-1.5 rounded-full px-3"
-            disabled={likeBusy}
-            onClick={(e) => void onToggleLike(e)}
-          >
-            <Heart className={`h-3.5 w-3.5 ${liked ? "fill-current" : ""}`} />
-            <span className="text-xs font-medium">{likeCount}</span>
-          </Button>
+          <ReactionPicker
+            postId={post.id}
+            initialCount={post.likeCount ?? 0}
+            onAuthRequired={requireAuth}
+          />
           <Button
             type="button"
             variant="ghost"

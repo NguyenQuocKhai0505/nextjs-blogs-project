@@ -1,26 +1,19 @@
 import fs from "node:fs"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 
 /**
- * On some Windows setups, Prisma generates the client into `node_modules/.prisma/client`
- * but `@prisma/client`'s `default.d.ts` re-exports from `.prisma/client/default`.
+ * Prisma generates into `apps/api/node_modules/.prisma/client`.
+ * `@prisma/client` re-exports from `.prisma/client/default` beside the package.
  *
- * This script creates a junction:
- *   node_modules/@prisma/client/.prisma/client  ->  node_modules/.prisma/client
- *
- * so TypeScript/VSCode resolve the correct, freshly generated types (UserRole, relations, ...).
+ * In npm workspaces, the IDE often resolves the hoisted root `@prisma/client`
+ * which would otherwise see stale types. This script junctions:
+ *   .../node_modules/@prisma/client/.prisma/client  ->  apps/api/node_modules/.prisma/client
  */
-function ensureJunction() {
-  const apiRoot = path.resolve(process.cwd())
-  const nodeModules = path.join(apiRoot, "node_modules")
+function linkPrismaClientPackage(prismaClientPkgDir, generatedClientDir) {
+  const dst = path.join(prismaClientPkgDir, ".prisma", "client")
 
-  const src = path.join(nodeModules, ".prisma", "client")
-  const dst = path.join(nodeModules, "@prisma", "client", ".prisma", "client")
-
-  if (!fs.existsSync(src)) {
-    // Nothing to link yet (e.g. dependencies not installed / generate not run).
-    return
-  }
+  if (!fs.existsSync(prismaClientPkgDir)) return
 
   fs.mkdirSync(path.dirname(dst), { recursive: true })
 
@@ -35,8 +28,52 @@ function ensureJunction() {
     // ignore
   }
 
-  fs.symlinkSync(src, dst, "junction")
+  fs.symlinkSync(generatedClientDir, dst, "junction")
+}
+
+function findWorkspaceRoot(apiRoot) {
+  let dir = apiRoot
+  for (let i = 0; i < 6; i++) {
+    const parent = path.dirname(dir)
+    if (parent === dir) break
+    const pkgPath = path.join(parent, "package.json")
+    if (fs.existsSync(pkgPath)) {
+      try {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"))
+        if (Array.isArray(pkg.workspaces) && pkg.workspaces.length > 0) {
+          return parent
+        }
+      } catch {
+        // ignore
+      }
+    }
+    dir = parent
+  }
+  return null
+}
+
+function ensureJunction() {
+  const apiRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+  const generatedClientDir = path.join(apiRoot, "node_modules", ".prisma", "client")
+
+  if (!fs.existsSync(generatedClientDir)) {
+    return
+  }
+
+  // apps/api local @prisma/client
+  linkPrismaClientPackage(
+    path.join(apiRoot, "node_modules", "@prisma", "client"),
+    generatedClientDir
+  )
+
+  // monorepo root hoisted @prisma/client (fixes IDE / tsserver resolving from root)
+  const workspaceRoot = findWorkspaceRoot(apiRoot)
+  if (workspaceRoot) {
+    linkPrismaClientPackage(
+      path.join(workspaceRoot, "node_modules", "@prisma", "client"),
+      generatedClientDir
+    )
+  }
 }
 
 ensureJunction()
-

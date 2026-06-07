@@ -32,6 +32,23 @@ enum ConversationKind {
   @@map("conversation_kind")
 }
 
+enum StoryMediaType {
+  IMAGE
+  VIDEO
+  TEXT
+  @@map("story_media_type")
+}
+
+enum ReactionType {
+  LIKE
+  LOVE
+  HAHA
+  WOW
+  SAD
+  ANGRY
+  @@map("reaction_type")
+}
+
 model User {
   id                   String         @id @db.VarChar(255)
   name                 String         @db.VarChar(255)
@@ -60,6 +77,8 @@ model User {
   conversationMembers     ConversationMember[]
   conversationReadStates ConversationReadState[]
   conversationHides       ConversationHide[]
+  stories                 Story[]
+  storyViews              StoryView[]
 
   @@map("user")
 }
@@ -128,12 +147,13 @@ model Post {
 }
 
 model PostLike {
-  id        Int      @id @default(autoincrement())
-  postId    Int      @map("post_id")
-  userId    String   @map("user_id") @db.VarChar(255)
-  createdAt DateTime @default(now()) @map("created_at")
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        Int          @id @default(autoincrement())
+  postId    Int          @map("post_id")
+  userId    String       @map("user_id") @db.VarChar(255)
+  reaction  ReactionType @default(LIKE) @map("reaction")
+  createdAt DateTime     @default(now()) @map("created_at")
+  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId], map: "post_likes_post_user_unique")
   @@map("post_likes")
@@ -281,4 +301,35 @@ model AppNotificationCounter {
   lastReadAt DateTime? @map("last_read_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
   @@map("app_notification_counters")
+}
+
+model Story {
+  id              Int            @id @default(autoincrement())
+  authorId        String         @map("author_id") @db.VarChar(255)
+  mediaType       StoryMediaType @map("media_type")
+  imageUrl        String?        @map("image_url")
+  videoUrl        String?        @map("video_url")
+  textContent     String?        @map("text_content") @db.Text
+  backgroundColor String?        @map("background_color") @db.VarChar(32)
+  expiresAt       DateTime       @map("expires_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  author          User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views           StoryView[]
+
+  @@index([authorId, expiresAt], map: "stories_author_expires_idx")
+  @@index([expiresAt], map: "stories_expires_idx")
+  @@map("stories")
+}
+
+model StoryView {
+  id       Int      @id @default(autoincrement())
+  storyId  Int      @map("story_id")
+  viewerId String   @map("viewer_id") @db.VarChar(255)
+  viewedAt DateTime @default(now()) @map("viewed_at")
+  story    Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  viewer   User     @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, viewerId], map: "story_views_story_viewer_unique")
+  @@index([viewerId], map: "story_views_viewer_idx")
+  @@map("story_views")
 }

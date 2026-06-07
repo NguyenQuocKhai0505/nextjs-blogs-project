@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common"
 import type { Prisma } from "@prisma/client"
-import { UserRole } from "@prisma/client"
+import { ReactionType, UserRole } from "@prisma/client"
 import { PrismaService } from "../prisma/prisma.service.js"
 import { NotificationsGateway } from "../notifications/notifications.gateway.js"
 import { NotificationsService } from "../notifications/notifications.service.js"
@@ -182,16 +182,69 @@ export class PostsService {
     return { success: true }
   }
 
-  async getLikeStatus(postId: number, userId: string) {
+  private async buildReactionSummary(postId: number) {
+    const groups = await this.prisma.postLike.groupBy({
+      by: ["reaction"],
+      where: { postId },
+      _count: { reaction: true },
+    })
+    const summary: Partial<Record<ReactionType, number>> = {}
+    for (const g of groups) {
+      summary[g.reaction] = g._count.reaction
+    }
+    return summary
+  }
+
+  private async reactionResponse(postId: number, userId: string, reaction: ReactionType | null) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { likeCount: true },
+    })
+    const summary = await this.buildReactionSummary(postId)
+    const reactionCount = post?.likeCount ?? 0
+    return {
+      reaction,
+      reactionCount,
+      summary,
+      liked: reaction != null,
+      likeCount: reactionCount,
+    }
+  }
+
+  private async notifyPostLiked(
+    post: { id: number; authorId: string; slug: string; title: string },
+    userId: string
+  ) {
+    const created = await this.notifications.createOrAggregate({
+      recipientId: post.authorId,
+      actorId: userId,
+      type: "POST_LIKED",
+      targetKind: "post",
+      targetId: String(post.id),
+      targetSlug: post.slug,
+      meta: { postTitle: post.title },
+    })
+    if (created?.notif) {
+      this.notifGateway.emitNewNotification(post.authorId, created.notif)
+      this.notifGateway.emitUnreadCount(post.authorId, created.unread)
+    }
+  }
+
+  async getReactionStatus(postId: number, userId: string) {
     const post = await this.prisma.post.findUnique({ where: { id: postId } })
     if (!post) throw new NotFoundException("Post not found")
     const row = await this.prisma.postLike.findUnique({
       where: { postId_userId: { postId, userId } },
     })
-    return { liked: !!row, likeCount: post.likeCount }
+    return this.reactionResponse(postId, userId, row?.reaction ?? null)
   }
 
-  async toggleLike(postId: number, userId: string) {
+  /** @deprecated Use getReactionStatus — kept for old clients. */
+  async getLikeStatus(postId: number, userId: string) {
+    return this.getReactionStatus(postId, userId)
+  }
+
+  async setReaction(postId: number, userId: string, reaction: ReactionType) {
     const post = await this.prisma.post.findUnique({ where: { id: postId } })
     if (!post) throw new NotFoundException("Post not found")
 
@@ -199,7 +252,19 @@ export class PostsService {
       where: { postId_userId: { postId, userId } },
     })
 
-    if (existing) {
+    if (!existing) {
+      await this.prisma.$transaction([
+        this.prisma.postLike.create({ data: { postId, userId, reaction } }),
+        this.prisma.post.update({
+          where: { id: postId },
+          data: { likeCount: { increment: 1 } },
+        }),
+      ])
+      await this.notifyPostLiked(post, userId)
+      return this.reactionResponse(postId, userId, reaction)
+    }
+
+    if (existing.reaction === reaction) {
       await this.prisma.$transaction([
         this.prisma.postLike.delete({ where: { id: existing.id } }),
         this.prisma.post.update({
@@ -207,37 +272,24 @@ export class PostsService {
           data: { likeCount: { decrement: 1 } },
         }),
       ])
-    } else {
-      await this.prisma.$transaction([
-        this.prisma.postLike.create({ data: { postId, userId } }),
-        this.prisma.post.update({
-          where: { id: postId },
-          data: { likeCount: { increment: 1 } },
-        }),
-      ])
-
-      // Create + emit notification only when it's a new like.
-      const created = await this.notifications.createOrAggregate({
-        recipientId: post.authorId,
-        actorId: userId,
-        type: "POST_LIKED",
-        targetKind: "post",
-        targetId: String(post.id),
-        targetSlug: post.slug,
-        meta: { postTitle: post.title },
-      })
-      if (created?.notif) {
-        this.notifGateway.emitNewNotification(post.authorId, created.notif)
-        this.notifGateway.emitUnreadCount(post.authorId, created.unread)
-      }
+      return this.reactionResponse(postId, userId, null)
     }
 
-    const updated = await this.prisma.post.findUnique({
-      where: { id: postId },
-      select: { likeCount: true },
+    await this.prisma.postLike.update({
+      where: { id: existing.id },
+      data: { reaction },
     })
-    const liked = !existing
-    return { liked, likeCount: updated?.likeCount ?? 0 }
+    return this.reactionResponse(postId, userId, reaction)
+  }
+
+  async toggleLike(postId: number, userId: string) {
+    const existing = await this.prisma.postLike.findUnique({
+      where: { postId_userId: { postId, userId } },
+    })
+    if (existing?.reaction === ReactionType.LIKE) {
+      return this.setReaction(postId, userId, ReactionType.LIKE)
+    }
+    return this.setReaction(postId, userId, ReactionType.LIKE)
   }
 
   async listComments(postId: number) {

@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Heart, MessageCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { MessageCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { ReactionPicker } from "@/components/post/reaction-picker"
 import { toast } from "sonner"
 import { confirmToast } from "@/lib/confirm-toast"
 import Lightbox from "@/components/media/lightbox"
@@ -65,33 +66,11 @@ export default function PostDetailClient({
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
 
-  const [likeCount, setLikeCount] = useState(post.likeCount)
-  const [liked, setLiked] = useState(false)
   const [commentTotal, setCommentTotal] = useState(post.commentCount)
-  const [likeBusy, setLikeBusy] = useState(false)
 
   useEffect(() => {
     setCommentTotal(post.commentCount)
   }, [post.id, post.commentCount])
-
-  useEffect(() => {
-    const token = getAccessToken()
-    if (!token) {
-      setLiked(false)
-      return
-    }
-    let cancelled = false
-    ;(async () => {
-      const res = await authFetch(`/posts/id/${post.id}/liked`, { cache: "no-store" })
-      if (!res.ok || cancelled) return
-      const data = (await res.json()) as { liked?: boolean; likeCount?: number }
-      if (typeof data.liked === "boolean") setLiked(data.liked)
-      if (typeof data.likeCount === "number") setLikeCount(data.likeCount)
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [post.id])
 
   const requireAuth = () => {
     if (!getAccessToken()) {
@@ -100,22 +79,6 @@ export default function PostDetailClient({
       return false
     }
     return true
-  }
-
-  const onToggleLike = async () => {
-    if (!requireAuth()) return
-    setLikeBusy(true)
-    try {
-      const res = await authFetch(`/posts/id/${post.id}/like`, { method: "POST" })
-      if (!res.ok) throw new Error("Failed")
-      const data = (await res.json()) as { liked: boolean; likeCount: number }
-      setLiked(data.liked)
-      setLikeCount(data.likeCount)
-    } catch {
-      toast.error("Could not update reaction.")
-    } finally {
-      setLikeBusy(false)
-    }
   }
 
   const onDeletePost = async () => {
@@ -273,17 +236,12 @@ export default function PostDetailClient({
       </div>
 
       <div className="flex flex-wrap items-center gap-4 border-y border-border/60 py-4">
-        <Button
-          type="button"
-          variant={liked ? "default" : "outline"}
-          size="sm"
-          className="rounded-full gap-2"
-          disabled={likeBusy}
-          onClick={() => void onToggleLike()}
-        >
-          <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
-          {likeCount} {likeCount === 1 ? "reaction" : "reactions"}
-        </Button>
+        <ReactionPicker
+          postId={post.id}
+          initialCount={post.likeCount}
+          size="md"
+          onAuthRequired={requireAuth}
+        />
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <MessageCircle className="h-4 w-4" />
           {commentTotal} {commentTotal === 1 ? "comment" : "comments"}

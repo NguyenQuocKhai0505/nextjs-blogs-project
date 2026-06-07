@@ -4,6 +4,7 @@ import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler"
 import { ConfigModule } from "@nestjs/config"
 
 import { AiModule } from "../ai/ai.module.js"
+import { StoriesModule } from "../stories/stories.module.js"
 import { AuthModule } from "../auth/auth.module.js"
 import { CategoriesModule } from "../categories/categories.module.js"
 import { ChatModule } from "../chat/chat.module.js"
@@ -50,6 +51,7 @@ function throttlerRootOptions() {
     CategoriesModule,
     NotificationsModule,
     AiModule,
+    StoriesModule,
   ],
   controllers: [HealthController],
   providers: [

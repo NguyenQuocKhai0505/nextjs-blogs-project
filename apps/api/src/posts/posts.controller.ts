@@ -14,6 +14,7 @@ import { PostsService } from "./posts.service.js"
 import { CreatePostDto } from "./dto/create-post.dto.js"
 import { CreateCommentDto } from "./dto/create-comment.dto.js"
 import { UpdatePostDto } from "./dto/update-post.dto.js"
+import { SetReactionDto } from "./dto/set-reaction.dto.js"
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard.js"
 import { CurrentUserId } from "../common/decorators/current-user-id.decorator.js"
 
@@ -37,6 +38,25 @@ export class PostsController {
   @Get("by-author/:authorId")
   listByAuthor(@Param("authorId") authorId: string) {
     return this.posts.listByAuthorId(authorId)
+  }
+
+  @Get("id/:postId/reaction")
+  @UseGuards(JwtAuthGuard)
+  reactionStatus(
+    @CurrentUserId() userId: string,
+    @Param("postId", ParseIntPipe) postId: number
+  ) {
+    return this.posts.getReactionStatus(postId, userId)
+  }
+
+  @HttpPost("id/:postId/reaction")
+  @UseGuards(JwtAuthGuard)
+  setReaction(
+    @CurrentUserId() userId: string,
+    @Param("postId", ParseIntPipe) postId: number,
+    @Body() dto: SetReactionDto
+  ) {
+    return this.posts.setReaction(postId, userId, dto.reaction)
   }
 
   @Get("id/:postId/liked")

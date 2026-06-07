@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 
 import CategoriesBar from "@/components/feed/categories-bar"
+import StoriesBar from "@/components/feed/stories-bar"
 import ComposerCard from "@/components/feed/composer-card"
 import HomeFeedSection from "@/components/feed/home-feed-section"
 import type { FeedPost } from "@/lib/types"
@@ -67,6 +68,7 @@ export default function HomeClient({
 
   return (
     <div className="space-y-4">
+      <StoriesBar viewerId={viewerId} />
       <CategoriesBar
         viewerRole={viewerRole}
         selectedCategoryIds={selectedCategoryIds}
