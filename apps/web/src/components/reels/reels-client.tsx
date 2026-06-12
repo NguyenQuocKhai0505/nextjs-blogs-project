@@ -1,13 +1,13 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { ReelItemCard } from "@/components/reels/reel-item"
 import { apiUrl } from "@/lib/api"
-import { authFetch } from "@/lib/auth-fetch"
 import { getAccessToken } from "@/lib/token"
 import type { ReelFeed, ReelItem } from "@/lib/types/reels"
 import { useLocale } from "@/lib/i18n/locale-context"
@@ -146,10 +146,10 @@ export function ReelsClient() {
           <p className="text-sm text-white/70">{t("reels.emptyHint")}</p>
           <div className="flex flex-wrap justify-center gap-2">
             <Button asChild>
-              <a href="/reels/create">{t("reels.createFirst")}</a>
+              <Link href="/reels/create">{t("reels.createFirst")}</Link>
             </Button>
             <Button asChild variant="outline" className="border-white/30 bg-transparent text-white">
-              <a href="/">{t("reels.backHome")}</a>
+              <Link href="/">{t("reels.backHome")}</Link>
             </Button>
           </div>
         </div>

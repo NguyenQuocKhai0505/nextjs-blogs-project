@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { Image as ImageIcon, Loader2, Type, Video, X } from "lucide-react"
+import { Image as ImageIcon, Loader2, Type, Video } from "lucide-react"
 import { toast } from "sonner"
 
 import { apiUrl } from "@/lib/api"
