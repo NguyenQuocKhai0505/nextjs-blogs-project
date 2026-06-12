@@ -79,7 +79,10 @@ model User {
   conversationHides       ConversationHide[]
   stories                 Story[]
   storyViews              StoryView[]
-
+  reels                   Reel[]
+  reelLikes               ReelLike[]
+  reelViews               ReelView[]
+  
   @@map("user")
 }
 
@@ -332,4 +335,46 @@ model StoryView {
   @@unique([storyId, viewerId], map: "story_views_story_viewer_unique")
   @@index([viewerId], map: "story_views_viewer_idx")
   @@map("story_views")
+}
+
+model Reel {
+  id           Int      @id @default(autoincrement())
+  authorId     String   @map("author_id") @db.VarChar(255)
+  videoUrl     String   @map("video_url")
+  caption      String?  @db.VarChar(500)
+  viewCount    Int      @default(0) @map("view_count")
+  likeCount    Int      @default(0) @map("like_count")
+  commentCount Int      @default(0) @map("comment_count")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  author User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes  ReelLike[]
+  views  ReelView[]
+  @@index([authorId, createdAt(sort: Desc)], map: "reels_author_created_idx")
+  @@index([createdAt(sort: Desc)], map: "reels_created_idx")
+  @@map("reels")
+}
+
+model ReelLike {
+  id        Int          @id @default(autoincrement())
+  reelId    Int          @map("reel_id")
+  userId    String       @map("user_id") @db.VarChar(255)
+  reaction  ReactionType @default(LIKE) @map("reaction")
+  createdAt DateTime     @default(now()) @map("created_at")
+  reel Reel @relation(fields: [reelId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([reelId, userId], map: "reel_likes_reel_user_unique")
+  @@map("reel_likes")
+}
+
+model ReelView {
+  id       Int      @id @default(autoincrement())
+  reelId   Int      @map("reel_id")
+  viewerId String   @map("viewer_id") @db.VarChar(255)
+  viewedAt DateTime @default(now()) @map("viewed_at")
+  reel   Reel @relation(fields: [reelId], references: [id], onDelete: Cascade)
+  viewer User @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+  @@unique([reelId, viewerId], map: "reel_views_reel_viewer_unique")
+  @@index([viewerId], map: "reel_views_viewer_idx")
+  @@map("reel_views")
 }

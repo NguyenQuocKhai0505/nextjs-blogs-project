@@ -17,6 +17,6 @@
       "@prisma/client": ["node_modules/@prisma/client"]
     }
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "src/reels/reel.service.ts"]
 }
 

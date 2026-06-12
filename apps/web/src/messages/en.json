@@ -73,7 +73,8 @@
     "quickActions": "Quick actions",
     "quickActionsHint": "Post something new or jump into messages.",
     "post": "Post",
-    "chat": "Chat"
+    "chat": "Chat",
+    "reels": "Reels"
   },
   "rail": {
     "trending": "Trending",
@@ -143,6 +144,31 @@
     "viewersFail": "Could not load viewers",
     "deleted": "Story deleted",
     "deleteFail": "Could not delete story"
+  },
+  "reels": {
+    "title": "Reels",
+    "backHome": "Home",
+    "backToFeed": "Back to reels",
+    "create": "Create",
+    "createTitle": "New reel",
+    "createHint": "Upload a short vertical video (max 50MB).",
+    "chooseVideo": "Choose video",
+    "uploading": "Uploading…",
+    "captionPlaceholder": "Add a caption (optional)…",
+    "created": "Reel posted",
+    "createFail": "Could not create reel",
+    "noVideoUrl": "No video URL returned from upload",
+    "loginRequired": "Sign in to post or react to reels",
+    "loadFail": "Could not load reels",
+    "emptyTitle": "No reels yet",
+    "emptyHint": "Be the first to share a short video.",
+    "createFirst": "Create your first reel",
+    "views": "views",
+    "videoLabel": "Reel video",
+    "delete": "Delete reel",
+    "deleteConfirm": "Delete this reel permanently?",
+    "deleted": "Reel deleted",
+    "deleteFail": "Could not delete reel"
   },
   "composer": {
     "title": "Create something",

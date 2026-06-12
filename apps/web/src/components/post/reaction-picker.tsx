@@ -18,11 +18,18 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
 type Props = {
-  postId: number
+  postId?: number
+  reelId?: number
   initialCount?: number
   size?: "sm" | "md"
   className?: string
   onAuthRequired?: () => void
+}
+
+function reactionPath(postId?: number, reelId?: number) {
+  if (reelId != null) return `/reels/${reelId}/reaction`
+  if (postId != null) return `/posts/id/${postId}/reaction`
+  return "/posts/id/0/reaction"
 }
 
 function parseStatus(data: unknown, fallbackCount: number): ReactionStatus {
@@ -63,11 +70,14 @@ function SummaryLine({ summary }: { summary: ReactionSummary }) {
 
 export function ReactionPicker({
   postId,
+  reelId,
   initialCount = 0,
   size = "sm",
   className,
   onAuthRequired,
 }: Props) {
+  const targetId = reelId ?? postId ?? 0
+  const path = reactionPath(postId, reelId)
   const [myReaction, setMyReaction] = useState<ReactionType | null>(null)
   const [reactionCount, setReactionCount] = useState(initialCount)
   const [summary, setSummary] = useState<ReactionSummary>({})
@@ -77,7 +87,7 @@ export function ReactionPicker({
 
   useEffect(() => {
     setReactionCount(initialCount)
-  }, [postId, initialCount])
+  }, [targetId, initialCount])
 
   useEffect(() => {
     const token = getAccessToken()
@@ -87,7 +97,7 @@ export function ReactionPicker({
     }
     let cancelled = false
     ;(async () => {
-      const res = await authFetch(`/posts/id/${postId}/reaction`, { cache: "no-store" })
+      const res = await authFetch(path, { cache: "no-store" })
       if (!res.ok || cancelled) return
       const data = parseStatus(await res.json(), initialCount)
       if (cancelled) return
@@ -98,7 +108,7 @@ export function ReactionPicker({
     return () => {
       cancelled = true
     }
-  }, [postId, initialCount])
+  }, [path, initialCount])
 
   useEffect(() => {
     if (!pickerOpen) return
@@ -118,7 +128,7 @@ export function ReactionPicker({
       setBusy(true)
       setPickerOpen(false)
       try {
-        const res = await authFetch(`/posts/id/${postId}/reaction`, {
+        const res = await authFetch(path, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ reaction: type }),
@@ -134,7 +144,7 @@ export function ReactionPicker({
         setBusy(false)
       }
     },
-    [postId, reactionCount, onAuthRequired]
+    [path, reactionCount, onAuthRequired]
   )
 
   const iconSize = size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"

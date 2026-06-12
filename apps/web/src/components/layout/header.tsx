@@ -26,6 +26,7 @@ function Header(){
     const navItems = useMemo(
       () => [
         { label: t("header.createPost"), href: "/post/create" },
+        { label: t("sidebar.reels"), href: "/reels" },
         { label: t("header.chat"), href: "/contact" },
         { label: t("header.aboutAuthor"), href: "/about" },
       ],

@@ -12,6 +12,7 @@ import {
   User,
   Bell,
   Info,
+  Clapperboard,
 } from "lucide-react"
 import { LanguageSwitcher } from "@/components/layout/language-switcher"
 import { useLocale } from "@/lib/i18n/locale-context"
@@ -23,6 +24,7 @@ export default function LeftSidebar() {
   const nav = useMemo(
     () => [
       { href: "/", label: t("sidebar.home"), icon: Home },
+      { href: "/reels", label: t("sidebar.reels"), icon: Clapperboard },
       { href: "/post/create", label: t("sidebar.create"), icon: PlusSquare },
       { href: "/contact", label: t("sidebar.messages"), icon: MessageCircle },
       { href: "/profile", label: t("sidebar.profile"), icon: User },

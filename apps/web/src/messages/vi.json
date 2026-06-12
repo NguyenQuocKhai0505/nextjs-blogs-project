@@ -73,7 +73,8 @@
     "quickActions": "Thao tác nhanh",
     "quickActionsHint": "Đăng bài mới hoặc vào tin nhắn.",
     "post": "Bài viết",
-    "chat": "Chat"
+    "chat": "Chat",
+    "reels": "Reels"
   },
   "rail": {
     "trending": "Xu hướng",
@@ -143,6 +144,31 @@
     "viewersFail": "Không tải được danh sách người xem",
     "deleted": "Đã xóa story",
     "deleteFail": "Không xóa được story"
+  },
+  "reels": {
+    "title": "Reels",
+    "backHome": "Trang chủ",
+    "backToFeed": "Quay lại reels",
+    "create": "Tạo reel",
+    "createTitle": "Reel mới",
+    "createHint": "Tải video ngắn dọc (tối đa 50MB).",
+    "chooseVideo": "Chọn video",
+    "uploading": "Đang tải lên…",
+    "captionPlaceholder": "Thêm chú thích (tuỳ chọn)…",
+    "created": "Đã đăng reel",
+    "createFail": "Không tạo được reel",
+    "noVideoUrl": "Upload không trả về URL video",
+    "loginRequired": "Đăng nhập để đăng hoặc react reel",
+    "loadFail": "Không tải được reels",
+    "emptyTitle": "Chưa có reel nào",
+    "emptyHint": "Hãy là người đầu tiên chia sẻ video ngắn.",
+    "createFirst": "Tạo reel đầu tiên",
+    "views": "lượt xem",
+    "videoLabel": "Video reel",
+    "delete": "Xóa reel",
+    "deleteConfirm": "Xóa reel này vĩnh viễn?",
+    "deleted": "Đã xóa reel",
+    "deleteFail": "Không xóa được reel"
   },
   "composer": {
     "title": "Tạo nội dung",
