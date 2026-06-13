@@ -4,11 +4,23 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Bell } from "lucide-react"
 import { useNotification } from "@/contexts/notification-context"
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { getNotificationText, getNotificationNavigatePath, isRead } from "@/lib/notifications/utils"
+import {
+  getNotificationText,
+  getNotificationNavigatePath,
+  getPrimaryActor,
+  isRead,
+} from "@/lib/notifications/utils"
 
 export function NotificationBell() {
   const router = useRouter()
@@ -61,27 +73,38 @@ export function NotificationBell() {
         ) : notifications.length === 0 ? (
           <div className="py-6 text-center text-sm text-muted-foreground">No new notifications</div>
         ) : (
-          notifications.map(notification => (
-            <DropdownMenuItem
-              key={notification.id}
-              className={cn(
-                "flex flex-col gap-1 py-3 focus:bg-muted",
-                isRead(notification) ? "opacity-60" : ""
-              )}
-              onClick={() => handleNavigate(getNotificationNavigatePath(notification))}
-            >
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={""} alt={"Notification"} />
-                  <AvatarFallback>{"N"}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <p className="text-sm font-medium leading-tight">{getNotificationText(notification)}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(notification.createdAt).toLocaleString()}</p>
+          notifications.map((notification) => {
+            const actor = getPrimaryActor(notification)
+            return (
+              <DropdownMenuItem
+                key={notification.id}
+                className={cn(
+                  "flex flex-col gap-1 py-3 focus:bg-muted cursor-pointer",
+                  isRead(notification) ? "opacity-60" : ""
+                )}
+                onClick={() => handleNavigate(getNotificationNavigatePath(notification))}
+              >
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    {actor?.avatarUrl ? (
+                      <AvatarImage src={actor.avatarUrl} alt={actor.name} />
+                    ) : null}
+                    <AvatarFallback>
+                      {actor?.name?.charAt(0)?.toUpperCase() ?? "N"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium leading-tight">
+                      {getNotificationText(notification)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(notification.createdAt).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </DropdownMenuItem>
-          ))
+              </DropdownMenuItem>
+            )
+          })
         )}
       </DropdownMenuContent>
     </DropdownMenu>

@@ -16,6 +16,7 @@ import {
 } from "@/lib/types/reactions"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { ReactionListDialog } from "@/components/post/reaction-list-dialog"
 
 type Props = {
   postId?: number
@@ -54,15 +55,31 @@ function parseStatus(data: unknown, fallbackCount: number): ReactionStatus {
   return { reaction, reactionCount, summary }
 }
 
-function SummaryLine({ summary }: { summary: ReactionSummary }) {
+function SummaryLine({
+  summary,
+  onOpen,
+}: {
+  summary: ReactionSummary
+  onOpen: (reaction: ReactionType) => void
+}) {
   const items = REACTION_TYPES.filter((t) => (summary[t] ?? 0) > 0)
   if (!items.length) return null
   return (
-    <span className="hidden text-xs text-muted-foreground sm:inline">
+    <span className="inline-flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
       {items.map((t) => (
-        <span key={t} className="mr-1.5">
+        <button
+          key={t}
+          type="button"
+          className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 transition-colors hover:bg-muted hover:text-foreground"
+          title={REACTION_LABEL[t]}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onOpen(t)
+          }}
+        >
           {REACTION_EMOJI[t]} {summary[t]}
-        </span>
+        </button>
       ))}
     </span>
   )
@@ -83,7 +100,15 @@ export function ReactionPicker({
   const [summary, setSummary] = useState<ReactionSummary>({})
   const [busy, setBusy] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [listOpen, setListOpen] = useState(false)
+  const [listFilter, setListFilter] = useState<ReactionType | null>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
+
+  const openReactionList = useCallback((filter: ReactionType | null = null) => {
+    if (reactionCount <= 0) return
+    setListFilter(filter)
+    setListOpen(true)
+  }, [reactionCount])
 
   useEffect(() => {
     setReactionCount(initialCount)
@@ -207,10 +232,32 @@ export function ReactionPicker({
         ) : (
           <ThumbsUp className={iconSize} />
         )}
-        <span className="text-xs font-medium">{reactionCount}</span>
       </Button>
+      {reactionCount > 0 ? (
+        <button
+          type="button"
+          className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            openReactionList(null)
+          }}
+        >
+          {reactionCount}
+        </button>
+      ) : (
+        <span className="text-xs font-medium text-muted-foreground">{reactionCount}</span>
+      )}
 
-      <SummaryLine summary={summary} />
+      <SummaryLine summary={summary} onOpen={openReactionList} />
+
+      <ReactionListDialog
+        open={listOpen}
+        onOpenChange={setListOpen}
+        postId={postId}
+        reelId={reelId}
+        filterReaction={listFilter}
+      />
     </div>
   )
 }

@@ -35,6 +35,18 @@ export class ReelsController {
     return this.reels.createReel(userId, dto)
   }
 
+  @Get(":id/reactions")
+  listReactions(
+    @Param("id", ParseIntPipe) id: number,
+    @Query("reaction") reactionRaw?: string
+  ) {
+    const allowed = ["LIKE", "LOVE", "HAHA", "WOW", "SAD", "ANGRY"] as const
+    const reaction = reactionRaw && (allowed as readonly string[]).includes(reactionRaw)
+      ? (reactionRaw as (typeof allowed)[number])
+      : undefined
+    return this.reels.listReactions(id, reaction)
+  }
+
   @Get(":id/reaction")
   @UseGuards(JwtAuthGuard)
   getReaction(

@@ -40,6 +40,18 @@ export class PostsController {
     return this.posts.listByAuthorId(authorId)
   }
 
+  @Get("id/:postId/reactions")
+  listReactions(
+    @Param("postId", ParseIntPipe) postId: number,
+    @Query("reaction") reactionRaw?: string
+  ) {
+    const allowed = ["LIKE", "LOVE", "HAHA", "WOW", "SAD", "ANGRY"] as const
+    const reaction = reactionRaw && (allowed as readonly string[]).includes(reactionRaw)
+      ? (reactionRaw as (typeof allowed)[number])
+      : undefined
+    return this.posts.listReactions(postId, reaction)
+  }
+
   @Get("id/:postId/reaction")
   @UseGuards(JwtAuthGuard)
   reactionStatus(

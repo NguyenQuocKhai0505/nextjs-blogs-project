@@ -266,6 +266,9 @@
     "deletePost": "게시물 삭제",
     "videoLabel": "동영상",
     "viewDetails": "자세히 보기",
-    "communityPost": "커뮤니티 게시물"
+    "communityPost": "커뮤니티 게시물",
+    "reactionsTitle": "반응한 사람",
+    "reactionsLoading": "불러오는 중…",
+    "reactionsEmpty": "아직 반응이 없습니다."
   }
 }

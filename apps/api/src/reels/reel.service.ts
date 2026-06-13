@@ -46,6 +46,31 @@ export class ReelsService {
     return this.reactionResponse(reelId, userId, row?.reaction ?? null)
   }
 
+  async listReactions(reelId: number, reaction?: ReactionType) {
+    const reel = await this.prisma.reel.findUnique({ where: { id: reelId } })
+    if (!reel) throw new NotFoundException("Reel not found")
+
+    const rows = await this.prisma.reelLike.findMany({
+      where: {
+        reelId,
+        ...(reaction ? { reaction } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: { select: { id: true, name: true, avatarUrl: true } },
+      },
+    })
+
+    return {
+      items: rows.map((r) => ({
+        userId: r.userId,
+        reaction: r.reaction,
+        createdAt: r.createdAt.toISOString(),
+        user: r.user,
+      })),
+    }
+  }
+
   async setReaction(reelId: number, userId: string, reaction: ReactionType) {
     const reel = await this.prisma.reel.findUnique({ where: { id: reelId } })
     if (!reel) throw new NotFoundException("Reel not found")

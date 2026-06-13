@@ -239,6 +239,31 @@ export class PostsService {
     return this.reactionResponse(postId, userId, row?.reaction ?? null)
   }
 
+  async listReactions(postId: number, reaction?: ReactionType) {
+    const post = await this.prisma.post.findUnique({ where: { id: postId } })
+    if (!post) throw new NotFoundException("Post not found")
+
+    const rows = await this.prisma.postLike.findMany({
+      where: {
+        postId,
+        ...(reaction ? { reaction } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: { select: { id: true, name: true, avatarUrl: true } },
+      },
+    })
+
+    return {
+      items: rows.map((r) => ({
+        userId: r.userId,
+        reaction: r.reaction,
+        createdAt: r.createdAt.toISOString(),
+        user: r.user,
+      })),
+    }
+  }
+
   /** @deprecated Use getReactionStatus — kept for old clients. */
   async getLikeStatus(postId: number, userId: string) {
     return this.getReactionStatus(postId, userId)

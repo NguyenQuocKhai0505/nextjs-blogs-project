@@ -2,6 +2,11 @@ import { Injectable } from "@nestjs/common";
 import { Prisma, NotificationType, NotificationTargetKind } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service.js";
 
+function parseActorIds(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((id): id is string => typeof id === "string" && id.length > 0);
+}
+
 type CreateNotifInput = {
   recipientId: string;
   actorId: string;
@@ -32,7 +37,89 @@ export class NotificationsService {
     const sliced = items.slice(0, take);
     const nextCursor = hasMore ? sliced[sliced.length - 1]?.id : null;
 
-    return { items: sliced, nextCursor };
+    const actorIdSet = new Set<string>();
+    for (const row of sliced) {
+      for (const id of parseActorIds(row.actorIds)) {
+        actorIdSet.add(id);
+      }
+    }
+
+    const actors =
+      actorIdSet.size > 0
+        ? await this.prisma.user.findMany({
+            where: { id: { in: [...actorIdSet] } },
+            select: { id: true, name: true, avatarUrl: true },
+          })
+        : [];
+    const actorById = new Map(actors.map((a) => [a.id, a]));
+
+    return {
+      items: sliced.map((row) => this.formatRow(row, actorById)),
+      nextCursor,
+    };
+  }
+
+  private formatRow(
+    row: {
+      id: number;
+      type: NotificationType;
+      targetKind: NotificationTargetKind;
+      targetId: string;
+      targetSlug: string | null;
+      meta: Prisma.JsonValue;
+      readAt: Date | null;
+      createdAt: Date;
+      updatedAt: Date;
+      actorCount: number;
+      actorIds: Prisma.JsonValue;
+    },
+    actorById: Map<string, { id: string; name: string; avatarUrl: string | null }>
+  ) {
+    const ids = parseActorIds(row.actorIds);
+    return {
+      id: row.id,
+      type: row.type,
+      targetKind: row.targetKind,
+      targetId: row.targetId,
+      targetSlug: row.targetSlug,
+      meta: row.meta,
+      readAt: row.readAt?.toISOString() ?? null,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+      actorCount: row.actorCount,
+      actorIds: ids,
+      actors: ids
+        .map((id) => actorById.get(id))
+        .filter((a): a is { id: string; name: string; avatarUrl: string | null } => !!a),
+    };
+  }
+
+  async formatForClient(
+    row: {
+      id: number;
+      type: NotificationType;
+      targetKind: NotificationTargetKind;
+      targetId: string;
+      targetSlug: string | null;
+      meta: Prisma.JsonValue;
+      readAt: Date | null;
+      createdAt: Date;
+      updatedAt: Date;
+      actorCount: number;
+      actorIds: Prisma.JsonValue;
+    } | null
+  ) {
+    if (!row) return null;
+    const ids = parseActorIds(row.actorIds);
+    const actors =
+      ids.length > 0
+        ? await this.prisma.user.findMany({
+            where: { id: { in: ids } },
+            select: { id: true, name: true, avatarUrl: true },
+          })
+        : [];
+    const actorById = new Map(actors.map((a) => [a.id, a]));
+    return this.formatRow(row, actorById);
   }
 
   async getUnreadCount(userId: string) {
@@ -144,6 +231,7 @@ export class NotificationsService {
       return { notif, unread: unreadRow?.unread ?? 0 };
     });
 
-    return txResult;
+    const formatted = await this.formatForClient(txResult.notif);
+    return { notif: formatted, unread: txResult.unread };
   }
 }

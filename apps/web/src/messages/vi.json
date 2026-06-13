@@ -266,6 +266,9 @@
     "deletePost": "Xóa bài viết",
     "videoLabel": "Video",
     "viewDetails": "Xem chi tiết",
-    "communityPost": "Bài cộng đồng"
+    "communityPost": "Bài cộng đồng",
+    "reactionsTitle": "Người đã thả cảm xúc",
+    "reactionsLoading": "Đang tải…",
+    "reactionsEmpty": "Chưa có ai thả cảm xúc."
   }
 }

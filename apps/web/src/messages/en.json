@@ -266,6 +266,9 @@
     "deletePost": "Delete post",
     "videoLabel": "Video",
     "viewDetails": "View details",
-    "communityPost": "Community post"
+    "communityPost": "Community post",
+    "reactionsTitle": "People who reacted",
+    "reactionsLoading": "Loading reactions…",
+    "reactionsEmpty": "No reactions yet."
   }
 }
