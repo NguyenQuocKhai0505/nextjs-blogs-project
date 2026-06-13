@@ -66,6 +66,8 @@ export class ChatService {
         content: string | null
         imageUrl: string | null
         videoUrl: string | null
+        audioUrl: string | null
+        audioDurationSec: number | null
         revokedAt: Date | null
         createdAt: Date
       } | null
@@ -81,6 +83,8 @@ export class ChatService {
             content: lastMessage.content,
             imageUrl: lastMessage.imageUrl,
             videoUrl: lastMessage.videoUrl,
+            audioUrl: lastMessage.audioUrl,
+            audioDurationSec: lastMessage.audioDurationSec,
             revokedAt: lastMessage.revokedAt ?? null,
             createdAt: lastMessage.createdAt,
           }
@@ -341,6 +345,8 @@ export class ChatService {
         content: null,
         imageUrl: null,
         videoUrl: null,
+        audioUrl: null,
+        audioDurationSec: null,
       },
       include: { sender: { select: { id: true, name: true, avatarUrl: true } } },
     })
@@ -436,6 +442,8 @@ export class ChatService {
       content?: string
       imageUrl?: string
       videoUrl?: string
+      audioUrl?: string
+      audioDurationSec?: number
     }
   ) {
     await this.assertCanAccessConversation(userId, input.conversationId)
@@ -447,6 +455,8 @@ export class ChatService {
         content: input.content ?? null,
         imageUrl: input.imageUrl ?? null,
         videoUrl: input.videoUrl ?? null,
+        audioUrl: input.audioUrl ?? null,
+        audioDurationSec: input.audioDurationSec ?? null,
       },
       include: { sender: { select: { id: true, name: true, avatarUrl: true } } },
     })

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
+import { VoiceMessagePlayer } from "@/components/contact/voice-message-player"
 
 export type MessageItem = {
   id: number
@@ -10,6 +11,8 @@ export type MessageItem = {
   content: string | null
   imageUrl?: string | null
   videoUrl?: string | null
+  audioUrl?: string | null
+  audioDurationSec?: number | null
   createdAt: string
 }
 
@@ -81,6 +84,13 @@ export default function ChatWindow({ messages, currentUserId, loading, onDeleteM
                         src={message.videoUrl}
                         controls
                         className="max-h-52 w-full rounded-xl"
+                      />
+                    )}
+                    {message.audioUrl && (
+                      <VoiceMessagePlayer
+                        src={message.audioUrl}
+                        durationSec={message.audioDurationSec}
+                        isOwn={isOwn}
                       />
                     )}
                     {message.content && (

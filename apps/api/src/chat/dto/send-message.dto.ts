@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString, MaxLength, Min } from "class-validator"
+import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator"
 
 export class SendMessageDto {
   @IsInt()
@@ -19,5 +19,15 @@ export class SendMessageDto {
   @IsString()
   @MaxLength(5000)
   videoUrl?: string
-}
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  audioUrl?: string
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(600)
+  audioDurationSec?: number
+}

@@ -76,6 +76,8 @@ export default function ChatPanel({
     content?: string
     imageUrl?: string
     videoUrl?: string
+    audioUrl?: string
+    audioDurationSec?: number
   }
 
   const handleSendMessage = async (payload: OutgoingMessagePayload) => {

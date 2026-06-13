@@ -2,19 +2,33 @@
 
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Image as ImageIcon, Video as VideoIcon, Send } from "lucide-react"
+import { Image as ImageIcon, Mic, Send, Square, Video as VideoIcon, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { apiUrl } from "@/lib/api"
 import { useLocale } from "@/lib/i18n/locale-context"
+import { useVoiceRecorder } from "@/hooks/use-voice-recorder"
+import { toast } from "sonner"
 
 type MessageInputProps = {
-  onSend: (payload: { content?: string; imageUrl?: string; videoUrl?: string }) => void
+  onSend: (payload: {
+    content?: string
+    imageUrl?: string
+    videoUrl?: string
+    audioUrl?: string
+    audioDurationSec?: number
+  }) => void
   disabled?: boolean
 }
 
 function PendingImagePreview({ url, className }: { url: string; className?: string }) {
   // eslint-disable-next-line @next/next/no-img-element -- blob / object URL preview
   return <img src={url} alt="Preview" className={className} />
+}
+
+function formatRecordingTime(sec: number): string {
+  const m = Math.floor(sec / 60)
+  const s = sec % 60
+  return `${m}:${s.toString().padStart(2, "0")}`
 }
 
 export default function MessageInput({ onSend, disabled }: MessageInputProps) {
@@ -26,6 +40,8 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
   const imageInputRef = useRef<HTMLInputElement | null>(null)
   const videoInputRef = useRef<HTMLInputElement | null>(null)
 
+  const { isRecording, durationSec, start, stop, cancel } = useVoiceRecorder()
+
   const handleFileSelected = async (
     event: React.ChangeEvent<HTMLInputElement>,
     type: "image" | "video"
@@ -33,7 +49,6 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
     const file = event.target.files?.[0]
     if (!file) return
 
-    // Giới hạn dung lượng: ảnh 5MB, video 50MB
     const maxSize = type === "image" ? 5 * 1024 * 1024 : 50 * 1024 * 1024
     if (file.size > maxSize) {
       console.error("File too large")
@@ -65,8 +80,54 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
     }
   }
 
-  const handleSend = () => {
+  const uploadVoiceBlob = async (
+    blob: Blob,
+    filename: string
+  ): Promise<string | null> => {
+    const formData = new FormData()
+    formData.append("files", blob, filename)
+    const res = await fetch(apiUrl("/upload"), {
+      method: "POST",
+      body: formData,
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as { audioUrls?: string[] }
+    return data.audioUrls?.[0] ?? null
+  }
+
+  const handleMicClick = async () => {
     if (disabled || uploading) return
+
+    if (isRecording) {
+      setUploading(true)
+      try {
+        const result = await stop()
+        if (!result) return
+        const audioUrl = await uploadVoiceBlob(result.blob, result.filename)
+        if (!audioUrl) {
+          toast.error(t("chat.voiceUploadFail"))
+          return
+        }
+        onSend({
+          audioUrl,
+          audioDurationSec: result.durationSec,
+        })
+      } catch {
+        toast.error(t("chat.voiceUploadFail"))
+      } finally {
+        setUploading(false)
+      }
+      return
+    }
+
+    const ok = await start()
+    if (!ok) {
+      toast.error(t("chat.micPermissionDenied"))
+    }
+  }
+
+  const handleSend = () => {
+    if (disabled || uploading || isRecording) return
     if (!value.trim() && !pendingMedia) return
 
     onSend({
@@ -86,9 +147,10 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
     }
   }
 
+  const busy = disabled || uploading
+
   return (
     <div className="flex items-end gap-3 px-2 py-2 sm:px-0 sm:py-3">
-      {/* Hidden file inputs */}
       <input
         ref={imageInputRef}
         type="file"
@@ -105,7 +167,41 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
       />
 
       <div className="flex flex-col gap-2 flex-1">
-        {pendingMedia && (
+        {isRecording ? (
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm">
+            <div className="flex items-center gap-2 text-destructive">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-destructive" />
+              </span>
+              <span className="font-medium">{t("chat.recording")}</span>
+              <span className="tabular-nums">{formatRecordingTime(durationSec)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1 text-xs"
+                onClick={() => cancel()}
+              >
+                <X className="h-3.5 w-3.5" />
+                {t("chat.cancelRecording")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="h-8 gap-1 text-xs"
+                onClick={() => void handleMicClick()}
+              >
+                <Square className="h-3 w-3 fill-current" />
+                {t("chat.stopAndSend")}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {pendingMedia && !isRecording ? (
           <div className="rounded-lg border bg-muted px-3 py-2 text-xs text-muted-foreground">
             <div className="flex items-start justify-between gap-2">
               {pendingMedia.type === "image" ? (
@@ -137,7 +233,8 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
               </Button>
             </div>
           </div>
-        )}
+        ) : null}
+
         <div className="flex items-end gap-2">
           <div className="flex items-center gap-1">
             <Button
@@ -146,7 +243,7 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
               size="icon"
               className="rounded-full"
               onClick={() => imageInputRef.current?.click()}
-              disabled={disabled || uploading}
+              disabled={busy || isRecording}
             >
               <ImageIcon className="h-5 w-5 text-green-600" />
             </Button>
@@ -156,9 +253,21 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
               size="icon"
               className="rounded-full"
               onClick={() => videoInputRef.current?.click()}
-              disabled={disabled || uploading}
+              disabled={busy || isRecording}
             >
               <VideoIcon className="h-5 w-5 text-green-600" />
+            </Button>
+            <Button
+              type="button"
+              variant={isRecording ? "destructive" : "ghost"}
+              size="icon"
+              className="rounded-full"
+              onClick={() => void handleMicClick()}
+              disabled={busy && !isRecording}
+              aria-label={isRecording ? t("chat.stopAndSend") : t("chat.recordVoice")}
+              title={isRecording ? t("chat.stopAndSend") : t("chat.recordVoice")}
+            >
+              <Mic className={cn("h-5 w-5", isRecording ? "text-destructive-foreground" : "text-blue-600")} />
             </Button>
           </div>
           <textarea
@@ -169,16 +278,16 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
             rows={1}
             className={cn(
               "flex-1 resize-none rounded-2xl border bg-transparent px-4 py-2 text-sm shadow-sm focus-visible:border-primary",
-              (disabled || uploading) && "cursor-not-allowed opacity-50"
+              busy && "cursor-not-allowed opacity-50"
             )}
-            disabled={disabled || uploading}
+            disabled={busy || isRecording}
           />
           <Button
             type="button"
             size="icon"
             className="rounded-full"
             onClick={handleSend}
-            disabled={disabled || uploading || (!value.trim() && !pendingMedia)}
+            disabled={busy || isRecording || (!value.trim() && !pendingMedia)}
             aria-label={t("chat.sendAria")}
           >
             <Send className="size-4" />
@@ -188,4 +297,3 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
     </div>
   )
 }
-

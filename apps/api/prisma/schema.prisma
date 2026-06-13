@@ -276,6 +276,8 @@ model Message {
   content        String?
   imageUrl       String?      @map("image_url")
   videoUrl       String?      @map("video_url")
+  audioUrl       String?      @map("audio_url")
+  audioDurationSec Int?       @map("audio_duration_sec")
   read           Boolean      @default(false)
   revokedAt      DateTime?    @map("revoked_at")
   createdAt      DateTime     @default(now()) @map("created_at")

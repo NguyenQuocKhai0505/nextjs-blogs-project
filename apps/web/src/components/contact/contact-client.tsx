@@ -10,6 +10,7 @@ import { apiSocketUrl } from "@/lib/api"
 import { getAccessToken } from "@/lib/token"
 import { authFetch } from "@/lib/auth-fetch"
 import MessageInput from "@/components/contact/message-input"
+import { VoiceMessagePlayer } from "@/components/contact/voice-message-player"
 import { CreateGroupDialog } from "@/components/contact/create-group-dialog"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -59,6 +60,8 @@ export type ConversationItem = {
     content: string | null
     imageUrl: string | null
     videoUrl: string | null
+    audioUrl: string | null
+    audioDurationSec: number | null
     revokedAt?: string | null
     createdAt: string
   } | null
@@ -80,6 +83,8 @@ export type MessageItem = {
   content: string | null
   imageUrl: string | null
   videoUrl: string | null
+  audioUrl: string | null
+  audioDurationSec: number | null
   read: boolean
   revokedAt?: string | null
   createdAt: string
@@ -101,6 +106,7 @@ function lastMessagePreview(
   if (m.content?.trim()) return m.content
   if (m.imageUrl) return t("chat.sentImage")
   if (m.videoUrl) return t("chat.sentVideo")
+  if (m.audioUrl) return t("chat.sentVoice")
   return "—"
 }
 
@@ -322,6 +328,8 @@ export default function ContactClient({
             content: msg.content,
             imageUrl: msg.imageUrl,
             videoUrl: msg.videoUrl,
+            audioUrl: msg.audioUrl,
+            audioDurationSec: msg.audioDurationSec,
             revokedAt: msg.revokedAt ?? null,
             createdAt: msg.createdAt,
           },
@@ -358,6 +366,8 @@ export default function ContactClient({
                 content: msg.content,
                 imageUrl: msg.imageUrl,
                 videoUrl: msg.videoUrl,
+                audioUrl: msg.audioUrl,
+                audioDurationSec: msg.audioDurationSec,
                 revokedAt: msg.revokedAt ?? c.lastMessage.revokedAt ?? null,
               }
             : null,
@@ -404,6 +414,8 @@ export default function ContactClient({
     content?: string
     imageUrl?: string
     videoUrl?: string
+    audioUrl?: string
+    audioDurationSec?: number
   }) {
     if (!activeId) return
     const res = await authFetch("/messages", {
@@ -630,6 +642,16 @@ export default function ContactClient({
                                     className={cn(
                                       "max-h-64 w-full max-w-full rounded-lg",
                                       m.content || m.imageUrl ? "mt-2" : ""
+                                    )}
+                                  />
+                                ) : null}
+                                {m.audioUrl ? (
+                                  <VoiceMessagePlayer
+                                    src={m.audioUrl}
+                                    durationSec={m.audioDurationSec}
+                                    isOwn={isMine}
+                                    className={cn(
+                                      m.content || m.imageUrl || m.videoUrl ? "mt-2" : ""
                                     )}
                                   />
                                 ) : null}
