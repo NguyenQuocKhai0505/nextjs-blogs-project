@@ -27,6 +27,16 @@
     "cancelRecording": "Huỷ",
     "micPermissionDenied": "Không có quyền micro. Hãy cho phép mic trong trình duyệt.",
     "voiceUploadFail": "Không tải lên được tin thoại.",
+    "translatePrompt": "Dịch sang ngôn ngữ của bạn?",
+    "translateAgain": "Dịch sang ngôn ngữ khác",
+    "translating": "Đang dịch…",
+    "translateFail": "Không dịch được tin nhắn này.",
+    "translateSignIn": "Đăng nhập để dùng tính năng dịch.",
+    "translateLang": {
+      "en": "Tiếng Anh",
+      "ko": "Tiếng Hàn",
+      "vi": "Tiếng Việt"
+    },
     "selectChat": "Chọn một cuộc trò chuyện",
     "loading": "Đang tải…",
     "noMessages": "Chưa có tin nhắn.",

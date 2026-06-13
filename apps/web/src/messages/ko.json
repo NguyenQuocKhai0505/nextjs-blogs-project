@@ -27,6 +27,16 @@
     "cancelRecording": "취소",
     "micPermissionDenied": "마이크 권한이 거부되었습니다. 브라우저 설정에서 허용하세요.",
     "voiceUploadFail": "음성 메시지를 업로드할 수 없습니다.",
+    "translatePrompt": "내 언어로 번역할까요?",
+    "translateAgain": "다른 언어로 번역",
+    "translating": "번역 중…",
+    "translateFail": "이 메시지를 번역할 수 없습니다.",
+    "translateSignIn": "번역을 사용하려면 로그인하세요.",
+    "translateLang": {
+      "en": "영어",
+      "ko": "한국어",
+      "vi": "베트남어"
+    },
     "selectChat": "대화 선택",
     "loading": "불러오는 중…",
     "noMessages": "메시지가 없습니다.",

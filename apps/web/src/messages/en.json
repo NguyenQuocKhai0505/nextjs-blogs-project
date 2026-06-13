@@ -27,6 +27,16 @@
     "cancelRecording": "Cancel",
     "micPermissionDenied": "Microphone access denied. Allow mic in browser settings.",
     "voiceUploadFail": "Could not upload voice message.",
+    "translatePrompt": "Translate in your language?",
+    "translateAgain": "Translate to another language",
+    "translating": "Translating…",
+    "translateFail": "Could not translate this message.",
+    "translateSignIn": "Sign in to use translation.",
+    "translateLang": {
+      "en": "English",
+      "ko": "Korean",
+      "vi": "Vietnamese"
+    },
     "selectChat": "Select a chat",
     "loading": "Loading…",
     "noMessages": "No messages yet.",

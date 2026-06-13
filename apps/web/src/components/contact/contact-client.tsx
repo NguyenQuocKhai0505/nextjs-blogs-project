@@ -11,6 +11,7 @@ import { getAccessToken } from "@/lib/token"
 import { authFetch } from "@/lib/auth-fetch"
 import MessageInput from "@/components/contact/message-input"
 import { VoiceMessagePlayer } from "@/components/contact/voice-message-player"
+import { MessageTranslate } from "@/components/contact/message-translate"
 import { CreateGroupDialog } from "@/components/contact/create-group-dialog"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -40,7 +41,6 @@ type UserLite = {
   id: string
   name: string
   avatarUrl: string | null
-  // legacy fields (from old BetterAuth/Drizzle chat UI)
   email?: string | null
   avatar?: string | null
 }
@@ -50,7 +50,6 @@ export type ConversationItem = {
   kind?: "DIRECT" | "GROUP"
   title?: string | null
   otherUser: UserLite | null
-  /** Inbound messages not yet “read” for this viewer (see API read cursor). */
   unreadCount?: number
   updatedAt: string
   lastMessage: {
@@ -686,6 +685,16 @@ export default function ContactClient({
                             </DropdownMenu>
                           ) : null}
                         </div>
+                        {!isRevoked && m.content?.trim() ? (
+                          <MessageTranslate
+                            text={m.content.trim()}
+                            align={isMine ? "end" : "start"}
+                            onAuthRequired={() => {
+                              toast.error(t("chat.translateSignIn"))
+                              router.push("/auth")
+                            }}
+                          />
+                        ) : null}
                         <span
                           className={cn(
                             "px-1 text-[10px] text-muted-foreground",

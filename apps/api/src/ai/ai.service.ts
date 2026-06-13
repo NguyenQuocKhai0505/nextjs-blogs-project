@@ -3,22 +3,54 @@ import { Injectable, InternalServerErrorException, ServiceUnavailableException }
 
 import type { ChatMessageDto } from "./dto/chat.dto.js"
 
+const TARGET_LANGUAGE_NAMES: Record<"en" | "ko" | "vi", string> = {
+  en: "English",
+  ko: "Korean",
+  vi: "Vietnamese",
+}
+
 @Injectable()
 export class AiService {
-  async chat(messages: ChatMessageDto[]): Promise<{ text: string }> {
+  private getModel(systemInstruction?: string) {
     const key = process.env.GEMINI_API_KEY
     if (!key) {
       throw new ServiceUnavailableException("AI is not configured")
     }
-
-    // Override with GEMINI_MODEL in .env (e.g. gemini-2.5-flash, gemini-2.5-pro).
     const modelName = process.env.GEMINI_MODEL ?? "gemini-2.5-flash"
     const genAI = new GoogleGenerativeAI(key)
-    const model = genAI.getGenerativeModel({
+    return genAI.getGenerativeModel({
       model: modelName,
-      systemInstruction:
-        "You are a helpful assistant inside the Ksocial app. Be concise and accurate. Match the user's language when possible.",
+      ...(systemInstruction ? { systemInstruction } : {}),
     })
+  }
+
+  async translate(
+    text: string,
+    targetLanguage: "en" | "ko" | "vi"
+  ): Promise<{ text: string; targetLanguage: "en" | "ko" | "vi" }> {
+    const trimmed = text.trim()
+    if (!trimmed) {
+      throw new InternalServerErrorException("Empty text")
+    }
+
+    const langName = TARGET_LANGUAGE_NAMES[targetLanguage]
+    const model = this.getModel(
+      `You are a professional translator. Translate chat messages accurately and naturally into ${langName}. Return ONLY the translated text — no quotes, labels, or explanations.`
+    )
+
+    const result = await model.generateContent(trimmed)
+    const translated = result.response.text().trim()
+    if (!translated) {
+      throw new InternalServerErrorException("Empty translation")
+    }
+
+    return { text: translated, targetLanguage }
+  }
+
+  async chat(messages: ChatMessageDto[]): Promise<{ text: string }> {
+    const model = this.getModel(
+      "You are a helpful assistant inside the Ksocial app. Be concise and accurate. Match the user's language when possible."
+    )
 
     if (!messages.length) {
       throw new InternalServerErrorException("No messages")
