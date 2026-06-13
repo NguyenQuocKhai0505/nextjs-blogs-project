@@ -24,6 +24,7 @@ export type FeedPost = {
   category?: PostCategory | null
   likeCount?: number
   commentCount?: number
+  shareCount?: number
   createdAt: Date | string
   author: PostAuthor
 }

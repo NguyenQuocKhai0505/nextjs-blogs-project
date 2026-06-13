@@ -74,7 +74,8 @@
     "quickActionsHint": "Post something new or jump into messages.",
     "post": "Post",
     "chat": "Chat",
-    "reels": "Reels"
+    "reels": "Reels",
+    "saved": "Saved"
   },
   "rail": {
     "trending": "Trending",
@@ -177,6 +178,65 @@
     "photo": "Photo",
     "video": "Video",
     "text": "Text"
+  },
+  "saved": {
+    "title": "Saved posts",
+    "subtitle": "Posts you bookmarked to read later.",
+    "save": "Save post",
+    "unsave": "Remove from saved",
+    "savedToast": "Post saved",
+    "unsavedToast": "Removed from saved",
+    "toggleFail": "Could not update saved status.",
+    "loadFail": "Could not load saved posts.",
+    "loginTitle": "Sign in to see saved posts",
+    "loginHint": "Bookmark posts from the feed to find them here.",
+    "emptyTitle": "No saved posts yet",
+    "emptyHint": "Tap the bookmark icon on any post to save it.",
+    "browseFeed": "Browse feed"
+  },
+  "share": {
+    "share": "Share post",
+    "unshare": "Remove share",
+    "sharedToast": "Post shared to your profile",
+    "unsharedToast": "Share removed",
+    "toggleFail": "Could not update share status.",
+    "ownPost": "You cannot share your own post"
+  },
+  "report": {
+    "menuItem": "Report post",
+    "title": "Report content",
+    "subtitle": "Tell us why this content violates community guidelines. Our team will review it.",
+    "reasonLabel": "Reason",
+    "detailsLabel": "Additional details (optional)",
+    "detailsPlaceholder": "Describe the issue…",
+    "cancel": "Cancel",
+    "submit": "Submit report",
+    "submitting": "Submitting…",
+    "submitted": "Report submitted. Thank you.",
+    "submitFail": "Could not submit report.",
+    "reasons": {
+      "SPAM": "Spam or misleading",
+      "HARASSMENT": "Harassment or bullying",
+      "HATE_SPEECH": "Hate speech",
+      "VIOLENCE": "Violence or dangerous acts",
+      "NUDITY": "Nudity or sexual content",
+      "OTHER": "Other"
+    },
+    "adminTitle": "Content reports",
+    "adminSubtitle": "Review user-submitted reports.",
+    "filterAll": "All",
+    "filterPending": "Pending",
+    "markReviewed": "Mark reviewed",
+    "dismiss": "Dismiss",
+    "empty": "No reports yet.",
+    "loadFail": "Could not load reports.",
+    "updateOk": "Report updated",
+    "updateFail": "Could not update report",
+    "targetPost": "Post",
+    "targetComment": "Comment",
+    "targetUser": "User",
+    "targetReel": "Reel",
+    "viewTarget": "View"
   },
   "post": {
     "signInToast": "Please sign in to continue.",

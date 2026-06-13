@@ -7,7 +7,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { formatDate } from "@/lib/utils"
-import { MessageCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { MessageCircle, MoreHorizontal, Pencil, Trash2, Flag } from "lucide-react"
 import { Button } from "../ui/button"
 import {
   DropdownMenu,
@@ -25,6 +25,9 @@ import { confirmToast } from "@/lib/confirm-toast"
 import Lightbox from "@/components/media/lightbox"
 import { PostVideo } from "@/components/media/post-video"
 import { ReactionPicker } from "@/components/post/reaction-picker"
+import { SaveButton } from "@/components/post/save-button"
+import { ShareButton } from "@/components/post/share-button"
+import { ReportDialog } from "@/components/post/report-dialog"
 
 function parseMediaField(media?: string | string[] | null): string[] {
   if (!media) return []
@@ -210,6 +213,7 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
   const hasMedia = images.length > 0 || videos.length > 0
 
   const [commentsOpen, setCommentsOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
   const [commentCount, setCommentCount] = useState(post.commentCount ?? 0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
@@ -315,7 +319,33 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              ) : null}
+              ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="shrink-0 text-muted-foreground"
+                      aria-label={t("post.optionsAria")}
+                    >
+                      <MoreHorizontal className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem
+                      className="cursor-pointer text-destructive focus:text-destructive"
+                      onClick={() => {
+                        if (!requireAuth()) return
+                        setReportOpen(true)
+                      }}
+                    >
+                      <Flag className="h-4 w-4" />
+                      {t("report.menuItem")}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
             <Link href={`/post/${post.slug}`} className="group mt-2 block">
               <CardTitle className="line-clamp-2 text-lg font-bold leading-snug transition-colors group-hover:text-primary sm:text-xl">
@@ -373,6 +403,13 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
             initialCount={post.likeCount ?? 0}
             onAuthRequired={requireAuth}
           />
+          <SaveButton postId={post.id} onAuthRequired={requireAuth} />
+          <ShareButton
+            postId={post.id}
+            initialShareCount={post.shareCount ?? 0}
+            isAuthor={isAuthor}
+            onAuthRequired={requireAuth}
+          />
           <Button
             type="button"
             variant="ghost"
@@ -405,6 +442,13 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
       viewerId={viewerId ?? null}
       isPostAuthor={isAuthor}
       onCommentCountChange={setCommentCount}
+    />
+    <ReportDialog
+      targetKind="POST"
+      targetId={post.id}
+      open={reportOpen}
+      onOpenChange={setReportOpen}
+      onAuthRequired={requireAuth}
     />
     </>
   )

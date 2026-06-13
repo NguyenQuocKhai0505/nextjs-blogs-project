@@ -4,8 +4,11 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { MessageCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { MessageCircle, MoreHorizontal, Pencil, Trash2, Flag } from "lucide-react"
 import { ReactionPicker } from "@/components/post/reaction-picker"
+import { SaveButton } from "@/components/post/save-button"
+import { ShareButton } from "@/components/post/share-button"
+import { ReportDialog } from "@/components/post/report-dialog"
 import { toast } from "sonner"
 import { confirmToast } from "@/lib/confirm-toast"
 import Lightbox from "@/components/media/lightbox"
@@ -36,6 +39,7 @@ export type PostDetailPayload = {
   category: { id: number; name: string; slug: string } | null
   likeCount: number
   commentCount: number
+  shareCount?: number
   authorId: string
   createdAt: string
   author: { id: string; name: string; avatarUrl: string | null }
@@ -67,6 +71,8 @@ export default function PostDetailClient({
   const [lightboxIndex, setLightboxIndex] = useState(0)
 
   const [commentTotal, setCommentTotal] = useState(post.commentCount)
+  const [reportOpen, setReportOpen] = useState(false)
+  const isAuthor = Boolean(viewerId && post.authorId && viewerId === post.authorId)
 
   useEffect(() => {
     setCommentTotal(post.commentCount)
@@ -154,7 +160,27 @@ export default function PostDetailClient({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : null}
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="shrink-0" aria-label="Post options">
+                <MoreHorizontal className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem
+                className="cursor-pointer text-destructive focus:text-destructive"
+                onClick={() => {
+                  if (!requireAuth()) return
+                  setReportOpen(true)
+                }}
+              >
+                <Flag className="h-4 w-4" />
+                Report post
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       <div>
@@ -242,6 +268,18 @@ export default function PostDetailClient({
           size="md"
           onAuthRequired={requireAuth}
         />
+        <SaveButton
+          postId={post.id}
+          size="md"
+          onAuthRequired={requireAuth}
+        />
+        <ShareButton
+          postId={post.id}
+          initialShareCount={post.shareCount ?? 0}
+          isAuthor={isAuthor}
+          size="md"
+          onAuthRequired={requireAuth}
+        />
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <MessageCircle className="h-4 w-4" />
           {commentTotal} {commentTotal === 1 ? "comment" : "comments"}
@@ -254,6 +292,13 @@ export default function PostDetailClient({
         isPostAuthor={canEdit}
         anchorId="comments"
         onTotalChange={setCommentTotal}
+      />
+      <ReportDialog
+        targetKind="POST"
+        targetId={post.id}
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        onAuthRequired={requireAuth}
       />
     </div>
   )

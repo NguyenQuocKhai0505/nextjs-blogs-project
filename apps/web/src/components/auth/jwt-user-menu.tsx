@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { clearAccessToken } from "@/lib/token"
-import { LogOut, Settings, User as UserIcon } from "lucide-react"
+import { LogOut, Settings, User as UserIcon, Flag } from "lucide-react"
 
 type JwtUserMenuProps = {
   avatarUrl?: string | null
@@ -53,13 +53,22 @@ export default function JwtUserMenu({
         </DropdownMenuItem>
 
         {role === "ADMIN" ? (
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onClick={() => router.push("/admin/categories")}
-          >
-            <Settings className="h-4 w-4" />
-            <span>Manage categories</span>
-          </DropdownMenuItem>
+          <>
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => router.push("/admin/categories")}
+            >
+              <Settings className="h-4 w-4" />
+              <span>Manage categories</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => router.push("/admin/reports")}
+            >
+              <Flag className="h-4 w-4" />
+              <span>Content reports</span>
+            </DropdownMenuItem>
+          </>
         ) : null}
 
         <DropdownMenuSeparator />

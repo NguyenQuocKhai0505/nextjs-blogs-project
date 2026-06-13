@@ -49,6 +49,31 @@ enum ReactionType {
   @@map("reaction_type")
 }
 
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  HATE_SPEECH
+  VIOLENCE
+  NUDITY
+  OTHER
+  @@map("report_reason")
+}
+
+enum ReportTargetKind {
+  POST
+  COMMENT
+  USER
+  REEL
+  @@map("report_target_kind")
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+  @@map("report_status")
+}
+
 model User {
   id                   String         @id @db.VarChar(255)
   name                 String         @db.VarChar(255)
@@ -82,7 +107,10 @@ model User {
   reels                   Reel[]
   reelLikes               ReelLike[]
   reelViews               ReelView[]
-  
+  savedPosts              SavedPost[]
+  postReposts             PostRepost[]
+  reportsSubmitted        Report[]
+
   @@map("user")
 }
 
@@ -136,12 +164,15 @@ model Post {
   videoUrls    String?  @map("video_urls")
   likeCount    Int      @default(0) @map("like_count")
   commentCount Int      @default(0) @map("comment_count")
+  shareCount   Int      @default(0) @map("share_count")
   authorId     String   @map("author_id") @db.VarChar(255)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @default(now()) @map("updated_at")
   author       User     @relation(fields: [authorId], references: [id])
   likes        PostLike[]
   comments     Comment[]
+  savedPosts   SavedPost[]
+  reposts      PostRepost[]
   categoryId Int?      @map("category_id")
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
@@ -377,4 +408,51 @@ model ReelView {
   @@unique([reelId, viewerId], map: "reel_views_reel_viewer_unique")
   @@index([viewerId], map: "reel_views_viewer_idx")
   @@map("reel_views")
+}
+
+model SavedPost {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id") @db.VarChar(255)
+  postId    Int      @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId], map: "saved_posts_user_post_unique")
+  @@index([userId, createdAt(sort: Desc)], map: "saved_posts_user_created_idx")
+  @@map("saved_posts")
+}
+
+model PostRepost {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id") @db.VarChar(255)
+  postId    Int      @map("post_id")
+  caption   String?  @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId], map: "post_reposts_user_post_unique")
+  @@index([userId, createdAt(sort: Desc)], map: "post_reposts_user_created_idx")
+  @@index([postId], map: "post_reposts_post_idx")
+  @@map("post_reposts")
+}
+
+model Report {
+  id         Int              @id @default(autoincrement())
+  reporterId String           @map("reporter_id") @db.VarChar(255)
+  targetKind ReportTargetKind @map("target_kind")
+  targetId   String           @map("target_id") @db.VarChar(255)
+  reason     ReportReason
+  details    String?          @db.VarChar(1000)
+  status     ReportStatus     @default(PENDING)
+  createdAt  DateTime         @default(now()) @map("created_at")
+  reviewedAt DateTime?        @map("reviewed_at")
+
+  reporter User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([reporterId, targetKind, targetId], map: "reports_reporter_target_unique")
+  @@index([status, createdAt(sort: Desc)], map: "reports_status_created_idx")
+  @@map("reports")
 }

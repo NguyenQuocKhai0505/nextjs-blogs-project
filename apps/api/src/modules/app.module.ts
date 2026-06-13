@@ -5,6 +5,9 @@ import { ConfigModule } from "@nestjs/config"
 
 import { AiModule } from "../ai/ai.module.js"
 import { ReelsModule } from "../reels/reel.module.js"
+import { ReportsModule } from "../reports/reports.module.js"
+import { SavedModule } from "../saved/save.module.js"
+import { SharesModule } from "../shares/shares.module.js"
 import { StoriesModule } from "../stories/stories.module.js"
 import { AuthModule } from "../auth/auth.module.js"
 import { CategoriesModule } from "../categories/categories.module.js"
@@ -54,6 +57,9 @@ function throttlerRootOptions() {
     AiModule,
     StoriesModule,
     ReelsModule,
+    SavedModule,
+    SharesModule,
+    ReportsModule,
   ],
   controllers: [HealthController],
   providers: [

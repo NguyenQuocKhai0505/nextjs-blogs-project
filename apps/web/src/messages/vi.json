@@ -74,7 +74,8 @@
     "quickActionsHint": "Đăng bài mới hoặc vào tin nhắn.",
     "post": "Bài viết",
     "chat": "Chat",
-    "reels": "Reels"
+    "reels": "Reels",
+    "saved": "Đã lưu"
   },
   "rail": {
     "trending": "Xu hướng",
@@ -177,6 +178,65 @@
     "photo": "Ảnh",
     "video": "Video",
     "text": "Chữ"
+  },
+  "saved": {
+    "title": "Bài đã lưu",
+    "subtitle": "Các bài bạn đã bookmark để xem lại.",
+    "save": "Lưu bài",
+    "unsave": "Bỏ lưu",
+    "savedToast": "Đã lưu bài",
+    "unsavedToast": "Đã bỏ lưu",
+    "toggleFail": "Không cập nhật được trạng thái lưu.",
+    "loadFail": "Không tải được bài đã lưu.",
+    "loginTitle": "Đăng nhập để xem bài đã lưu",
+    "loginHint": "Bấm icon bookmark trên bài viết để lưu tại đây.",
+    "emptyTitle": "Chưa có bài đã lưu",
+    "emptyHint": "Bấm biểu tượng bookmark trên bất kỳ bài nào.",
+    "browseFeed": "Xem bảng tin"
+  },
+  "share": {
+    "share": "Chia sẻ bài",
+    "unshare": "Bỏ chia sẻ",
+    "sharedToast": "Đã chia sẻ bài lên trang của bạn",
+    "unsharedToast": "Đã bỏ chia sẻ",
+    "toggleFail": "Không cập nhật được trạng thái chia sẻ.",
+    "ownPost": "Bạn không thể chia sẻ bài của chính mình"
+  },
+  "report": {
+    "menuItem": "Báo cáo bài viết",
+    "title": "Báo cáo nội dung",
+    "subtitle": "Cho chúng tôi biết vì sao nội dung này vi phạm quy tắc cộng đồng.",
+    "reasonLabel": "Lý do",
+    "detailsLabel": "Chi tiết thêm (tuỳ chọn)",
+    "detailsPlaceholder": "Mô tả vấn đề…",
+    "cancel": "Huỷ",
+    "submit": "Gửi báo cáo",
+    "submitting": "Đang gửi…",
+    "submitted": "Đã gửi báo cáo. Cảm ơn bạn.",
+    "submitFail": "Không gửi được báo cáo.",
+    "reasons": {
+      "SPAM": "Spam hoặc lừa đảo",
+      "HARASSMENT": "Quấy rối hoặc bắt nạt",
+      "HATE_SPEECH": "Ngôn từ thù hận",
+      "VIOLENCE": "Bạo lực hoặc hành vi nguy hiểm",
+      "NUDITY": "Khỏa thân hoặc nội dung tình dục",
+      "OTHER": "Khác"
+    },
+    "adminTitle": "Báo cáo nội dung",
+    "adminSubtitle": "Xem và xử lý báo cáo từ người dùng.",
+    "filterAll": "Tất cả",
+    "filterPending": "Chờ xử lý",
+    "markReviewed": "Đã xem",
+    "dismiss": "Bác báo cáo",
+    "empty": "Chưa có báo cáo nào.",
+    "loadFail": "Không tải được báo cáo.",
+    "updateOk": "Đã cập nhật báo cáo",
+    "updateFail": "Không cập nhật được báo cáo",
+    "targetPost": "Bài viết",
+    "targetComment": "Bình luận",
+    "targetUser": "Người dùng",
+    "targetReel": "Reel",
+    "viewTarget": "Xem"
   },
   "post": {
     "signInToast": "Vui lòng đăng nhập để tiếp tục.",
