@@ -112,7 +112,10 @@ export default function HomeFeedSection({
       {error ? (
         <Card className="rounded-2xl border-destructive/30 bg-destructive/5">
           <CardContent className="py-8 text-center text-sm text-destructive">
-            {t("home.feedError")}
+            <p>{t("home.feedError")}</p>
+            {process.env.NODE_ENV !== "production" && error ? (
+              <p className="mt-2 text-xs text-destructive/80">{error}</p>
+            ) : null}
           </CardContent>
         </Card>
       ) : loading ? (

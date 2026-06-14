@@ -2,13 +2,11 @@ import "reflect-metadata"
 import { NestFactory } from "@nestjs/core"
 import { AppModule } from "./modules/app.module.js"
 import { ValidationPipe } from "@nestjs/common"
+import { buildCorsOptions } from "./common/cors.js"
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    cors: {
-      origin: process.env.WEB_URL ?? "http://localhost:3000",
-      credentials: true,
-    },
+    cors: buildCorsOptions(),
   })
 
   app.setGlobalPrefix("v1")

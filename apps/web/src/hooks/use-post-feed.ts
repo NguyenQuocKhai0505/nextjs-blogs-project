@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
+import { apiUrl } from "@/lib/api"
 import { authFetch } from "@/lib/auth-fetch"
+import { getAccessToken } from "@/lib/token"
 import type { FeedPost } from "@/lib/types"
 import type { DayFilter, FeedMode } from "@/lib/types/feed"
 
@@ -14,6 +16,17 @@ type FeedResponse = {
 }
 
 const PAGE_SIZE = 10
+
+function parseFeedPayload(data: unknown): { items: FeedPost[]; nextCursor: number | null } {
+  if (Array.isArray(data)) {
+    return { items: data as FeedPost[], nextCursor: null }
+  }
+  const row = data as FeedResponse
+  const items = Array.isArray(row.items) ? row.items : []
+  const next =
+    typeof row.nextCursor === "number" && row.nextCursor > 0 ? row.nextCursor : null
+  return { items, nextCursor: next }
+}
 
 function buildQuery(opts: {
   mode: FeedMode
@@ -28,6 +41,14 @@ function buildQuery(opts: {
   if (opts.days) qs.set("days", String(opts.days))
   if (opts.cursor) qs.set("cursor", String(opts.cursor))
   return `?${qs.toString()}`
+}
+
+/** For You: plain fetch (giống code cũ, tránh CORS preflight). Following: authFetch để gửi JWT. */
+async function feedFetch(path: string, mode: FeedMode, init?: RequestInit) {
+  if (mode === "following" && getAccessToken()) {
+    return authFetch(path, init)
+  }
+  return fetch(apiUrl(path), init)
 }
 
 export function usePostFeed(opts: {
@@ -51,19 +72,20 @@ export function usePostFeed(opts: {
       setError(null)
 
       try {
-        const res = await authFetch(
-          `/posts${buildQuery({ mode, categoryIds, days, cursor: cursor ?? undefined })}`,
-          { cache: "no-store" }
-        )
-        if (!res.ok) throw new Error("Failed to load feed")
-        const data = (await res.json()) as FeedResponse
+        if (!apiUrl("/").startsWith("http")) {
+          throw new Error("NEXT_PUBLIC_API_URL is not configured")
+        }
+
+        const path = `/posts${buildQuery({ mode, categoryIds, days, cursor: cursor ?? undefined })}`
+        const res = await feedFetch(path, mode, { cache: "no-store" })
+        if (!res.ok) {
+          const body = await res.text().catch(() => "")
+          throw new Error(`Feed HTTP ${res.status}${body ? `: ${body.slice(0, 120)}` : ""}`)
+        }
+        const data: unknown = await res.json()
         if (requestId !== requestIdRef.current) return
 
-        const items = Array.isArray(data.items) ? data.items : []
-        const next =
-          typeof data.nextCursor === "number" && data.nextCursor > 0
-            ? data.nextCursor
-            : null
+        const { items, nextCursor: next } = parseFeedPayload(data)
 
         setPosts((prev) => {
           if (!append) return items
