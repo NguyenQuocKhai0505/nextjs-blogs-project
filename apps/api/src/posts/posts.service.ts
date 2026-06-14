@@ -76,20 +76,60 @@ export class PostsService {
   }
 
   async list(opts?: { categoryIds?: number[]; days?: number }) {
+    const result = await this.listFeed({
+      mode: "forYou",
+      categoryIds: opts?.categoryIds,
+      days: opts?.days,
+      take: 500,
+    })
+    return result.items
+  }
+
+  async listFeed(opts: {
+    mode?: "forYou" | "following"
+    userId?: string
+    categoryIds?: number[]
+    days?: number
+    cursor?: number
+    take?: number
+  }) {
+    const take = Math.min(Math.max(opts.take ?? 10, 1), 30)
+    const mode = opts.mode === "following" ? "following" : "forYou"
     const where: Prisma.PostWhereInput = {}
-    if (opts?.categoryIds?.length) {
+
+    if (opts.categoryIds?.length) {
       where.categoryId = { in: opts.categoryIds }
     }
-    if (opts?.days) {
+    if (opts.days) {
       const from = new Date(Date.now() - opts.days * 24 * 60 * 60 * 1000)
       where.createdAt = { gte: from }
     }
 
-    return this.prisma.post.findMany({
+    if (mode === "following") {
+      if (!opts.userId) {
+        return { items: [], nextCursor: null }
+      }
+      const follows = await this.prisma.follow.findMany({
+        where: { followerId: opts.userId },
+        select: { followingId: true },
+      })
+      const authorIds = [...new Set([opts.userId, ...follows.map((f) => f.followingId)])]
+      where.authorId = { in: authorIds }
+    }
+
+    if (opts.cursor) {
+      where.id = { lt: opts.cursor }
+    }
+
+    const rows = await this.prisma.post.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take,
       include: postAuthorCategoryInclude,
     })
+
+    const nextCursor = rows.length === take ? rows[rows.length - 1].id : null
+    return { items: rows, nextCursor }
   }
 
   async listByAuthorId(authorId: string) {

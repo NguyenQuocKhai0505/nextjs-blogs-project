@@ -18,20 +18,37 @@ import { SetReactionDto } from "./dto/set-reaction.dto.js"
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard.js"
 import { CurrentUserId } from "../common/decorators/current-user-id.decorator.js"
 
+export type FeedMode = "forYou" | "following"
+
 @Controller("posts")
 export class PostsController {
   constructor(private readonly posts: PostsService) {}
 
   @Get()
-  list(@Query("categoryIds") categoryIdsRaw?: string, @Query("days") daysRaw?: string) {
+  list(
+    @CurrentUserId() userId: string | undefined,
+    @Query("mode") modeRaw?: string,
+    @Query("categoryIds") categoryIdsRaw?: string,
+    @Query("days") daysRaw?: string,
+    @Query("cursor") cursorRaw?: string,
+    @Query("take") takeRaw?: string
+  ) {
     const ids = (categoryIdsRaw ?? "")
       .split(",")
       .map((s) => Number(s.trim()))
       .filter((n) => Number.isFinite(n) && n > 0)
     const days = Number(daysRaw)
-    return this.posts.list({
+    const cursor = Number(cursorRaw)
+    const take = Number(takeRaw)
+    const mode: FeedMode = modeRaw === "following" ? "following" : "forYou"
+
+    return this.posts.listFeed({
+      mode,
+      userId,
       categoryIds: ids.length ? ids : undefined,
       days: Number.isFinite(days) && days > 0 ? days : undefined,
+      cursor: Number.isFinite(cursor) && cursor > 0 ? cursor : undefined,
+      take: Number.isFinite(take) && take > 0 ? take : undefined,
     })
   }
 

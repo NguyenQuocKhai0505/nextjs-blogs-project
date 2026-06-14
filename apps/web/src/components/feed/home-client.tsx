@@ -1,17 +1,14 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 
 import CategoriesBar from "@/components/feed/categories-bar"
 import StoriesBar from "@/components/feed/stories-bar"
 import ComposerCard from "@/components/feed/composer-card"
 import HomeFeedSection from "@/components/feed/home-feed-section"
-import type { FeedPost } from "@/lib/types"
-import { apiUrl } from "@/lib/api"
-import { useTheme } from "next-themes"
-
-export type DayFilter = 0 | 1 | 7 | 30
+import type { DayFilter, FeedMode } from "@/lib/types/feed"
+import { usePostFeed } from "@/hooks/use-post-feed"
 
 export default function HomeClient({
   viewerId,
@@ -20,13 +17,10 @@ export default function HomeClient({
   viewerId: string | null
   viewerRole: "USER" | "ADMIN" | null
 }) {
-  const { resolvedTheme } = useTheme()
   const searchParams = useSearchParams()
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([])
   const [days, setDays] = useState<DayFilter>(0)
-
-  const [posts, setPosts] = useState<FeedPost[]>([])
-  const [loading, setLoading] = useState(true)
+  const [feedMode, setFeedMode] = useState<FeedMode>("forYou")
 
   useEffect(() => {
     const raw = searchParams.get("categoryIds")?.trim()
@@ -38,33 +32,11 @@ export default function HomeClient({
     if (ids.length) setSelectedCategoryIds(ids)
   }, [searchParams])
 
-  const query = useMemo(() => {
-    const qs = new URLSearchParams()
-    if (selectedCategoryIds.length) qs.set("categoryIds", selectedCategoryIds.join(","))
-    if (days) qs.set("days", String(days))
-    const s = qs.toString()
-    return s ? `?${s}` : ""
-  }, [selectedCategoryIds, days])
-
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    void fetch(apiUrl(`/posts${query}`), { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data: unknown) => {
-        if (cancelled) return
-        setPosts(Array.isArray(data) ? (data as FeedPost[]) : [])
-      })
-      .catch(() => {
-        if (!cancelled) setPosts([])
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [query])
+  const { posts, loading, loadingMore, error, hasMore, loadMore } = usePostFeed({
+    mode: feedMode,
+    categoryIds: selectedCategoryIds,
+    days,
+  })
 
   return (
     <div className="space-y-4">
@@ -80,11 +52,15 @@ export default function HomeClient({
         viewerId={viewerId}
         viewerRole={viewerRole}
         loading={loading}
+        loadingMore={loadingMore}
+        error={error}
+        hasMore={hasMore}
+        onLoadMore={loadMore}
+        feedMode={feedMode}
+        onFeedModeChange={setFeedMode}
         days={days}
         onDaysChange={setDays}
-        theme={resolvedTheme === "dark" ? "dark" : "light"}
       />
     </div>
   )
 }
-
