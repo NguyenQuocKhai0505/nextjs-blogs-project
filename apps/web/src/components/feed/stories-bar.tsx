@@ -43,7 +43,7 @@ function StoryRing({
     >
       <div
         className={cn(
-          "relative rounded-2xl p-[2px]",
+          "relative rounded-full p-[2.5px]",
           hasStories && hasUnviewed
             ? "bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600"
             : hasStories
@@ -53,13 +53,13 @@ function StoryRing({
                 : "bg-muted-foreground/20"
         )}
       >
-        <div className="relative grid h-14 w-14 place-items-center overflow-hidden rounded-[14px] bg-background">
+        <div className="relative grid h-[60px] w-[60px] place-items-center overflow-hidden rounded-full bg-background sm:h-14 sm:w-14">
           {isOwn && !hasStories ? (
             <Plus className="h-6 w-6 text-muted-foreground" />
           ) : (
-            <Avatar className="h-full w-full rounded-[14px]">
+            <Avatar className="h-full w-full">
               <AvatarImage src={avatarUrl ?? undefined} alt={name} />
-              <AvatarFallback className="rounded-[14px] text-sm font-semibold">
+              <AvatarFallback className="text-sm font-semibold">
                 {name.slice(0, 1).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -144,18 +144,15 @@ export default function StoriesBar({ viewerId }: Props) {
 
   return (
     <>
-      <div className="rounded-2xl border bg-card/50 p-3 backdrop-blur supports-[backdrop-filter]:bg-card/40">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold">{t("stories.title")}</p>
-          <p className="text-xs text-muted-foreground">{t("stories.subtitle")}</p>
-        </div>
+      <div className="ks-glass-panel p-2.5 sm:p-3">
+        <p className="text-xs font-semibold sm:text-sm">{t("stories.title")}</p>
 
-        <div className="mt-3 flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="mt-2 flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {loading ? (
             Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
-                className="h-14 w-[76px] shrink-0 animate-pulse rounded-2xl bg-muted/50"
+                className="h-14 w-[68px] shrink-0 animate-pulse rounded-full bg-muted/50"
               />
             ))
           ) : displayGroups.length === 0 ? (
@@ -164,7 +161,7 @@ export default function StoriesBar({ viewerId }: Props) {
               onClick={openCreate}
               className="flex w-[76px] shrink-0 flex-col items-center gap-2"
             >
-              <div className="grid h-14 w-14 place-items-center rounded-2xl border-2 border-dashed border-muted-foreground/40">
+              <div className="grid h-14 w-14 place-items-center rounded-full border-2 border-dashed border-muted-foreground/40">
                 <Plus className="h-6 w-6 text-muted-foreground" />
               </div>
               <p className="text-xs text-muted-foreground">{t("stories.add")}</p>

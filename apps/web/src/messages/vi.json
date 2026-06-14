@@ -118,7 +118,11 @@
     "discover": "Khám phá",
     "creatorMode": "Chế độ creator",
     "creatorHint": "Chia sẻ đều đặn để tăng tương tác.",
-    "createPost": "Tạo bài viết"
+    "createPost": "Tạo bài viết",
+    "follow": "Theo dõi",
+    "followed": "Đã theo dõi",
+    "followFail": "Không thể theo dõi.",
+    "suggestedEmpty": "Chưa có gợi ý."
   },
   "discover": {
     "title": "Khám phá mọi người",
@@ -210,7 +214,8 @@
     "createPost": "Tạo bài viết",
     "photo": "Ảnh",
     "video": "Video",
-    "text": "Chữ"
+    "text": "Chữ",
+    "whatsOnYourMind": "Bạn đang nghĩ gì?"
   },
   "saved": {
     "title": "Bài đã lưu",
@@ -285,6 +290,7 @@
     "communityPost": "Bài cộng đồng",
     "reactionsTitle": "Người đã thả cảm xúc",
     "reactionsLoading": "Đang tải…",
-    "reactionsEmpty": "Chưa có ai thả cảm xúc."
+    "reactionsEmpty": "Chưa có ai thả cảm xúc.",
+    "comment": "Bình luận"
   }
 }

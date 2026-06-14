@@ -17,10 +17,10 @@ export default function AppShell({
   containerClassName?: string
 }) {
   return (
-    <div className="min-h-dvh bg-background">
+    <div className="ks-app-shell">
       <Header />
 
-      <div className="mx-auto w-full max-w-[1440px] px-3 pb-20 pt-5 sm:px-6 lg:px-8 md:pb-6">
+      <div className="relative z-0 mx-auto w-full max-w-[1440px] px-3 pb-20 pt-5 sm:px-6 lg:px-8 md:pb-6">
         <div className="grid grid-cols-1 gap-5 md:grid-cols-[280px_minmax(0,1fr)] lg:grid-cols-[280px_minmax(0,1fr)_360px] xl:grid-cols-[300px_minmax(0,1fr)_380px]">
           <aside className="hidden md:block">
             <div className="sticky top-[96px]">

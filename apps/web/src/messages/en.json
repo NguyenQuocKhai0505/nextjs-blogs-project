@@ -118,7 +118,11 @@
     "discover": "Discover",
     "creatorMode": "Creator mode",
     "creatorHint": "Share updates regularly to grow your audience.",
-    "createPost": "Create a post"
+    "createPost": "Create a post",
+    "follow": "Follow",
+    "followed": "Following",
+    "followFail": "Could not follow.",
+    "suggestedEmpty": "No suggestions right now."
   },
   "discover": {
     "title": "Discover people",
@@ -210,7 +214,8 @@
     "createPost": "Create post",
     "photo": "Photo",
     "video": "Video",
-    "text": "Text"
+    "text": "Text",
+    "whatsOnYourMind": "What's on your mind?"
   },
   "saved": {
     "title": "Saved posts",
@@ -285,6 +290,7 @@
     "communityPost": "Community post",
     "reactionsTitle": "People who reacted",
     "reactionsLoading": "Loading reactions…",
-    "reactionsEmpty": "No reactions yet."
+    "reactionsEmpty": "No reactions yet.",
+    "comment": "Comment"
   }
 }

@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 
 import CategoriesBar from "@/components/feed/categories-bar"
 import StoriesBar from "@/components/feed/stories-bar"
-import ComposerCard from "@/components/feed/composer-card"
+import FeedComposerInline from "@/components/feed/feed-composer-inline"
 import HomeFeedSection from "@/components/feed/home-feed-section"
 import type { DayFilter, FeedMode } from "@/lib/types/feed"
 import { usePostFeed } from "@/hooks/use-post-feed"
@@ -46,7 +46,7 @@ export default function HomeClient({
         selectedCategoryIds={selectedCategoryIds}
         onSelectedCategoryIdsChange={setSelectedCategoryIds}
       />
-      <ComposerCard />
+      <FeedComposerInline viewerId={viewerId} />
       <HomeFeedSection
         posts={posts}
         viewerId={viewerId}

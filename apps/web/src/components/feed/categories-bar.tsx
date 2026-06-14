@@ -151,9 +151,9 @@ export default function CategoriesBar({
 
   return (
     <>
-      <div className="rounded-2xl border bg-card/50 p-3 backdrop-blur supports-[backdrop-filter]:bg-card/40">
+      <div className="ks-glass-panel p-2.5 sm:p-3">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold">Categories</p>
+          <p className="text-xs font-semibold text-muted-foreground sm:text-sm">Categories</p>
           <div className="flex items-center gap-2">
             <Button
               type="button"
@@ -186,13 +186,13 @@ export default function CategoriesBar({
 
         <div
           ref={scrollerRef}
-          className="ks-scrollbar-x mt-3 flex gap-2 overflow-x-auto pb-2 pr-1 [scrollbar-width:thin]"
+          className="ks-scrollbar-x mt-2 flex gap-1.5 overflow-x-auto pb-1 pr-1 [scrollbar-width:thin]"
         >
           <button
             type="button"
             onClick={() => onSelectedCategoryIdsChange([])}
             className={cn(
-              "shrink-0 rounded-full border px-3 py-1.5 text-sm transition-colors",
+              "shrink-0 rounded-full border px-2.5 py-1 text-xs transition-colors sm:px-3 sm:py-1.5 sm:text-sm",
               selectedCategoryIds.length === 0
                 ? "bg-primary text-primary-foreground border-primary/30"
                 : "bg-background/60 hover:bg-background/80"

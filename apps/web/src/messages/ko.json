@@ -118,7 +118,11 @@
     "discover": "둘러보기",
     "creatorMode": "크리에이터 모드",
     "creatorHint": "꾸준히 소식을 공유해 팔로워를 늘리세요.",
-    "createPost": "게시물 작성"
+    "createPost": "게시물 작성",
+    "follow": "팔로우",
+    "followed": "팔로우함",
+    "followFail": "팔로우할 수 없습니다.",
+    "suggestedEmpty": "추천이 없습니다."
   },
   "discover": {
     "title": "사람 찾기",
@@ -210,7 +214,8 @@
     "createPost": "게시물 작성",
     "photo": "사진",
     "video": "동영상",
-    "text": "텍스트"
+    "text": "텍스트",
+    "whatsOnYourMind": "무슨 생각을 하고 계신가요?"
   },
   "saved": {
     "title": "저장한 게시물",
@@ -285,6 +290,7 @@
     "communityPost": "커뮤니티 게시물",
     "reactionsTitle": "반응한 사람",
     "reactionsLoading": "불러오는 중…",
-    "reactionsEmpty": "아직 반응이 없습니다."
+    "reactionsEmpty": "아직 반응이 없습니다.",
+    "comment": "댓글"
   }
 }

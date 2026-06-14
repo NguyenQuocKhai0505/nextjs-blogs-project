@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Loader2, PenSquare, Users } from "lucide-react"
+import { Loader2, Users } from "lucide-react"
 
 import PostList from "@/components/post/post-list"
 import { FeedTabs } from "@/components/feed/feed-tabs"
@@ -63,51 +63,45 @@ export default function HomeFeedSection({
 
   return (
     <section className="space-y-4">
-      <Card className="overflow-hidden rounded-2xl border-border/50 bg-gradient-to-br from-card via-card to-primary/5">
-        <CardContent className="space-y-4 p-4 sm:p-5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="sticky top-14 z-20 -mx-1 px-1 pb-1 sm:top-16">
+        <Card className="ks-glass overflow-hidden rounded-2xl border-border/40 py-0 shadow-sm">
+          <CardContent className="space-y-3 p-3 sm:p-4">
             <div className="min-w-0">
-              <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-                {t("home.feedTitle")}
+              <h1 className="text-lg font-bold tracking-tight sm:text-xl">
+                <span className="ks-brand-text">{t("home.feedTitle")}</span>
               </h1>
-              <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">{subtitle}</p>
             </div>
-            <Button asChild size="sm" className="shrink-0 rounded-xl shadow-sm">
-              <Link href="/post/create">
-                <PenSquare className="mr-2 h-4 w-4" />
-                {t("home.post")}
-              </Link>
-            </Button>
-          </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <FeedTabs
-              mode={feedMode}
-              onModeChange={onFeedModeChange}
-              disabled={loading}
-            />
-            <div className="flex flex-wrap gap-1.5">
-              {DAY_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  disabled={loading}
-                  onClick={() => onDaysChange(opt.value)}
-                  className={cn(
-                    "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                    days === opt.value
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground",
-                    loading && "opacity-60"
-                  )}
-                >
-                  {t(opt.labelKey)}
-                </button>
-              ))}
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+              <FeedTabs
+                mode={feedMode}
+                onModeChange={onFeedModeChange}
+                disabled={loading}
+              />
+              <div className="flex flex-wrap gap-1">
+                {DAY_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => onDaysChange(opt.value)}
+                    className={cn(
+                      "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-xs",
+                      days === opt.value
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground",
+                      loading && "opacity-60"
+                    )}
+                  >
+                    {t(opt.labelKey)}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {error ? (
         <Card className="rounded-2xl border-destructive/30 bg-destructive/5">

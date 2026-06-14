@@ -10,7 +10,7 @@ export default function ComposerCard() {
   const { t } = useLocale()
 
   return (
-    <Card className="rounded-2xl bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/40">
+    <Card>
       <CardContent className="p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">

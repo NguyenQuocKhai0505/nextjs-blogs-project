@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export function FeedPostSkeleton() {
   return (
-    <Card className="overflow-hidden rounded-2xl border-border/50 bg-card/60">
+    <Card className="overflow-hidden rounded-2xl border-border/40 bg-card/40 py-0">
       <CardContent className="space-y-4 p-4">
         <div className="flex items-center gap-3">
           <Skeleton className="h-10 w-10 rounded-full" />

@@ -100,6 +100,7 @@ export function ReactionPicker({
   const [summary, setSummary] = useState<ReactionSummary>({})
   const [busy, setBusy] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [popKey, setPopKey] = useState(0)
   const [listOpen, setListOpen] = useState(false)
   const [listFilter, setListFilter] = useState<ReactionType | null>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -163,6 +164,7 @@ export function ReactionPicker({
         setMyReaction(data.reaction)
         setReactionCount(data.reactionCount)
         setSummary(data.summary)
+        setPopKey((k) => k + 1)
       } catch {
         toast.error("Could not update reaction.")
       } finally {
@@ -226,7 +228,11 @@ export function ReactionPicker({
         }}
       >
         {activeEmoji ? (
-          <span className="text-base leading-none" aria-hidden>
+          <span
+            key={popKey}
+            className="ks-reaction-pop text-base leading-none"
+            aria-hidden
+          >
             {activeEmoji}
           </span>
         ) : (
