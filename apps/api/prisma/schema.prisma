@@ -104,6 +104,7 @@ model User {
   conversationHides       ConversationHide[]
   stories                 Story[]
   storyViews              StoryView[]
+  storyLikes              StoryLike[]
   reels                   Reel[]
   reelLikes               ReelLike[]
   reelViews               ReelView[]
@@ -348,9 +349,11 @@ model Story {
   textContent     String?        @map("text_content") @db.Text
   backgroundColor String?        @map("background_color") @db.VarChar(32)
   expiresAt       DateTime       @map("expires_at")
+  reactionCount   Int            @default(0) @map("reaction_count")
   createdAt       DateTime       @default(now()) @map("created_at")
   author          User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   views           StoryView[]
+  likes           StoryLike[]
 
   @@index([authorId, expiresAt], map: "stories_author_expires_idx")
   @@index([expiresAt], map: "stories_expires_idx")
@@ -368,6 +371,19 @@ model StoryView {
   @@unique([storyId, viewerId], map: "story_views_story_viewer_unique")
   @@index([viewerId], map: "story_views_viewer_idx")
   @@map("story_views")
+}
+
+model StoryLike {
+  id        Int          @id @default(autoincrement())
+  storyId   Int          @map("story_id")
+  userId    String       @map("user_id") @db.VarChar(255)
+  reaction  ReactionType @default(LIKE) @map("reaction")
+  createdAt DateTime     @default(now()) @map("created_at")
+  story     Story        @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, userId], map: "story_likes_story_user_unique")
+  @@map("story_likes")
 }
 
 model Reel {

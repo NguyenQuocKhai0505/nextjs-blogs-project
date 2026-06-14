@@ -20,6 +20,7 @@ type Props = {
   isOwn: boolean
   onDeleted: (id: number) => void
   onAuthRequired: () => void
+  variant?: "page" | "overlay"
 }
 
 export function ReelItemCard({
@@ -28,6 +29,7 @@ export function ReelItemCard({
   isOwn,
   onDeleted,
   onAuthRequired,
+  variant = "page",
 }: Props) {
   const { t } = useLocale()
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -83,9 +85,14 @@ export function ReelItemCard({
     }
   }
 
+  const isOverlay = variant === "overlay"
+
   return (
     <section
-      className="relative h-dvh w-full shrink-0 snap-start snap-always bg-black"
+      className={cn(
+        "relative w-full shrink-0 snap-start snap-always bg-black",
+        isOverlay ? "h-full min-h-full" : "h-dvh"
+      )}
       aria-label={reel.caption ?? t("reels.videoLabel")}
     >
       <video
@@ -100,20 +107,31 @@ export function ReelItemCard({
 
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
 
-      <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-4 py-3">
-        <Link
-          href="/"
-          className="pointer-events-auto rounded-full bg-black/40 px-3 py-1.5 text-sm font-medium backdrop-blur"
-        >
-          {t("reels.backHome")}
-        </Link>
-        <Link
-          href="/reels/create"
-          className="pointer-events-auto rounded-full bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground"
-        >
-          {t("reels.create")}
-        </Link>
-      </div>
+      {!isOverlay ? (
+        <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-4 py-3">
+          <Link
+            href="/"
+            className="pointer-events-auto rounded-full bg-black/40 px-3 py-1.5 text-sm font-medium backdrop-blur"
+          >
+            {t("reels.backHome")}
+          </Link>
+          <Link
+            href="/reels/create"
+            className="pointer-events-auto rounded-full bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground"
+          >
+            {t("reels.create")}
+          </Link>
+        </div>
+      ) : (
+        <div className="absolute right-0 top-0 z-10 flex items-center justify-end px-4 py-3">
+          <Link
+            href="/reels/create"
+            className="pointer-events-auto rounded-full bg-primary px-3 py-1.5 text-sm font-semibold text-primary-foreground"
+          >
+            {t("reels.create")}
+          </Link>
+        </div>
+      )}
 
       <div className="absolute bottom-0 left-0 right-0 z-10 flex items-end justify-between gap-4 p-4 pb-8">
         <div className="pointer-events-auto min-w-0 flex-1 space-y-3">

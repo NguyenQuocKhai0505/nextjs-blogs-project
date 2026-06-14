@@ -22,7 +22,13 @@ function parseFeed(data: unknown): ReelFeed {
   return { items, nextCursor }
 }
 
-export function ReelsClient() {
+export function ReelsClient({
+  variant = "page",
+  onClose,
+}: {
+  variant?: "page" | "overlay"
+  onClose?: () => void
+}) {
   const router = useRouter()
   const { t } = useLocale()
   const hasToken = !!getAccessToken()
@@ -130,9 +136,11 @@ export function ReelsClient() {
     router.push("/auth")
   }
 
+  const isOverlay = variant === "overlay"
+
   if (loading) {
     return (
-      <div className="grid h-dvh place-items-center">
+      <div className={isOverlay ? "grid h-full place-items-center" : "grid h-dvh place-items-center"}>
         <Loader2 className="h-8 w-8 animate-spin text-white/70" />
       </div>
     )
@@ -140,7 +148,13 @@ export function ReelsClient() {
 
   if (items.length === 0) {
     return (
-      <div className="grid h-dvh place-items-center px-6 text-center">
+      <div
+        className={
+          isOverlay
+            ? "grid h-full place-items-center px-6 text-center"
+            : "grid h-dvh place-items-center px-6 text-center"
+        }
+      >
         <div className="space-y-4">
           <p className="text-lg font-semibold">{t("reels.emptyTitle")}</p>
           <p className="text-sm text-white/70">{t("reels.emptyHint")}</p>
@@ -148,9 +162,19 @@ export function ReelsClient() {
             <Button asChild>
               <Link href="/reels/create">{t("reels.createFirst")}</Link>
             </Button>
-            <Button asChild variant="outline" className="border-white/30 bg-transparent text-white">
-              <Link href="/">{t("reels.backHome")}</Link>
-            </Button>
+            {isOverlay && onClose ? (
+              <Button
+                variant="outline"
+                className="border-white/30 bg-transparent text-white"
+                onClick={onClose}
+              >
+                {t("reels.close")}
+              </Button>
+            ) : (
+              <Button asChild variant="outline" className="border-white/30 bg-transparent text-white">
+                <Link href="/">{t("reels.backHome")}</Link>
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -158,7 +182,7 @@ export function ReelsClient() {
   }
 
   return (
-    <div className="relative h-dvh overflow-hidden">
+    <div className={isOverlay ? "relative h-full overflow-hidden" : "relative h-dvh overflow-hidden"}>
       <div
         ref={scrollerRef}
         className="h-full snap-y snap-mandatory overflow-y-auto scroll-smooth"
@@ -169,6 +193,7 @@ export function ReelsClient() {
             ref={(el) => {
               itemRefs.current[index] = el
             }}
+            className={isOverlay ? "h-full snap-start snap-always" : undefined}
           >
             <ReelItemCard
               reel={reel}
@@ -176,6 +201,7 @@ export function ReelsClient() {
               isOwn={me?.id === reel.author.id}
               onDeleted={handleDeleted}
               onAuthRequired={handleAuthRequired}
+              variant={variant}
             />
           </div>
         ))}

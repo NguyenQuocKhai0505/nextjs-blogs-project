@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common"
-import { StoryMediaType } from "@prisma/client"
+import { StoryMediaType, ReactionType } from "@prisma/client"
 import { PrismaService } from "../prisma/prisma.service.js"
 import { CreateStoryDto } from "./dto/create-story.dto.js"
 
@@ -33,6 +33,7 @@ type StoryItem = {
   createdAt: string
   expiresAt: string
   viewed: boolean
+  reactionCount: number
 }
 
 @Injectable()
@@ -53,6 +54,7 @@ export class StoriesService {
       backgroundColor: string | null
       createdAt: Date
       expiresAt: Date
+      reactionCount: number
       views?: { id: number }[]
     },
     viewerId?: string
@@ -69,6 +71,33 @@ export class StoriesService {
       createdAt: row.createdAt.toISOString(),
       expiresAt: row.expiresAt.toISOString(),
       viewed,
+      reactionCount: row.reactionCount ?? 0,
+    }
+  }
+
+  private async reactionSummary(storyId: number) {
+    const groups = await this.prisma.storyLike.groupBy({
+      by: ["reaction"],
+      where: { storyId },
+      _count: { reaction: true },
+    })
+    const summary: Partial<Record<ReactionType, number>> = {}
+    for (const g of groups) {
+      summary[g.reaction as ReactionType] = g._count.reaction
+    }
+    return summary
+  }
+
+  private async reactionResponse(storyId: number, userId: string, reaction: ReactionType | null) {
+    const story = await this.prisma.story.findUnique({ where: { id: storyId } })
+    const summary = await this.reactionSummary(storyId)
+    const reactionCount = story?.reactionCount ?? 0
+    return {
+      reaction,
+      reactionCount,
+      summary,
+      liked: reaction != null,
+      likeCount: reactionCount,
     }
   }
 
@@ -108,7 +137,7 @@ export class StoriesService {
     })
 
     return {
-      ...this.mapStory({ ...story, views: [] }, userId),
+      ...this.mapStory({ ...story, views: [], reactionCount: 0 }, userId),
       author: story.author,
     }
   }
@@ -237,5 +266,83 @@ export class StoriesService {
 
     await this.prisma.story.delete({ where: { id: storyId } })
     return { ok: true }
+  }
+
+  async getReactionStatus(storyId: number, userId: string) {
+    const story = await this.prisma.story.findFirst({
+      where: { id: storyId, expiresAt: { gt: new Date() } },
+    })
+    if (!story) throw new NotFoundException("Story not found")
+
+    const row = await this.prisma.storyLike.findUnique({
+      where: { storyId_userId: { storyId, userId } },
+    })
+    return this.reactionResponse(storyId, userId, row?.reaction ?? null)
+  }
+
+  async listReactions(storyId: number, reaction?: ReactionType) {
+    const story = await this.prisma.story.findFirst({
+      where: { id: storyId, expiresAt: { gt: new Date() } },
+    })
+    if (!story) throw new NotFoundException("Story not found")
+
+    const rows = await this.prisma.storyLike.findMany({
+      where: {
+        storyId,
+        ...(reaction ? { reaction } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: { select: { id: true, name: true, avatarUrl: true } },
+      },
+    })
+
+    return {
+      items: rows.map((r: (typeof rows)[number]) => ({
+        userId: r.userId,
+        reaction: r.reaction,
+        createdAt: r.createdAt.toISOString(),
+        user: r.user,
+      })),
+    }
+  }
+
+  async setReaction(storyId: number, userId: string, reaction: ReactionType) {
+    const story = await this.prisma.story.findFirst({
+      where: { id: storyId, expiresAt: { gt: new Date() } },
+    })
+    if (!story) throw new NotFoundException("Story not found")
+
+    const existing = await this.prisma.storyLike.findUnique({
+      where: { storyId_userId: { storyId, userId } },
+    })
+
+    if (!existing) {
+      await this.prisma.$transaction([
+        this.prisma.storyLike.create({ data: { storyId, userId, reaction } }),
+        this.prisma.story.update({
+          where: { id: storyId },
+          data: { reactionCount: { increment: 1 } },
+        }),
+      ])
+      return this.reactionResponse(storyId, userId, reaction)
+    }
+
+    if (existing.reaction === reaction) {
+      await this.prisma.$transaction([
+        this.prisma.storyLike.delete({ where: { id: existing.id } }),
+        this.prisma.story.update({
+          where: { id: storyId },
+          data: { reactionCount: { decrement: 1 } },
+        }),
+      ])
+      return this.reactionResponse(storyId, userId, null)
+    }
+
+    await this.prisma.storyLike.update({
+      where: { id: existing.id },
+      data: { reaction },
+    })
+    return this.reactionResponse(storyId, userId, reaction)
   }
 }

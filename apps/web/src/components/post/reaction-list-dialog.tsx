@@ -31,11 +31,22 @@ type Props = {
   onOpenChange: (open: boolean) => void
   postId?: number
   reelId?: number
+  storyId?: number
   filterReaction?: ReactionType | null
 }
 
-function listPath(postId?: number, reelId?: number, reaction?: ReactionType | null) {
-  const base = reelId != null ? `/reels/${reelId}/reactions` : `/posts/id/${postId}/reactions`
+function listPath(
+  postId?: number,
+  reelId?: number,
+  storyId?: number,
+  reaction?: ReactionType | null
+) {
+  const base =
+    storyId != null
+      ? `/stories/${storyId}/reactions`
+      : reelId != null
+        ? `/reels/${reelId}/reactions`
+        : `/posts/id/${postId}/reactions`
   if (reaction) return `${base}?reaction=${reaction}`
   return base
 }
@@ -45,6 +56,7 @@ export function ReactionListDialog({
   onOpenChange,
   postId,
   reelId,
+  storyId,
   filterReaction = null,
 }: Props) {
   const { t } = useLocale()
@@ -52,10 +64,10 @@ export function ReactionListDialog({
   const [loading, setLoading] = useState(false)
 
   const load = useCallback(async () => {
-    if (!postId && !reelId) return
+    if (!postId && !reelId && !storyId) return
     setLoading(true)
     try {
-      const path = listPath(postId, reelId, filterReaction)
+      const path = listPath(postId, reelId, storyId, filterReaction)
       const res = await authFetch(path, { cache: "no-store" })
       if (!res.ok) throw new Error("fail")
       const data = (await res.json()) as { items?: ReactionListItem[] }
@@ -65,7 +77,7 @@ export function ReactionListDialog({
     } finally {
       setLoading(false)
     }
-  }, [postId, reelId, filterReaction])
+  }, [postId, reelId, storyId, filterReaction])
 
   useEffect(() => {
     if (open) void load()

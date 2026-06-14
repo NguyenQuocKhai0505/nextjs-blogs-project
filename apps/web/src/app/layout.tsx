@@ -5,6 +5,11 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme/theme-provider"
 import { LocaleProvider } from "@/lib/i18n/locale-context"
 import { Toaster } from "sonner"
+import { ReelsOverlayProvider } from "@/components/reels/reels-overlay-provider"
+
+function ReelsOverlayRoot({ children }: { children: React.ReactNode }) {
+  return <ReelsOverlayProvider>{children}</ReelsOverlayProvider>
+}
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,7 +41,9 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <LocaleProvider>{children}</LocaleProvider>
+            <LocaleProvider>
+              <ReelsOverlayRoot>{children}</ReelsOverlayRoot>
+            </LocaleProvider>
           </ThemeProvider>
         </Suspense>
         <Toaster />

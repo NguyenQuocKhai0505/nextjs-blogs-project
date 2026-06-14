@@ -6,10 +6,12 @@ import { ChevronLeft, ChevronRight, Eye, Plus, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { authFetch } from "@/lib/auth-fetch"
+import { getAccessToken } from "@/lib/token"
 import type { StoryGroup, StoryItem } from "@/lib/types/stories"
 import { useLocale } from "@/lib/i18n/locale-context"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { ReactionPicker } from "@/components/post/reaction-picker"
 import {
   Dialog,
   DialogContent,
@@ -160,14 +162,59 @@ export function StoryViewer({
     }
   }
 
+  const handleClose = useCallback(() => {
+    onClose()
+    onRefresh()
+  }, [onClose, onRefresh])
+
+  const requireAuth = useCallback(() => {
+    if (!getAccessToken()) {
+      toast.error(t("post.signInToast"))
+      handleClose()
+      return false
+    }
+    return true
+  }, [t, handleClose])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleClose()
+    }
+    window.addEventListener("keydown", onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      window.removeEventListener("keydown", onKey)
+      document.body.style.overflow = prev
+    }
+  }, [handleClose])
+
   if (!group || !story) return null
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95">
-        <div className="relative h-full w-full max-w-lg">
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <button
+          type="button"
+          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          onClick={handleClose}
+          aria-label={t("stories.close")}
+        />
+
+        <div className="relative z-10 h-full w-full max-w-lg overflow-hidden bg-black shadow-2xl md:h-[min(96dvh,900px)] md:rounded-2xl">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-3 top-3 z-50 rounded-full bg-black/60 text-white hover:bg-black/80 hover:text-white"
+            onClick={handleClose}
+            aria-label={t("stories.close")}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+
           {/* Progress bars */}
-          <div className="absolute left-0 right-0 top-0 z-20 flex gap-1 px-3 pt-3">
+          <div className="absolute left-0 right-0 top-0 z-40 flex gap-1 px-3 pt-3">
             {group.stories.map((s, i) => (
               <div
                 key={s.id}
@@ -189,7 +236,7 @@ export function StoryViewer({
           </div>
 
           {/* Header */}
-          <div className="absolute left-0 right-0 top-6 z-20 flex items-center justify-between px-3">
+          <div className="absolute left-0 right-12 top-6 z-40 flex items-center justify-between px-3">
             <div className="flex items-center gap-2">
               <Avatar className="h-9 w-9 border border-white/20">
                 <AvatarImage src={group.user.avatarUrl ?? undefined} />
@@ -207,62 +254,51 @@ export function StoryViewer({
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1">
-              {isOwn && (
-                <>
-                  {onAddStory && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="text-white hover:bg-white/10"
-                      onClick={onAddStory}
-                    >
-                      <Plus className="h-5 w-5" />
-                    </Button>
-                  )}
+            {isOwn ? (
+              <div className="flex items-center gap-1">
+                {onAddStory && (
                   <Button
                     size="icon"
                     variant="ghost"
                     className="text-white hover:bg-white/10"
-                    onClick={() => void loadViewers()}
+                    onClick={onAddStory}
                   >
-                    <Eye className="h-5 w-5" />
+                    <Plus className="h-5 w-5" />
                   </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="text-white hover:bg-white/10"
-                    onClick={() => void deleteStory()}
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </Button>
-                </>
-              )}
-              <Button
-                size="icon"
-                variant="ghost"
-                className="text-white hover:bg-white/10"
-                onClick={() => {
-                  onClose()
-                  onRefresh()
-                }}
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
+                )}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="text-white hover:bg-white/10"
+                  onClick={() => void loadViewers()}
+                >
+                  <Eye className="h-5 w-5" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="text-white hover:bg-white/10"
+                  onClick={() => void deleteStory()}
+                >
+                  <Trash2 className="h-5 w-5" />
+                </Button>
+              </div>
+            ) : null}
           </div>
 
           {/* Story content */}
-          <div className="flex h-full items-center justify-center">
+          <div className="relative z-0 flex h-full items-center justify-center pt-14 pb-24">
             {story.mediaType === "IMAGE" && story.imageUrl && (
-              <Image
-                src={story.imageUrl}
-                alt=""
-                fill
-                className="object-contain"
-                unoptimized
-                priority
-              />
+              <div className="relative h-full w-full">
+                <Image
+                  src={story.imageUrl}
+                  alt=""
+                  fill
+                  className="object-contain"
+                  unoptimized
+                  priority
+                />
+              </div>
             )}
             {story.mediaType === "VIDEO" && story.videoUrl && (
               <video
@@ -271,6 +307,7 @@ export function StoryViewer({
                 className="max-h-full max-w-full"
                 autoPlay
                 playsInline
+                controls
                 onEnded={goNext}
                 onTimeUpdate={(e) => {
                   const v = e.currentTarget
@@ -283,7 +320,7 @@ export function StoryViewer({
             {story.mediaType === "TEXT" && (
               <div
                 className="flex h-full w-full items-center justify-center p-8"
-                style={{ backgroundColor: story.backgroundColor ?? "#6366f1" }}
+                style={{ backgroundColor: story.backgroundColor ?? "#3b82f6" }}
               >
                 <p className="max-w-sm text-center text-2xl font-semibold leading-snug text-white">
                   {story.textContent}
@@ -292,25 +329,39 @@ export function StoryViewer({
             )}
           </div>
 
+          {/* Reactions */}
+          {!isOwn ? (
+            <div className="absolute bottom-0 left-0 right-0 z-40 flex justify-center px-4 pb-6 pt-2">
+              <div className="rounded-full border border-white/20 bg-black/50 px-3 py-1.5 backdrop-blur-md">
+                <ReactionPicker
+                  storyId={story.id}
+                  initialCount={story.reactionCount ?? 0}
+                  size="md"
+                  className="[&_button]:border-white/30 [&_button]:bg-white/10 [&_button]:text-white"
+                  onAuthRequired={requireAuth}
+                />
+              </div>
+            </div>
+          ) : null}
+
           {/* Tap zones */}
           <button
             type="button"
             aria-label={t("stories.prev")}
-            className="absolute bottom-0 left-0 top-16 z-10 w-1/3"
+            className="absolute bottom-24 left-0 top-20 z-20 w-1/3"
             onClick={goPrev}
           />
           <button
             type="button"
             aria-label={t("stories.next")}
-            className="absolute bottom-0 right-0 top-16 z-10 w-1/3"
+            className="absolute bottom-24 right-0 top-20 z-20 w-1/3"
             onClick={goNext}
           />
 
-          {/* Group nav hints */}
           {groupIndex > 0 && (
             <button
               type="button"
-              className="absolute left-1 top-1/2 z-20 -translate-y-1/2 rounded-full bg-black/40 p-1 text-white"
+              className="absolute left-1 top-1/2 z-30 -translate-y-1/2 rounded-full bg-black/40 p-1 text-white"
               onClick={() => {
                 setGroupIndex((i) => i - 1)
                 setStoryIndex(0)
@@ -323,7 +374,7 @@ export function StoryViewer({
           {groupIndex < groups.length - 1 && (
             <button
               type="button"
-              className="absolute right-1 top-1/2 z-20 -translate-y-1/2 rounded-full bg-black/40 p-1 text-white"
+              className="absolute right-1 top-1/2 z-30 -translate-y-1/2 rounded-full bg-black/40 p-1 text-white"
               onClick={() => {
                 setGroupIndex((i) => i + 1)
                 setStoryIndex(0)

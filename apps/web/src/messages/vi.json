@@ -181,10 +181,12 @@
     "noViewers": "Chưa có ai xem",
     "viewersFail": "Không tải được danh sách người xem",
     "deleted": "Đã xóa story",
-    "deleteFail": "Không xóa được story"
+    "deleteFail": "Không xóa được story",
+    "close": "Đóng story"
   },
   "reels": {
     "title": "Reels",
+    "close": "Đóng",
     "backHome": "Trang chủ",
     "backToFeed": "Quay lại reels",
     "create": "Tạo reel",

@@ -21,13 +21,15 @@ import { ReactionListDialog } from "@/components/post/reaction-list-dialog"
 type Props = {
   postId?: number
   reelId?: number
+  storyId?: number
   initialCount?: number
   size?: "sm" | "md"
   className?: string
   onAuthRequired?: () => void
 }
 
-function reactionPath(postId?: number, reelId?: number) {
+function reactionPath(postId?: number, reelId?: number, storyId?: number) {
+  if (storyId != null) return `/stories/${storyId}/reaction`
   if (reelId != null) return `/reels/${reelId}/reaction`
   if (postId != null) return `/posts/id/${postId}/reaction`
   return "/posts/id/0/reaction"
@@ -88,13 +90,14 @@ function SummaryLine({
 export function ReactionPicker({
   postId,
   reelId,
+  storyId,
   initialCount = 0,
   size = "sm",
   className,
   onAuthRequired,
 }: Props) {
-  const targetId = reelId ?? postId ?? 0
-  const path = reactionPath(postId, reelId)
+  const targetId = storyId ?? reelId ?? postId ?? 0
+  const path = reactionPath(postId, reelId, storyId)
   const [myReaction, setMyReaction] = useState<ReactionType | null>(null)
   const [reactionCount, setReactionCount] = useState(initialCount)
   const [summary, setSummary] = useState<ReactionSummary>({})
@@ -262,6 +265,7 @@ export function ReactionPicker({
         onOpenChange={setListOpen}
         postId={postId}
         reelId={reelId}
+        storyId={storyId}
         filterReaction={listFilter}
       />
     </div>

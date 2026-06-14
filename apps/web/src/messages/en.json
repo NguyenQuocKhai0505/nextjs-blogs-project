@@ -181,10 +181,12 @@
     "noViewers": "No viewers yet",
     "viewersFail": "Could not load viewers",
     "deleted": "Story deleted",
-    "deleteFail": "Could not delete story"
+    "deleteFail": "Could not delete story",
+    "close": "Close story"
   },
   "reels": {
     "title": "Reels",
+    "close": "Close",
     "backHome": "Home",
     "backToFeed": "Back to reels",
     "create": "Create",
