@@ -352,14 +352,14 @@ export default function RightRail() {
         </CardContent>
       </Card>
 
-      <Card className="overflow-hidden rounded-2xl border-primary/20 bg-gradient-to-br from-primary/12 via-background to-background">
+      <Card className="overflow-hidden rounded-2xl border-primary/20 bg-primary/10">
         <CardContent className="p-4">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Sparkles className="h-4 w-4 text-primary" />
             {t("rail.creatorMode")}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">{t("rail.creatorHint")}</p>
-          <Button asChild size="sm" className="ks-brand-gradient mt-3 w-full rounded-xl border-0 text-primary-foreground">
+          <Button asChild size="sm" className="mt-3 w-full rounded-xl bg-primary text-primary-foreground hover:bg-primary/90">
             <Link href="/post/create">{t("rail.createPost")}</Link>
           </Button>
         </CardContent>

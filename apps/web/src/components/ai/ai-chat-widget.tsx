@@ -104,7 +104,7 @@ export function AiChatWidget() {
           onClick={() => setOpen(true)}
           className={cn(
             "ks-ai-float fixed z-40 flex h-14 w-14 items-center justify-center rounded-full",
-            "border border-primary/30 bg-gradient-to-br from-primary/90 via-violet-600/90 to-cyan-600/85 text-primary-foreground shadow-lg shadow-primary/25",
+            "border border-primary/30 bg-primary text-primary-foreground shadow-lg shadow-primary/25",
             "ring-2 ring-background transition hover:scale-105 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             "bottom-24 right-4 md:bottom-6 md:right-6"
           )}
@@ -132,7 +132,7 @@ export function AiChatWidget() {
           >
             <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-3 py-2.5">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-violet-600 text-primary-foreground">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                   <Sparkles className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">

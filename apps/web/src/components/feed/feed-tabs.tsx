@@ -34,7 +34,7 @@ export function FeedTabs({ mode, onModeChange, disabled }: Props) {
           className={cn(
             "rounded-xl px-4 py-2 text-sm font-medium transition-all",
             mode === tab.id
-              ? "ks-brand-gradient text-primary-foreground shadow-sm shadow-primary/25"
+              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25"
               : "text-muted-foreground hover:bg-primary/10 hover:text-foreground",
             disabled && "opacity-60"
           )}

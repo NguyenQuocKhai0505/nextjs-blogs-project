@@ -45,7 +45,7 @@ function StoryRing({
         className={cn(
           "relative rounded-full p-[2.5px]",
           hasStories && hasUnviewed
-            ? "bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600"
+            ? "bg-primary p-[2.5px]"
             : hasStories
               ? "bg-muted-foreground/30"
               : isOwn
