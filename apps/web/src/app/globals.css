@@ -183,7 +183,15 @@
 }
 
 .ks-glass-panel {
-  @apply ks-glass rounded-2xl border;
+  border-width: 1px;
+  border-style: solid;
+  border-color: color-mix(in oklch, var(--foreground) 8%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in oklch, var(--card) 88%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in oklch, var(--foreground) 6%, transparent) inset,
+    0 8px 32px -12px color-mix(in oklch, var(--primary) 18%, transparent);
+  @apply backdrop-blur-xl supports-[backdrop-filter]:bg-card/50;
 }
 
 .ks-brand-gradient {
