@@ -16,7 +16,6 @@ export type StoryItem = {
   createdAt: string
   expiresAt: string
   viewed: boolean
-  reactionCount?: number
 }
 
 export type StoryGroup = {

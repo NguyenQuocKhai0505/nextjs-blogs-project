@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
- * Production migrate helper: clears known failed migration (P3009) then deploys.
+ * Production migrate helper: clears removed failed migration (P3009) then deploys.
  * Render Start/Build: npm run migrate:deploy
  */
 import { execSync } from "node:child_process"
 
-const FAILED_MIGRATION = "20260606130000_story_reactions"
+/** Removed migration — may still be marked failed on production DB */
+const ORPHAN_MIGRATION = "20260606130000_story_reactions"
 
 function run(cmd, { allowFail = false } = {}) {
   try {
@@ -15,8 +16,8 @@ function run(cmd, { allowFail = false } = {}) {
   }
 }
 
-console.log("[migrate-deploy] clearing failed migration if present...")
-run(`npx prisma migrate resolve --rolled-back ${FAILED_MIGRATION}`, {
+console.log("[migrate-deploy] clearing orphan failed migration if present...")
+run(`npx prisma migrate resolve --rolled-back ${ORPHAN_MIGRATION}`, {
   allowFail: true,
 })
 

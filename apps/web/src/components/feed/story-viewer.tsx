@@ -6,12 +6,10 @@ import { ChevronLeft, ChevronRight, Eye, Plus, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { authFetch } from "@/lib/auth-fetch"
-import { getAccessToken } from "@/lib/token"
 import type { StoryGroup, StoryItem } from "@/lib/types/stories"
 import { useLocale } from "@/lib/i18n/locale-context"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { ReactionPicker } from "@/components/post/reaction-picker"
 import {
   Dialog,
   DialogContent,
@@ -167,15 +165,6 @@ export function StoryViewer({
     onRefresh()
   }, [onClose, onRefresh])
 
-  const requireAuth = useCallback(() => {
-    if (!getAccessToken()) {
-      toast.error(t("post.signInToast"))
-      handleClose()
-      return false
-    }
-    return true
-  }, [t, handleClose])
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") handleClose()
@@ -287,7 +276,7 @@ export function StoryViewer({
           </div>
 
           {/* Story content */}
-          <div className="relative z-0 flex h-full items-center justify-center pt-14 pb-24">
+          <div className="relative z-0 flex h-full items-center justify-center pt-14">
             {story.mediaType === "IMAGE" && story.imageUrl && (
               <div className="relative h-full w-full">
                 <Image
@@ -329,32 +318,17 @@ export function StoryViewer({
             )}
           </div>
 
-          {/* Reactions */}
-          {!isOwn ? (
-            <div className="absolute bottom-0 left-0 right-0 z-40 flex justify-center px-4 pb-6 pt-2">
-              <div className="rounded-full border border-white/20 bg-black/50 px-3 py-1.5 backdrop-blur-md">
-                <ReactionPicker
-                  storyId={story.id}
-                  initialCount={story.reactionCount ?? 0}
-                  size="md"
-                  className="[&_button]:border-white/30 [&_button]:bg-white/10 [&_button]:text-white"
-                  onAuthRequired={requireAuth}
-                />
-              </div>
-            </div>
-          ) : null}
-
           {/* Tap zones */}
           <button
             type="button"
             aria-label={t("stories.prev")}
-            className="absolute bottom-24 left-0 top-20 z-20 w-1/3"
+            className="absolute bottom-0 left-0 top-20 z-20 w-1/3"
             onClick={goPrev}
           />
           <button
             type="button"
             aria-label={t("stories.next")}
-            className="absolute bottom-24 right-0 top-20 z-20 w-1/3"
+            className="absolute bottom-0 right-0 top-20 z-20 w-1/3"
             onClick={goNext}
           />
 
