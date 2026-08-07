@@ -92,7 +92,8 @@
     "post": "게시",
     "chat": "채팅",
     "reels": "릴스",
-    "saved": "저장됨"
+    "saved": "저장됨",
+    "moments": "모먼트"
   },
   "rail": {
     "trending": "트렌드",
@@ -294,5 +295,29 @@
     "reactionsLoading": "불러오는 중…",
     "reactionsEmpty": "아직 반응이 없습니다.",
     "comment": "댓글"
+  },
+  "moments": {
+    "title": "모먼트",
+    "friendsFallback": "친구",
+    "friendsCount": "친구 {count}명",
+    "history": "기록",
+    "shutter": "사진 촬영",
+    "flip": "카메라 전환",
+    "gallery": "갤러리",
+    "flash": "플래시",
+    "zoom": "줌",
+    "retake": "다시 촬영",
+    "send": "보내기",
+    "cameraPermission": "모먼트를 촬영하려면 카메라 권한이 필요합니다.",
+    "cameraUnsupported": "이 브라우저는 카메라를 지원하지 않습니다.",
+    "cameraNotReady": "카메라가 아직 준비되지 않았습니다.",
+    "retryCamera": "다시 시도",
+    "pickFromGallery": "갤러리에서 선택",
+    "comingSoon": "이 기능은 다음 단계에서 제공됩니다.",
+    "closeFriendsSoon": "친한 친구 선택 — 백엔드는 나중에.",
+    "historySoon": "모먼트 기록 — API 준비 후.",
+    "sendSoon": "모먼트 보내기 — 이후 단계에서 API 연결.",
+    "announce": "공지",
+    "placeholder": "Locket 스타일 카메라 UI는 다음 단계에서 만듭니다."
   }
 }

@@ -92,7 +92,8 @@
     "post": "Bài viết",
     "chat": "Chat",
     "reels": "Reels",
-    "saved": "Đã lưu"
+    "saved": "Đã lưu",
+    "moments": "Moments"
   },
   "rail": {
     "trending": "Xu hướng",
@@ -294,5 +295,29 @@
     "reactionsLoading": "Đang tải…",
     "reactionsEmpty": "Chưa có ai thả cảm xúc.",
     "comment": "Bình luận"
+  },
+  "moments": {
+    "title": "Moments",
+    "friendsFallback": "Bạn bè",
+    "friendsCount": "{count} người bạn",
+    "history": "Lịch sử",
+    "shutter": "Chụp ảnh",
+    "flip": "Đảo camera",
+    "gallery": "Thư viện",
+    "flash": "Đèn flash",
+    "zoom": "Zoom",
+    "retake": "Chụp lại",
+    "send": "Gửi",
+    "cameraPermission": "Cần quyền camera để chụp khoảnh khắc.",
+    "cameraUnsupported": "Trình duyệt không hỗ trợ camera.",
+    "cameraNotReady": "Camera chưa sẵn sàng.",
+    "retryCamera": "Thử lại",
+    "pickFromGallery": "Chọn từ thư viện",
+    "comingSoon": "Tính năng sẽ có ở bước sau.",
+    "closeFriendsSoon": "Chọn bạn thân — làm ở backend sau.",
+    "historySoon": "Lịch sử moments — làm sau khi có API.",
+    "sendSoon": "Gửi moment — nối API ở phase sau.",
+    "announce": "Thông báo",
+    "placeholder": "Màn hình camera Locket sẽ làm ở bước tiếp theo."
   }
 }

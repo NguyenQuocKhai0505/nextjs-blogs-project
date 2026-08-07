@@ -13,6 +13,7 @@ import {
   Info,
   Clapperboard,
   Bookmark,
+  Aperture,
 } from "lucide-react"
 import { useLocale } from "@/lib/i18n/locale-context"
 import { useReelsOverlay } from "@/components/reels/reels-overlay-provider"
@@ -26,6 +27,7 @@ export default function LeftSidebar() {
     () => [
       { href: "/", label: t("sidebar.home"), icon: Home, action: "link" as const },
       { href: "/reels", label: t("sidebar.reels"), icon: Clapperboard, action: "reels" as const },
+      { href: "/moments", label: t("sidebar.moments"), icon: Aperture, action: "link" as const },
       { href: "/saved", label: t("sidebar.saved"), icon: Bookmark, action: "link" as const },
       { href: "/contact", label: t("sidebar.messages"), icon: MessageCircle, action: "link" as const },
       { href: "/profile", label: t("sidebar.profile"), icon: User, action: "link" as const },
@@ -77,7 +79,10 @@ export default function LeftSidebar() {
       </div>
 
       <div className="mt-4 pt-2">
-        <Button asChild className="w-full rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90">
+        <Button
+          asChild
+          className="w-full rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90"
+        >
           <Link href="/post/create">
             <PlusSquare className="mr-2 h-4 w-4" />
             {t("sidebar.create")}

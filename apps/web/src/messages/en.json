@@ -92,7 +92,8 @@
     "post": "Post",
     "chat": "Chat",
     "reels": "Reels",
-    "saved": "Saved"
+    "saved": "Saved",
+    "moments": "Moments"
   },
   "rail": {
     "trending": "Trending",
@@ -294,5 +295,29 @@
     "reactionsLoading": "Loading reactions…",
     "reactionsEmpty": "No reactions yet.",
     "comment": "Comment"
+  },
+  "moments": {
+    "title": "Moments",
+    "friendsFallback": "Friends",
+    "friendsCount": "{count} friends",
+    "history": "History",
+    "shutter": "Take photo",
+    "flip": "Flip camera",
+    "gallery": "Gallery",
+    "flash": "Flash",
+    "zoom": "Zoom",
+    "retake": "Retake",
+    "send": "Send",
+    "cameraPermission": "Camera permission is required to capture a moment.",
+    "cameraUnsupported": "This browser does not support the camera.",
+    "cameraNotReady": "Camera is not ready yet.",
+    "retryCamera": "Try again",
+    "pickFromGallery": "Choose from gallery",
+    "comingSoon": "This feature comes in a later step.",
+    "closeFriendsSoon": "Close friends picker — backend later.",
+    "historySoon": "Moments history — after the API is ready.",
+    "sendSoon": "Send moment — wire up the API in a later phase.",
+    "announce": "Announcements",
+    "placeholder": "Locket-style camera UI comes in the next step."
   }
 }

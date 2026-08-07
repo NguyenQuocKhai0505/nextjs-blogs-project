@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, PlusSquare, MessageCircle, User, Clapperboard } from "lucide-react"
+import { Home, MessageCircle, User, Clapperboard, Aperture } from "lucide-react"
 import { useLocale } from "@/lib/i18n/locale-context"
 import { useReelsOverlay } from "@/components/reels/reels-overlay-provider"
 
@@ -15,7 +15,7 @@ export default function MobileBottomNav() {
   const items = [
     { href: "/", label: t("sidebar.home"), icon: Home, action: "link" as const },
     { href: "/reels", label: t("sidebar.reels"), icon: Clapperboard, action: "reels" as const },
-    { href: "/post/create", label: t("sidebar.post"), icon: PlusSquare, action: "link" as const },
+    { href: "/moments", label: t("sidebar.moments"), icon: Aperture, action: "link" as const },
     { href: "/contact", label: t("sidebar.chat"), icon: MessageCircle, action: "link" as const },
     { href: "/profile", label: t("sidebar.profile"), icon: User, action: "link" as const },
   ]
