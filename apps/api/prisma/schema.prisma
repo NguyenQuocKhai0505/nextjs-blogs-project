@@ -110,6 +110,10 @@ model User {
   savedPosts              SavedPost[]
   postReposts             PostRepost[]
   reportsSubmitted        Report[]
+  closeFriends            CloseFriend[] @relation("CloseFriendOwner")
+  closeFriendOf           CloseFriend[] @relation("CloseFriendTarget")
+  moments       Moment[]
+  momentViews   MomentView[]
 
   @@map("user")
 }
@@ -457,4 +461,40 @@ model Report {
   @@unique([reporterId, targetKind, targetId], map: "reports_reporter_target_unique")
   @@index([status, createdAt(sort: Desc)], map: "reports_status_created_idx")
   @@map("reports")
+}
+
+model CloseFriend {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id") @db.VarChar(255)
+  friendId  String   @map("friend_id") @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  user   User @relation("CloseFriendOwner", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("CloseFriendTarget", fields: [friendId], references: [id], onDelete: Cascade)
+  @@unique([userId, friendId], map: "close_friends_user_friend_unique")
+  @@index([friendId], map: "close_friends_friend_id_idx")
+  @@map("close_friends")
+}
+
+model Moment {
+  id        Int      @id @default(autoincrement())
+  authorId  String   @map("author_id") @db.VarChar(255)
+  imageUrl  String   @map("image_url")
+  caption   String?  @db.VarChar(300)
+  createdAt DateTime @default(now()) @map("created_at")
+  author User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views  MomentView[]
+  @@index([authorId, createdAt(sort: Desc)], map: "moments_author_created_idx")
+  @@map("moments")
+}
+
+model MomentView {
+  id       Int      @id @default(autoincrement())
+  momentId Int      @map("moment_id")
+  viewerId String   @map("viewer_id") @db.VarChar(255)
+  viewedAt DateTime @default(now()) @map("viewed_at")
+  moment Moment @relation(fields: [momentId], references: [id], onDelete: Cascade)
+  viewer User   @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+  @@unique([momentId, viewerId], map: "moment_views_moment_viewer_unique")
+  @@index([viewerId], map: "moment_views_viewer_idx")
+  @@map("moment_views")
 }
