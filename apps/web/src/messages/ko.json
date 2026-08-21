@@ -340,6 +340,11 @@
     "feedLoading": "모먼트 불러오는 중…",
     "gridView": "격자 보기",
     "gridTitle": "모먼트",
+    "delete": "삭제",
+    "deleteCancel": "취소",
+    "deleteConfirm": "이 모먼트를 삭제할까요?",
+    "deleted": "모먼트가 삭제되었습니다",
+    "deleteFail": "모먼트를 삭제할 수 없습니다.",
     "placeholder": "Locket 스타일 카메라 UI는 다음 단계에서 만듭니다."
   }
 }

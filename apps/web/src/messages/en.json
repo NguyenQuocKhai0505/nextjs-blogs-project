@@ -340,6 +340,11 @@
     "feedLoading": "Loading moments…",
     "gridView": "Grid view",
     "gridTitle": "Moments",
+    "delete": "Delete",
+    "deleteCancel": "Cancel",
+    "deleteConfirm": "Delete this moment?",
+    "deleted": "Moment deleted",
+    "deleteFail": "Could not delete moment.",
     "placeholder": "Locket-style camera UI comes in the next step."
   }
 }

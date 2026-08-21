@@ -9,6 +9,7 @@ import {
   FlipHorizontal2,
   Grid3X3,
   Home,
+  Trash2,
   Users,
   Zap,
   ZapOff,
@@ -16,6 +17,7 @@ import {
 import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { authFetch } from "@/lib/auth-fetch"
+import { confirmToast } from "@/lib/confirm-toast"
 import { useLocale } from "@/lib/i18n/locale-context"
 import { getAccessToken } from "@/lib/token"
 import { useMe } from "@/lib/use-me"
@@ -42,7 +44,7 @@ export function MomentsCamera() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const historyRef = useRef<HTMLElement>(null)
+  const historyRef = useRef<HTMLElement | null>(null)
   const scrollRootRef = useRef<HTMLDivElement>(null)
 
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user")
@@ -59,6 +61,7 @@ export function MomentsCamera() {
   const [viewMode, setViewMode] = useState<ViewMode>("camera")
   const [moments, setMoments] = useState<MomentItem[]>([])
   const [feedLoading, setFeedLoading] = useState(false)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
 
   useEffect(() => {
     setHasToken(!!getAccessToken())
@@ -283,6 +286,13 @@ export function MomentsCamera() {
   }
 
   const scrollToHistory = () => {
+    const first = moments[0]
+    if (first) {
+      document
+        .getElementById(`moment-${first.id}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" })
+      return
+    }
     historyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
@@ -291,6 +301,36 @@ export function MomentsCamera() {
     requestAnimationFrame(() => {
       scrollRootRef.current?.scrollTo({ top: 0, behavior: "smooth" })
     })
+  }
+
+  const deleteMoment = async (momentId: number) => {
+    if (!hasToken) {
+      toast.error(t("moments.loginRequired"))
+      return
+    }
+    const ok = await confirmToast({
+      title: t("moments.deleteConfirm"),
+      confirmText: t("moments.delete"),
+      cancelText: t("moments.deleteCancel"),
+    })
+    if (!ok) return
+
+    setDeletingId(momentId)
+    try {
+      const res = await authFetch(`/moments/${momentId}`, { method: "DELETE" })
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { message?: string } | null
+        throw new Error(
+          typeof data?.message === "string" ? data.message : t("moments.deleteFail")
+        )
+      }
+      setMoments((prev) => prev.filter((m) => m.id !== momentId))
+      toast.success(t("moments.deleted"))
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("moments.deleteFail"))
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   const friendsLabel =
@@ -354,25 +394,40 @@ export function MomentsCamera() {
           ) : (
             <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
               {moments.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  className="relative aspect-square overflow-hidden rounded-lg bg-zinc-900"
-                  onClick={() => {
-                    setViewMode("camera")
-                    requestAnimationFrame(() => {
-                      document
-                        .getElementById(`moment-${m.id}`)
-                        ?.scrollIntoView({ behavior: "smooth", block: "center" })
-                    })
-                  }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={m.imageUrl} alt="" className="h-full w-full object-cover" />
-                  {!m.viewed && m.author.id !== me?.id && (
-                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-sky-400 ring-2 ring-black" />
-                  )}
-                </button>
+                <div key={m.id} className="group relative aspect-square overflow-hidden rounded-lg bg-zinc-900">
+                  <button
+                    type="button"
+                    className="absolute inset-0"
+                    onClick={() => {
+                      setViewMode("camera")
+                      requestAnimationFrame(() => {
+                        document
+                          .getElementById(`moment-${m.id}`)
+                          ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                      })
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={m.imageUrl} alt="" className="h-full w-full object-cover" />
+                    {!m.viewed && m.author.id !== me?.id && (
+                      <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-sky-400 ring-2 ring-black" />
+                    )}
+                  </button>
+                  {m.author.id === me?.id ? (
+                    <button
+                      type="button"
+                      disabled={deletingId === m.id}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        void deleteMoment(m.id)
+                      }}
+                      className="absolute bottom-1.5 right-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-black/65 text-white opacity-90 transition hover:bg-red-500/90 disabled:opacity-40"
+                      aria-label={t("moments.delete")}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  ) : null}
+                </div>
               ))}
             </div>
           )}
@@ -380,9 +435,9 @@ export function MomentsCamera() {
       ) : (
         <div
           ref={scrollRootRef}
-          className="flex-1 snap-y snap-mandatory overflow-y-auto scroll-smooth"
+          className="flex-1 snap-y snap-mandatory overflow-y-auto overscroll-y-contain scroll-smooth"
         >
-          <section className="flex min-h-dvh snap-start flex-col">
+          <section className="flex h-dvh snap-start snap-always flex-col">
             <div className="flex flex-1 flex-col items-center justify-center px-4 pt-[calc(3.5rem+env(safe-area-inset-top))]">
               <div className="relative aspect-[3/4] w-full max-w-[420px] overflow-hidden rounded-[2rem] bg-zinc-900 shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
                 {capturedUrl ? (
@@ -549,48 +604,64 @@ export function MomentsCamera() {
             </div>
           </section>
 
-          <section
-            ref={historyRef}
-            className="min-h-dvh snap-start px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-8"
-          >
-            <h2 className="mb-4 text-center text-sm font-medium text-white/70">
-              {t("moments.history")}
-            </h2>
-            {feedLoading && moments.length === 0 ? (
-              <p className="py-16 text-center text-sm text-white/50">{t("moments.feedLoading")}</p>
-            ) : moments.length === 0 ? (
-              <p className="py-16 text-center text-sm text-white/50">{t("moments.emptyHistory")}</p>
-            ) : (
-              <div className="mx-auto flex max-w-[420px] flex-col gap-8">
-                {moments.map((m) => (
-                  <article
-                    key={m.id}
-                    id={`moment-${m.id}`}
-                    className="overflow-hidden rounded-[1.75rem] bg-zinc-900 ring-1 ring-white/10"
-                  >
-                    <div className="relative aspect-[3/4]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={m.imageUrl} alt="" className="h-full w-full object-cover" />
-                      <div className="absolute inset-x-0 top-0 flex items-center gap-2 bg-gradient-to-b from-black/55 to-transparent px-3 py-3">
-                        <Avatar className="h-8 w-8 ring-2 ring-sky-400/50">
-                          <AvatarImage src={m.author.avatarUrl ?? undefined} alt="" />
-                          <AvatarFallback className="bg-zinc-700 text-xs">
-                            {m.author.name.slice(0, 1).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="truncate text-sm font-medium">{m.author.name}</span>
-                      </div>
-                      {m.caption ? (
-                        <p className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-4 pt-10 text-center text-sm">
-                          {m.caption}
-                        </p>
+          {feedLoading && moments.length === 0 ? (
+            <section
+              ref={historyRef}
+              className="flex h-dvh snap-start snap-always items-center justify-center px-4"
+            >
+              <p className="text-sm text-white/50">{t("moments.feedLoading")}</p>
+            </section>
+          ) : moments.length === 0 ? (
+            <section
+              ref={historyRef}
+              className="flex h-dvh snap-start snap-always items-center justify-center px-4"
+            >
+              <p className="text-sm text-white/50">{t("moments.emptyHistory")}</p>
+            </section>
+          ) : (
+            moments.map((m, index) => (
+              <section
+                key={m.id}
+                id={`moment-${m.id}`}
+                ref={index === 0 ? historyRef : undefined}
+                className="flex h-dvh snap-start snap-always flex-col items-center justify-center px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-[calc(4rem+env(safe-area-inset-top))]"
+              >
+                <article className="relative w-full max-w-[420px] overflow-hidden rounded-[1.75rem] bg-zinc-900 ring-1 ring-white/10">
+                  <div className="relative aspect-[3/4]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={m.imageUrl} alt="" className="h-full w-full object-cover" />
+                    <div className="absolute inset-x-0 top-0 flex items-center gap-2 bg-gradient-to-b from-black/60 to-transparent px-3 py-3">
+                      <Avatar className="h-8 w-8 ring-2 ring-sky-400/50">
+                        <AvatarImage src={m.author.avatarUrl ?? undefined} alt="" />
+                        <AvatarFallback className="bg-zinc-700 text-xs">
+                          {m.author.name.slice(0, 1).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                        {m.author.name}
+                      </span>
+                      {m.author.id === me?.id ? (
+                        <button
+                          type="button"
+                          disabled={deletingId === m.id}
+                          onClick={() => void deleteMoment(m.id)}
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/45 text-white transition hover:bg-red-500/90 disabled:opacity-40"
+                          aria-label={t("moments.delete")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       ) : null}
                     </div>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
+                    {m.caption ? (
+                      <p className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-4 pt-10 text-center text-sm">
+                        {m.caption}
+                      </p>
+                    ) : null}
+                  </div>
+                </article>
+              </section>
+            ))
+          )}
         </div>
       )}
 

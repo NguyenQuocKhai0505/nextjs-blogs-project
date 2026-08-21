@@ -340,6 +340,11 @@
     "feedLoading": "Đang tải khoảnh khắc…",
     "gridView": "Xem dạng lưới",
     "gridTitle": "Khoảnh khắc",
+    "delete": "Xóa",
+    "deleteCancel": "Huỷ",
+    "deleteConfirm": "Xóa khoảnh khắc này?",
+    "deleted": "Đã xóa khoảnh khắc",
+    "deleteFail": "Không xóa được khoảnh khắc.",
     "placeholder": "Màn hình camera Locket sẽ làm ở bước tiếp theo."
   }
 }
