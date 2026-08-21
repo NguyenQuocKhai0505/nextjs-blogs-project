@@ -317,6 +317,11 @@
     "closeFriendsSoon": "Chọn bạn thân — làm ở backend sau.",
     "historySoon": "Lịch sử moments — làm sau khi có API.",
     "sendSoon": "Gửi moment — nối API ở phase sau.",
+    "loginRequired": "Đăng nhập để gửi khoảnh khắc.",
+    "sending": "Đang gửi…",
+    "sent": "Đã gửi khoảnh khắc",
+    "sendFail": "Không gửi được khoảnh khắc.",
+    "noImageUrl": "Upload không trả về URL ảnh.",
     "announce": "Thông báo",
     "placeholder": "Màn hình camera Locket sẽ làm ở bước tiếp theo."
   }

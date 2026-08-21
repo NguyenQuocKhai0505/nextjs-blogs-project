@@ -317,6 +317,11 @@
     "closeFriendsSoon": "친한 친구 선택 — 백엔드는 나중에.",
     "historySoon": "모먼트 기록 — API 준비 후.",
     "sendSoon": "모먼트 보내기 — 이후 단계에서 API 연결.",
+    "loginRequired": "모먼트를 보내려면 로그인하세요.",
+    "sending": "보내는 중…",
+    "sent": "모먼트를 보냈습니다",
+    "sendFail": "모먼트를 보낼 수 없습니다.",
+    "noImageUrl": "업로드가 이미지 URL을 반환하지 않았습니다.",
     "announce": "공지",
     "placeholder": "Locket 스타일 카메라 UI는 다음 단계에서 만듭니다."
   }

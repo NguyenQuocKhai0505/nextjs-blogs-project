@@ -317,6 +317,11 @@
     "closeFriendsSoon": "Close friends picker — backend later.",
     "historySoon": "Moments history — after the API is ready.",
     "sendSoon": "Send moment — wire up the API in a later phase.",
+    "loginRequired": "Sign in to send a moment.",
+    "sending": "Sending…",
+    "sent": "Moment sent",
+    "sendFail": "Could not send moment.",
+    "noImageUrl": "Upload did not return an image URL.",
     "announce": "Announcements",
     "placeholder": "Locket-style camera UI comes in the next step."
   }

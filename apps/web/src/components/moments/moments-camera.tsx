@@ -15,7 +15,6 @@ import {
   ZapOff,
 } from "lucide-react"
 import { toast } from "sonner"
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { authFetch } from "@/lib/auth-fetch"
 import { useLocale } from "@/lib/i18n/locale-context"
@@ -43,6 +42,8 @@ export function MomentsCamera() {
   const [capturedUrl, setCapturedUrl] = useState<string | null>(null)
   const [galleryThumb, setGalleryThumb] = useState<string | null>(null)
   const [friendCount, setFriendCount] = useState<number | null>(null)
+  const [capturedFile, setCapturedFile] = useState<Blob | null>(null)
+  const [sending, setSending] = useState(false)
 
   useEffect(() => {
     setHasToken(!!getAccessToken())
@@ -144,6 +145,7 @@ export function MomentsCamera() {
       (blob) => {
         if (!blob) return
         const url = URL.createObjectURL(blob)
+        setCapturedFile(blob)
         setCapturedUrl((prev) => {
           if (prev?.startsWith("blob:") && prev !== galleryThumb) URL.revokeObjectURL(prev)
           return url
@@ -160,6 +162,7 @@ export function MomentsCamera() {
   }
 
   const retake = () => {
+    setCapturedFile(null)
     setCapturedUrl((prev) => {
       if (prev?.startsWith("blob:") && prev !== galleryThumb) URL.revokeObjectURL(prev)
       return null
@@ -169,6 +172,7 @@ export function MomentsCamera() {
   const onPickGallery = (file: File | null) => {
     if (!file || !file.type.startsWith("image/")) return
     const url = URL.createObjectURL(file)
+    setCapturedFile(file)
     setGalleryThumb((prev) => {
       if (prev?.startsWith("blob:") && prev !== capturedUrl) URL.revokeObjectURL(prev)
       return url
@@ -178,6 +182,58 @@ export function MomentsCamera() {
       return url
     })
     stopCamera()
+  }
+
+  async function sendMoment() {
+    if (!hasToken) {
+      toast.error(t("moments.loginRequired"))
+      return
+    }
+    if (!capturedFile) {
+      toast.error(t("moments.cameraNotReady"))
+      return
+    }
+
+    setSending(true)
+    try {
+      const formData = new FormData()
+      formData.append("files", capturedFile, "moment.jpg")
+
+      const uploadRes = await authFetch("/upload", {
+        method: "POST",
+        body: formData,
+      })
+      const uploadJson = (await uploadRes.json().catch(() => ({}))) as {
+        message?: string
+        imageUrls?: string[]
+      }
+      if (!uploadRes.ok) {
+        throw new Error(
+          typeof uploadJson.message === "string" ? uploadJson.message : t("moments.sendFail")
+        )
+      }
+      const imageUrl = uploadJson.imageUrls?.[0]
+      if (!imageUrl) throw new Error(t("moments.noImageUrl"))
+
+      const res = await authFetch("/moments", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ imageUrl }),
+      })
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { message?: string } | null
+        throw new Error(
+          typeof data?.message === "string" ? data.message : t("moments.sendFail")
+        )
+      }
+
+      toast.success(t("moments.sent"))
+      retake()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("moments.sendFail"))
+    } finally {
+      setSending(false)
+    }
   }
 
   const friendsLabel =
@@ -308,16 +364,18 @@ export function MomentsCamera() {
             <button
               type="button"
               onClick={retake}
-              className="rounded-full bg-white/10 px-6 py-3 text-sm font-medium backdrop-blur-md hover:bg-white/15"
+              disabled={sending}
+              className="rounded-full bg-white/10 px-6 py-3 text-sm font-medium backdrop-blur-md hover:bg-white/15 disabled:opacity-50"
             >
               {t("moments.retake")}
             </button>
             <button
               type="button"
-              onClick={() => toast.message(t("moments.sendSoon"))}
-              className="rounded-full bg-amber-400 px-8 py-3 text-sm font-semibold text-black shadow-lg shadow-amber-400/25 hover:bg-amber-300"
+              onClick={() => void sendMoment()}
+              disabled={sending || !capturedFile}
+              className="rounded-full bg-amber-400 px-8 py-3 text-sm font-semibold text-black shadow-lg shadow-amber-400/25 hover:bg-amber-300 disabled:opacity-50"
             >
-              {t("moments.send")}
+              {sending ? t("moments.sending") : t("moments.send")}
             </button>
           </div>
         ) : (

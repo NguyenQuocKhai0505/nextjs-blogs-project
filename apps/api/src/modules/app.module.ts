@@ -7,6 +7,7 @@ import { AiModule } from "../ai/ai.module.js"
 import { ReelsModule } from "../reels/reel.module.js"
 import { ReportsModule } from "../reports/reports.module.js"
 import { SavedModule } from "../saved/save.module.js"
+import { MomentsModule } from "../moments/moment.module.js"
 import { SharesModule } from "../shares/shares.module.js"
 import { StoriesModule } from "../stories/stories.module.js"
 import { AuthModule } from "../auth/auth.module.js"
@@ -60,6 +61,7 @@ function throttlerRootOptions() {
     SavedModule,
     SharesModule,
     ReportsModule,
+    MomentsModule,
   ],
   controllers: [HealthController],
   providers: [
