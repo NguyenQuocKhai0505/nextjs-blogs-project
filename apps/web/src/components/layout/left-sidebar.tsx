@@ -37,19 +37,19 @@ export default function LeftSidebar() {
   )
 
   return (
-    <div className="ks-glass-panel flex flex-col p-3">
-      <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {t("sidebar.navigation")}
-      </p>
-
+    <nav className="flex flex-col gap-1">
       <div className="space-y-0.5">
         {nav.map((item) => {
-          const active = item.action === "reels" ? false : pathname === item.href
+          const active =
+            item.action === "reels"
+              ? false
+              : item.href === "/"
+                ? pathname === "/"
+                : pathname === item.href || pathname.startsWith(`${item.href}/`)
           const Icon = item.icon
           const className = cn(
-            "relative w-full justify-start gap-3 rounded-xl border-l-[3px] border-transparent pl-3",
-            active &&
-              "border-primary bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary"
+            "h-11 w-full justify-start gap-3 rounded-xl px-3 text-[15px] font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-foreground",
+            active && "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary"
           )
 
           if (item.action === "reels") {
@@ -61,7 +61,7 @@ export default function LeftSidebar() {
                 className={className}
                 onClick={openReels}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-5 w-5 shrink-0" strokeWidth={active ? 2.25 : 2} />
                 {item.label}
               </Button>
             )
@@ -70,7 +70,7 @@ export default function LeftSidebar() {
           return (
             <Button key={item.href} asChild variant="ghost" className={className}>
               <Link href={item.href}>
-                <Icon className="h-4 w-4" />
+                <Icon className="h-5 w-5 shrink-0" strokeWidth={active ? 2.25 : 2} />
                 {item.label}
               </Link>
             </Button>
@@ -78,17 +78,17 @@ export default function LeftSidebar() {
         })}
       </div>
 
-      <div className="mt-4 pt-2">
+      <div className="mt-3 px-1">
         <Button
           asChild
-          className="w-full rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90"
+          className="h-11 w-full rounded-full bg-primary text-[15px] font-semibold text-primary-foreground shadow-sm shadow-primary/25 hover:bg-primary/90"
         >
           <Link href="/post/create">
-            <PlusSquare className="mr-2 h-4 w-4" />
+            <PlusSquare className="mr-2 h-5 w-5" />
             {t("sidebar.create")}
           </Link>
         </Button>
       </div>
-    </div>
+    </nav>
   )
 }

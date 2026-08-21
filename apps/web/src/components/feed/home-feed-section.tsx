@@ -7,7 +7,6 @@ import PostList from "@/components/post/post-list"
 import { FeedTabs } from "@/components/feed/feed-tabs"
 import { FeedSkeletonList } from "@/components/feed/feed-skeleton"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { useLocale } from "@/lib/i18n/locale-context"
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll"
 import type { FeedMode } from "@/lib/types/feed"
@@ -56,67 +55,47 @@ export default function HomeFeedSection({
     onLoadMore,
   })
 
-  const subtitle =
-    feedMode === "following" ? t("home.feedFollowingSubtitle") : t("home.feedSubtitle")
-
   const emptyFollowing = feedMode === "following" && !loading && !hasPosts
 
   return (
-    <section className="space-y-4">
-      <div className="sticky top-14 z-20 -mx-1 px-1 pb-1 sm:top-16">
-        <Card className="ks-glass overflow-hidden rounded-2xl border-border/40 py-0 shadow-sm">
-          <CardContent className="space-y-3 p-3 sm:p-4">
-            <div className="min-w-0">
-              <h1 className="text-lg font-bold tracking-tight sm:text-xl">
-                <span className="ks-brand-text">{t("home.feedTitle")}</span>
-              </h1>
-              <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">{subtitle}</p>
-            </div>
-
-            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-              <FeedTabs
-                mode={feedMode}
-                onModeChange={onFeedModeChange}
-                disabled={loading}
-              />
-              <div className="flex flex-wrap gap-1">
-                {DAY_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    disabled={loading}
-                    onClick={() => onDaysChange(opt.value)}
-                    className={cn(
-                      "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-xs",
-                      days === opt.value
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground",
-                      loading && "opacity-60"
-                    )}
-                  >
-                    {t(opt.labelKey)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <section className="space-y-3">
+      <div className="sticky top-14 z-20 -mx-3 border-y border-border bg-background/95 px-3 backdrop-blur-md sm:-mx-0 sm:rounded-none sm:border-x-0">
+        <FeedTabs mode={feedMode} onModeChange={onFeedModeChange} disabled={loading} />
+        <div className="flex flex-wrap gap-1.5 py-2.5">
+          {DAY_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              disabled={loading}
+              onClick={() => onDaysChange(opt.value)}
+              className={cn(
+                "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors sm:text-xs",
+                days === opt.value
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground",
+                loading && "opacity-60"
+              )}
+            >
+              {t(opt.labelKey)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {error ? (
-        <Card className="rounded-2xl border-destructive/30 bg-destructive/5">
-          <CardContent className="py-8 text-center text-sm text-destructive">
-            <p>{t("home.feedError")}</p>
-            {process.env.NODE_ENV !== "production" && error ? (
-              <p className="mt-2 text-xs text-destructive/80">{error}</p>
-            ) : null}
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 py-8 text-center text-sm text-destructive">
+          <p>{t("home.feedError")}</p>
+          {process.env.NODE_ENV !== "production" && error ? (
+            <p className="mt-2 text-xs text-destructive/80">{error}</p>
+          ) : null}
+        </div>
       ) : loading ? (
         <FeedSkeletonList count={3} />
       ) : hasPosts ? (
         <>
-          <PostList posts={posts} viewerId={viewerId} viewerRole={viewerRole} />
+          <div className="overflow-hidden rounded-2xl border border-border bg-card sm:rounded-2xl">
+            <PostList posts={posts} viewerId={viewerId} viewerRole={viewerRole} />
+          </div>
           <div ref={sentinelRef} className="h-1" aria-hidden />
           {loadingMore ? (
             <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
@@ -125,42 +104,34 @@ export default function HomeFeedSection({
             </div>
           ) : null}
           {!hasMore && posts.length > 0 ? (
-            <p className="py-4 text-center text-xs text-muted-foreground">
-              {t("home.feedEnd")}
-            </p>
+            <p className="py-4 text-center text-xs text-muted-foreground">{t("home.feedEnd")}</p>
           ) : null}
         </>
       ) : emptyFollowing ? (
-        <Card className="rounded-2xl border-dashed bg-card/50">
-          <CardContent className="space-y-4 py-12 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Users className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-base font-semibold">{t("home.noFollowingTitle")}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {!viewerId
-                  ? t("home.noFollowingSignIn")
-                  : t("home.noFollowingHint")}
-              </p>
-            </div>
-            <Button asChild className="rounded-xl">
-              <Link href={viewerId ? "/discover" : "/auth"}>
-                {viewerId ? t("home.discoverPeople") : t("home.signIn")}
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="space-y-4 rounded-2xl border border-dashed border-border py-12 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <Users className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <p className="text-base font-semibold">{t("home.noFollowingTitle")}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {!viewerId ? t("home.noFollowingSignIn") : t("home.noFollowingHint")}
+            </p>
+          </div>
+          <Button asChild className="rounded-full">
+            <Link href={viewerId ? "/discover" : "/auth"}>
+              {viewerId ? t("home.discoverPeople") : t("home.signIn")}
+            </Link>
+          </Button>
+        </div>
       ) : (
-        <Card className="rounded-2xl border-dashed bg-card/50">
-          <CardContent className="space-y-3 py-12 text-center">
-            <p className="text-base font-semibold">{t("home.noPostsTitle")}</p>
-            <p className="text-sm text-muted-foreground">{t("home.noPostsHint")}</p>
-            <Button asChild className="rounded-xl">
-              <Link href="/post/create">{t("home.createFirstPost")}</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="space-y-3 rounded-2xl border border-dashed border-border py-12 text-center">
+          <p className="text-base font-semibold">{t("home.noPostsTitle")}</p>
+          <p className="text-sm text-muted-foreground">{t("home.noPostsHint")}</p>
+          <Button asChild className="rounded-full">
+            <Link href="/post/create">{t("home.createFirstPost")}</Link>
+          </Button>
+        </div>
       )}
     </section>
   )

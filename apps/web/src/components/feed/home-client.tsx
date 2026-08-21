@@ -39,14 +39,14 @@ export default function HomeClient({
   })
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <StoriesBar viewerId={viewerId} />
+      <FeedComposerInline viewerId={viewerId} />
       <CategoriesBar
         viewerRole={viewerRole}
         selectedCategoryIds={selectedCategoryIds}
         onSelectedCategoryIdsChange={setSelectedCategoryIds}
       />
-      <FeedComposerInline viewerId={viewerId} />
       <HomeFeedSection
         posts={posts}
         viewerId={viewerId}

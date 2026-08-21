@@ -144,10 +144,8 @@ export default function StoriesBar({ viewerId }: Props) {
 
   return (
     <>
-      <div className="ks-glass-panel p-2.5 sm:p-3">
-        <p className="text-xs font-semibold sm:text-sm">{t("stories.title")}</p>
-
-        <div className="mt-2 flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="px-0.5 py-1">
+        <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {loading ? (
             Array.from({ length: 5 }).map((_, i) => (
               <div

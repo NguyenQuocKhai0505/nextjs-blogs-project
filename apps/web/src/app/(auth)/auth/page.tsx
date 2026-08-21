@@ -1,12 +1,13 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import Image from "next/image"
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 
 import { apiUrl } from "@/lib/api"
 import { setAccessToken } from "@/lib/token"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
@@ -94,23 +95,38 @@ export default function AuthPage() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-2xl">
-          {mode === "login" ? "Sign in" : "Create account"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-xl shadow-primary/5">
+      <div className="border-b border-border bg-gradient-to-br from-primary/15 via-transparent to-transparent px-6 pb-5 pt-8 text-center">
+        <Link href="/" className="inline-flex flex-col items-center gap-2">
+          <div className="relative h-14 w-14 overflow-hidden rounded-2xl ring-2 ring-primary/25">
+            <Image src="/logo.png" alt="Ksocial" fill className="object-cover" priority />
+          </div>
+          <span className="ks-brand-text text-2xl">Ksocial</span>
+        </Link>
+        <h1 className="mt-4 text-xl font-bold tracking-tight">
+          {mode === "login" ? "Welcome back" : "Join Ksocial"}
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {mode === "login"
+            ? "Sign in to connect with your community"
+            : "Create an account to start sharing"}
+        </p>
+      </div>
+
+      <div className="space-y-4 px-6 py-6">
         <Button
           type="button"
           variant="outline"
-          className="w-full"
+          className="h-11 w-full rounded-full"
           onClick={loginGoogle}
         >
           Continue with Google
         </Button>
 
-        <div className="text-center text-sm text-muted-foreground">or</div>
+        <div className="relative text-center text-xs text-muted-foreground">
+          <span className="absolute inset-x-0 top-1/2 h-px bg-border" aria-hidden />
+          <span className="relative bg-card px-3">or</span>
+        </div>
 
         <form className="space-y-3" onSubmit={onSubmit}>
           {mode === "register" ? (
@@ -122,6 +138,7 @@ export default function AuthPage() {
                 autoComplete="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                className="rounded-xl"
                 required
               />
             </div>
@@ -135,6 +152,7 @@ export default function AuthPage() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="rounded-xl"
               required
             />
           </div>
@@ -147,17 +165,18 @@ export default function AuthPage() {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="rounded-xl"
               required
             />
           </div>
 
           {error ? (
-            <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
             </p>
           ) : null}
 
-          <Button className="w-full" type="submit" disabled={isLoading}>
+          <Button className="h-11 w-full rounded-full" type="submit" disabled={isLoading}>
             {isLoading
               ? mode === "login"
                 ? "Signing in..."
@@ -173,7 +192,7 @@ export default function AuthPage() {
                 Don&apos;t have an account?{" "}
                 <button
                   type="button"
-                  className="text-foreground underline underline-offset-4"
+                  className="font-medium text-primary underline-offset-4 hover:underline"
                   onClick={() => {
                     setMode("register")
                     setError(null)
@@ -187,7 +206,7 @@ export default function AuthPage() {
                 Already have an account?{" "}
                 <button
                   type="button"
-                  className="text-foreground underline underline-offset-4"
+                  className="font-medium text-primary underline-offset-4 hover:underline"
                   onClick={() => {
                     setMode("login")
                     setError(null)
@@ -199,7 +218,7 @@ export default function AuthPage() {
             )}
           </div>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

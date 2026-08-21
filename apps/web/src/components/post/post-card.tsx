@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import type { PostCardProps } from "@/lib/types"
-import { Card } from "../ui/card"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -254,11 +253,11 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
       index={lightboxIndex}
       onIndexChange={setLightboxIndex}
     />
-    <Card className="gap-0 overflow-hidden py-0">
-      <div className="flex items-start gap-3 px-4 pt-4 pb-2">
+    <article className="ks-post-enter ks-feed-divider overflow-hidden bg-card">
+      <div className="flex items-start gap-3 px-3 pt-3 pb-2 sm:px-4">
         <Link
           href={`/profile/${post.author.id}`}
-          className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted ring-2 ring-primary/10"
+          className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted ring-2 ring-primary/15"
         >
           {post.author.avatarUrl ? (
             <Image
@@ -300,7 +299,7 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    className="shrink-0 text-muted-foreground"
+                    className="shrink-0 rounded-full text-muted-foreground"
                     aria-label={t("post.optionsAria")}
                   >
                     <MoreHorizontal className="size-4" />
@@ -331,7 +330,7 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    className="shrink-0 text-muted-foreground"
+                    className="shrink-0 rounded-full text-muted-foreground"
                     aria-label={t("post.optionsAria")}
                   >
                     <MoreHorizontal className="size-4" />
@@ -355,25 +354,8 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
         </div>
       </div>
 
-      {(post.title || post.description) ? (
-        <div className="space-y-1 px-4 pb-3">
-          {post.title ? (
-            <Link href={`/post/${post.slug}`} className="group block">
-              <h3 className="line-clamp-2 text-base font-bold leading-snug transition-colors group-hover:text-primary">
-                {post.title}
-              </h3>
-            </Link>
-          ) : null}
-          {post.description ? (
-            <p className="line-clamp-4 text-sm leading-relaxed text-muted-foreground">
-              {post.description}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-
       {hasMedia ? (
-        <div className="border-y border-border/50">
+        <div className="bg-muted/20">
           {images.length > 0 ? (
             <PostMediaGrid
               imageUrls={images}
@@ -393,8 +375,25 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
         </div>
       ) : null}
 
-      <div className="px-2 pb-2 pt-1 sm:px-3">
-        <div className="grid grid-cols-4 divide-x divide-border/40 border-t border-border/40">
+      {(post.title || post.description) ? (
+        <div className="space-y-1 px-3 py-3 sm:px-4">
+          {post.title ? (
+            <Link href={`/post/${post.slug}`} className="group block">
+              <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug transition-colors group-hover:text-primary">
+                {post.title}
+              </h3>
+            </Link>
+          ) : null}
+          {post.description ? (
+            <p className="line-clamp-4 text-sm leading-relaxed text-foreground/85">
+              {post.description}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className="px-1 pb-2 sm:px-2">
+        <div className="grid grid-cols-4">
           <div className="flex justify-center py-1">
             <ReactionPicker
               postId={post.id}
@@ -435,7 +434,7 @@ function PostCard({ post, viewerId = null, viewerRole = null }: PostCardProps) {
           </div>
         </div>
       </div>
-    </Card>
+    </article>
     <CommentThreadDialog
       open={commentsOpen}
       onOpenChange={setCommentsOpen}

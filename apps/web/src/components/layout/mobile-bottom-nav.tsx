@@ -21,40 +21,47 @@ export default function MobileBottomNav() {
   ]
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border/50 bg-background/75 backdrop-blur-xl md:hidden supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto grid max-w-[520px] grid-cols-5 px-1.5 py-1.5">
-        {items.map((item) => {
-          const active = item.action === "reels" ? false : pathname === item.href
-          const Icon = item.icon
+    <nav className="fixed inset-x-0 bottom-0 z-20 pb-[max(0.35rem,env(safe-area-inset-bottom))] md:hidden">
+      <div className="mx-auto max-w-[420px] px-3">
+        <div className="flex items-stretch justify-around rounded-2xl border border-border/80 bg-card/95 px-1 py-1 shadow-lg shadow-black/10 backdrop-blur-md dark:shadow-black/40">
+          {items.map((item) => {
+            const active =
+              item.action === "reels"
+                ? false
+                : item.href === "/"
+                  ? pathname === "/"
+                  : pathname === item.href || pathname.startsWith(`${item.href}/`)
+            const Icon = item.icon
 
-          if (item.action === "reels") {
+            if (item.action === "reels") {
+              return (
+                <button
+                  key={item.href}
+                  type="button"
+                  onClick={openReels}
+                  className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-2 text-[10px] text-muted-foreground transition-colors"
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className="max-w-full truncate px-0.5">{item.label}</span>
+                </button>
+              )
+            }
+
             return (
-              <button
+              <Link
                 key={item.href}
-                type="button"
-                onClick={openReels}
-                className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2 text-[10px] text-muted-foreground transition-colors"
+                href={item.href}
+                className={cn(
+                  "flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-2 text-[10px] text-muted-foreground transition-colors",
+                  active && "bg-primary/12 font-semibold text-primary"
+                )}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className={cn("h-5 w-5", active && "scale-105")} strokeWidth={active ? 2.4 : 2} />
                 <span className="max-w-full truncate px-0.5">{item.label}</span>
-              </button>
+              </Link>
             )
-          }
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex flex-col items-center justify-center gap-0.5 rounded-xl py-2 text-[10px] text-muted-foreground transition-colors",
-                active && "ks-nav-pill font-medium"
-              )}
-            >
-              <Icon className={cn("h-5 w-5", active && "scale-105")} />
-              <span className="max-w-full truncate px-0.5">{item.label}</span>
-            </Link>
-          )
-        })}
+          })}
+        </div>
       </div>
     </nav>
   )

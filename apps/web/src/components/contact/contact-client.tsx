@@ -13,7 +13,6 @@ import MessageInput from "@/components/contact/message-input"
 import { VoiceMessagePlayer } from "@/components/contact/voice-message-player"
 import { MessageTranslate } from "@/components/contact/message-translate"
 import { CreateGroupDialog } from "@/components/contact/create-group-dialog"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -428,9 +427,9 @@ export default function ContactClient({
   }
 
   return (
-    <div className="grid gap-3 sm:gap-4 lg:grid-cols-[minmax(240px,26%)_minmax(0,1fr)] xl:grid-cols-[minmax(260px,24%)_minmax(0,1fr)]">
-      <Card className="flex flex-col overflow-hidden lg:min-h-[72vh]">
-        <div className="border-b px-4 py-3">
+    <div className="-mx-3 flex h-[calc(100dvh-7.5rem)] flex-col overflow-hidden border-y border-border bg-card sm:-mx-0 sm:rounded-2xl sm:border md:h-[calc(100dvh-6rem)] lg:flex-row">
+      <aside className="flex max-h-[42vh] w-full flex-col border-b border-border lg:max-h-none lg:w-[320px] lg:shrink-0 lg:border-b-0 lg:border-r">
+        <div className="border-b border-border px-4 py-3">
           <div className="flex items-start justify-between gap-2">
             <p className="text-sm font-semibold">{t("chat.title")}</p>
             <CreateGroupDialog
@@ -444,14 +443,14 @@ export default function ContactClient({
           </div>
           <p className="mt-1 text-xs text-muted-foreground">{t("chat.mutualHint")}</p>
         </div>
-        <div className="border-b px-4 py-3">
+        <div className="border-b border-border px-4 py-3">
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {t("chat.mutualFriends")}
           </p>
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="pl-9"
+              className="rounded-full pl-9"
               placeholder={t("chat.searchFriendsPlaceholder")}
               value={friendQuery}
               onChange={(e) => setFriendQuery(e.target.value)}
@@ -463,7 +462,7 @@ export default function ContactClient({
                 <li key={u.id}>
                   <button
                     type="button"
-                    className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-accent"
+                    className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm hover:bg-accent"
                     onClick={() => void openChatWith(u.id)}
                   >
                     <MessageCircle className="size-4 shrink-0 text-muted-foreground" />
@@ -476,7 +475,7 @@ export default function ContactClient({
             <p className="mt-2 text-xs text-muted-foreground">{t("chat.noMutualMatches")}</p>
           ) : null}
         </div>
-        <div className="min-h-0 flex-1 max-h-[min(45vh,380px)] overflow-y-auto lg:max-h-none lg:flex-1">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           {conversations.length === 0 ? (
             <div className="p-4 text-sm text-muted-foreground">{t("chat.noConversations")}</div>
           ) : (
@@ -486,8 +485,8 @@ export default function ContactClient({
                 <div
                   key={c.id}
                   className={cn(
-                    "flex w-full items-stretch border-b hover:bg-accent/80",
-                    activeId === c.id && "bg-accent"
+                    "flex w-full items-stretch hover:bg-accent/70",
+                    activeId === c.id && "bg-primary/10"
                   )}
                 >
                   <button
@@ -536,20 +535,20 @@ export default function ContactClient({
             })
           )}
         </div>
-      </Card>
+      </aside>
 
-      <Card className="flex min-h-[70vh] flex-col overflow-hidden lg:min-h-[72vh]">
-        <div className="border-b px-4 py-3 text-sm font-semibold">
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="border-b border-border px-3 py-3 text-sm font-semibold sm:px-4">
           {activeConversation ? conversationLabel(activeConversation) : t("chat.selectChat")}
         </div>
-        <div className="flex min-h-0 flex-1 flex-col bg-muted/20">
-          <div className="flex-1 overflow-y-auto px-2 py-4 sm:px-4 md:px-6">
+        <div className="flex min-h-0 flex-1 flex-col bg-muted/15">
+          <div className="flex-1 overflow-y-auto px-2 py-4 sm:px-4">
             {loadingMessages ? (
               <div className="text-sm text-muted-foreground">{t("chat.loading")}</div>
             ) : messages.length === 0 ? (
               <div className="text-sm text-muted-foreground">{t("chat.noMessages")}</div>
             ) : (
-              <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 xl:max-w-5xl">
+              <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
                 {messages.map((m) => {
                   const viewerId = me?.id
                   const senderKey = m.senderId || m.sender?.id
@@ -612,7 +611,7 @@ export default function ContactClient({
                                 "max-w-full rounded-2xl px-3.5 py-2 text-[15px] leading-snug shadow-sm",
                                 isMine
                                   ? "rounded-br-sm bg-primary text-primary-foreground"
-                                  : "rounded-bl-sm bg-muted/90 text-foreground ring-1 ring-border/50",
+                                  : "rounded-bl-sm bg-card text-foreground ring-1 ring-border/60",
                                 isRevoked && "italic opacity-90"
                               )}
                             >
@@ -714,13 +713,13 @@ export default function ContactClient({
               </div>
             )}
           </div>
-          <div className="shrink-0 border-t border-border/60 bg-card px-2 pb-3 pt-2 sm:px-4 md:px-6">
-            <div className="mx-auto w-full max-w-4xl xl:max-w-5xl">
+          <div className="shrink-0 border-t border-border bg-card px-2 pb-3 pt-2 sm:px-4">
+            <div className="mx-auto w-full max-w-3xl">
               <MessageInput onSend={send} disabled={!activeId} />
             </div>
           </div>
         </div>
-      </Card>
+      </section>
 
       <AlertDialog
         open={hideConfirmId !== null}

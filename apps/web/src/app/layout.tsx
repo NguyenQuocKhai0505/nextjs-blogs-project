@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Outfit, Plus_Jakarta_Sans } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme/theme-provider"
 import { LocaleProvider } from "@/lib/i18n/locale-context"
@@ -11,20 +11,20 @@ function ReelsOverlayRoot({ children }: { children: React.ReactNode }) {
   return <ReelsOverlayProvider>{children}</ReelsOverlayProvider>
 }
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta",
   subsets: ["latin"],
-});
+})
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
-});
+})
 
 export const metadata: Metadata = {
-  title: "Ksocial Website",
+  title: "Ksocial",
   description: "Connect, share, and discover with our community",
-};
+}
 
 export default function RootLayout({
   children,
@@ -33,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${plusJakarta.variable} ${outfit.variable} antialiased`}>
         <Suspense fallback={null}>
           <ThemeProvider
             attribute="class"

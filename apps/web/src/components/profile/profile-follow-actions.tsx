@@ -98,10 +98,7 @@ export default function ProfileFollowActions({
   return (
     <div className="flex flex-wrap gap-2">
       {rel.mutual ? (
-        <Button
-          asChild
-          className="border-none bg-blue-600 text-white shadow-sm hover:bg-blue-700"
-        >
+        <Button asChild className="rounded-full">
           <Link href={`/contact?userId=${encodeURIComponent(targetUserId)}`}>
             <MessageCircle className="mr-2 h-4 w-4" />
             Chat
@@ -109,11 +106,22 @@ export default function ProfileFollowActions({
         </Button>
       ) : null}
       {!rel.youFollow ? (
-        <Button onClick={() => void onFollow()} disabled={busy} variant={rel.followsYou ? "default" : "secondary"}>
+        <Button
+          onClick={() => void onFollow()}
+          disabled={busy}
+          variant={rel.followsYou ? "default" : "secondary"}
+          className="rounded-full"
+        >
           {rel.followsYou ? "Follow back" : "Follow"}
         </Button>
       ) : (
-        <Button type="button" variant="outline" onClick={() => void onUnfollow()} disabled={busy}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => void onUnfollow()}
+          disabled={busy}
+          className="rounded-full"
+        >
           {rel.mutual ? "Unfriend" : "Following"}
         </Button>
       )}

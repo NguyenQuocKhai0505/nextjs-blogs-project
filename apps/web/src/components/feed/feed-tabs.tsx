@@ -22,7 +22,7 @@ export function FeedTabs({ mode, onModeChange, disabled }: Props) {
     <div
       role="tablist"
       aria-label={t("home.feedTabsAria")}
-      className="inline-flex rounded-2xl border border-border/50 bg-muted/30 p-1 backdrop-blur-sm"
+      className="flex w-full gap-0 border-b border-border"
     >
       {tabs.map((tab) => (
         <button
@@ -32,15 +32,16 @@ export function FeedTabs({ mode, onModeChange, disabled }: Props) {
           aria-selected={mode === tab.id}
           disabled={disabled}
           className={cn(
-            "rounded-xl px-4 py-2 text-sm font-medium transition-all",
-            mode === tab.id
-              ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25"
-              : "text-muted-foreground hover:bg-primary/10 hover:text-foreground",
+            "relative flex-1 px-3 py-3 text-sm font-semibold transition-colors",
+            mode === tab.id ? "text-foreground" : "text-muted-foreground hover:text-foreground",
             disabled && "opacity-60"
           )}
           onClick={() => onModeChange(tab.id)}
         >
           {tab.label}
+          {mode === tab.id ? (
+            <span className="absolute inset-x-6 bottom-0 h-0.5 rounded-full bg-primary" />
+          ) : null}
         </button>
       ))}
     </div>

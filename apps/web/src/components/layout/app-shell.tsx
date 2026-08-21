@@ -1,6 +1,7 @@
 "use client"
 
 import { ReactNode } from "react"
+import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import Header from "./header"
 import LeftSidebar from "./left-sidebar"
@@ -16,25 +17,45 @@ export default function AppShell({
   children: ReactNode
   containerClassName?: string
 }) {
+  const pathname = usePathname()
+  const hideRail = pathname === "/contact" || pathname.startsWith("/contact/")
+
   return (
     <div className="ks-app-shell">
       <Header />
 
-      <div className="relative z-0 mx-auto w-full max-w-[1440px] px-3 pb-20 pt-5 sm:px-6 lg:px-8 md:pb-6">
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-[280px_minmax(0,1fr)] lg:grid-cols-[280px_minmax(0,1fr)_360px] xl:grid-cols-[300px_minmax(0,1fr)_380px]">
+      <div className="relative z-0 mx-auto w-full max-w-[1280px] px-3 pb-24 pt-4 sm:px-5 md:pb-6 lg:px-6">
+        <div
+          className={cn(
+            "grid grid-cols-1 gap-4 md:grid-cols-[220px_minmax(0,1fr)] lg:gap-6",
+            hideRail
+              ? "lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)]"
+              : "lg:grid-cols-[220px_minmax(0,680px)_280px] xl:grid-cols-[240px_minmax(0,680px)_300px] lg:justify-center"
+          )}
+        >
           <aside className="hidden md:block">
-            <div className="sticky top-[96px]">
+            <div className="sticky top-[72px]">
               <LeftSidebar />
             </div>
           </aside>
 
-          <main className={cn("min-w-0", containerClassName)}>{children}</main>
+          <main
+            className={cn(
+              "mx-auto min-w-0 w-full lg:mx-0",
+              hideRail ? "max-w-none" : "max-w-[680px]",
+              containerClassName
+            )}
+          >
+            {children}
+          </main>
 
-          <aside className="hidden lg:block">
-            <div className="sticky top-[96px]">
-              <RightRail />
-            </div>
-          </aside>
+          {!hideRail && (
+            <aside className="hidden lg:block">
+              <div className="sticky top-[72px]">
+                <RightRail />
+              </div>
+            </aside>
+          )}
         </div>
       </div>
 
@@ -44,4 +65,3 @@ export default function AppShell({
     </div>
   )
 }
-

@@ -151,15 +151,17 @@ export default function CategoriesBar({
 
   return (
     <>
-      <div className="ks-glass-panel p-2.5 sm:p-3">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs font-semibold text-muted-foreground sm:text-sm">Categories</p>
-          <div className="flex items-center gap-2">
+      <div className="py-1">
+        <div className="flex items-center justify-between gap-2 px-0.5">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Categories
+          </p>
+          <div className="flex items-center gap-1">
             <Button
               type="button"
               size="icon"
               variant="ghost"
-              className="h-8 w-8 rounded-xl"
+              className="h-7 w-7 rounded-full"
               onClick={() => scrollerRef.current?.scrollBy({ left: -260, behavior: "smooth" })}
               aria-label="Scroll categories left"
             >
@@ -169,15 +171,15 @@ export default function CategoriesBar({
               type="button"
               size="icon"
               variant="ghost"
-              className="h-8 w-8 rounded-xl"
+              className="h-7 w-7 rounded-full"
               onClick={() => scrollerRef.current?.scrollBy({ left: 260, behavior: "smooth" })}
               aria-label="Scroll categories right"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
             {isAdmin ? (
-              <Button size="sm" variant="outline" className="rounded-xl" onClick={openCreate} disabled={busy}>
-                <Plus className="mr-2 h-4 w-4" />
+              <Button size="sm" variant="ghost" className="h-7 rounded-full px-2 text-xs" onClick={openCreate} disabled={busy}>
+                <Plus className="mr-1 h-3.5 w-3.5" />
                 New
               </Button>
             ) : null}
@@ -186,7 +188,7 @@ export default function CategoriesBar({
 
         <div
           ref={scrollerRef}
-          className="ks-scrollbar-x mt-2 flex gap-1.5 overflow-x-auto pb-1 pr-1 [scrollbar-width:thin]"
+          className="ks-scrollbar-x mt-1.5 flex gap-1.5 overflow-x-auto pb-1 pr-1 [scrollbar-width:thin]"
         >
           <button
             type="button"
