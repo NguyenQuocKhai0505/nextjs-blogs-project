@@ -323,6 +323,12 @@
     "sendFail": "Không gửi được khoảnh khắc.",
     "noImageUrl": "Upload không trả về URL ảnh.",
     "announce": "Thông báo",
+    "backToBlog": "Quay về blog",
+    "captionPlaceholder": "Thêm chú thích…",
+    "emptyHistory": "Chưa có khoảnh khắc nào.",
+    "feedLoading": "Đang tải khoảnh khắc…",
+    "gridView": "Xem dạng lưới",
+    "gridTitle": "Khoảnh khắc",
     "placeholder": "Màn hình camera Locket sẽ làm ở bước tiếp theo."
   }
 }

@@ -323,6 +323,12 @@
     "sendFail": "Could not send moment.",
     "noImageUrl": "Upload did not return an image URL.",
     "announce": "Announcements",
+    "backToBlog": "Back to blog",
+    "captionPlaceholder": "Add a caption…",
+    "emptyHistory": "No moments yet.",
+    "feedLoading": "Loading moments…",
+    "gridView": "Grid view",
+    "gridTitle": "Moments",
     "placeholder": "Locket-style camera UI comes in the next step."
   }
 }

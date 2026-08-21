@@ -323,6 +323,12 @@
     "sendFail": "모먼트를 보낼 수 없습니다.",
     "noImageUrl": "업로드가 이미지 URL을 반환하지 않았습니다.",
     "announce": "공지",
+    "backToBlog": "블로그로 돌아가기",
+    "captionPlaceholder": "캡션 추가…",
+    "emptyHistory": "아직 모먼트가 없습니다.",
+    "feedLoading": "모먼트 불러오는 중…",
+    "gridView": "격자 보기",
+    "gridTitle": "모먼트",
     "placeholder": "Locket 스타일 카메라 UI는 다음 단계에서 만듭니다."
   }
 }
