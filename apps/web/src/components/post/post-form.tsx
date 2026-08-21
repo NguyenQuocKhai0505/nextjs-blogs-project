@@ -11,7 +11,7 @@ import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
-import { X, Link as LinkIcon, Loader2, Plus } from "lucide-react"
+import { X, Link as LinkIcon, Loader2, Plus, Sparkles } from "lucide-react"
 import { apiUrl } from "@/lib/api"
 import { authFetch } from "@/lib/auth-fetch"
 import type { PostCategory } from "@/lib/types"
@@ -21,6 +21,7 @@ import { useTheme } from "next-themes"
 import { PostVideo } from "@/components/media/post-video"
 import { isEmbedProviderUrl } from "@/lib/embed-video"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useLocale } from "@/lib/i18n/locale-context"
 
 //post form schema for validation
 const postSchema = z.object({
@@ -61,6 +62,9 @@ function PostForm({ post, mode = "create" }: PostFormProps){
     const [isPending,startTransition] = useTransition()
     const router = useRouter()
     const { resolvedTheme } = useTheme()
+    const { t, locale } = useLocale()
+    const [aiBrief, setAiBrief] = useState("")
+    const [aiLoading, setAiLoading] = useState(false)
     const parseMediaField = (media?: string[] | string | null) => {
         if (!media) return []
         if (Array.isArray(media)) return media
@@ -79,7 +83,7 @@ function PostForm({ post, mode = "create" }: PostFormProps){
     const [viewerRole, setViewerRole] = useState<"USER" | "ADMIN" | null>(null)
     const isAdmin = viewerRole === "ADMIN"
     const fileInputRef = useRef<HTMLInputElement>(null)
-    const { register, handleSubmit, formState: { errors } } = useForm<
+    const { register, handleSubmit, setValue, formState: { errors } } = useForm<
       PostFormInput,
       unknown,
       PostFormOutput
@@ -95,6 +99,69 @@ function PostForm({ post, mode = "create" }: PostFormProps){
                 : "",
         }
     })
+
+    const applyAiSuggestion = async () => {
+      const brief = aiBrief.trim()
+      if (brief.length < 5) {
+        toast.error(t("postForm.aiBriefTooShort"))
+        return
+      }
+      if (!getAccessToken()) {
+        toast.error(t("post.signInToast"))
+        router.push("/auth")
+        return
+      }
+      setAiLoading(true)
+      try {
+        const res = await authFetch("/ai/suggest-post", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            brief,
+            locale,
+            categoryNames: categories.map((c) => c.name),
+          }),
+        })
+        if (res.status === 429) {
+          toast.error(t("postForm.aiRateLimited"))
+          return
+        }
+        if (!res.ok) {
+          const err = (await res.json().catch(() => null)) as { message?: string } | null
+          throw new Error(
+            typeof err?.message === "string" ? err.message : t("postForm.aiSuggestFail")
+          )
+        }
+        const data = (await res.json()) as {
+          title?: string
+          description?: string
+          content?: string
+          categoryName?: string | null
+        }
+        if (!data.title || !data.description || !data.content) {
+          throw new Error(t("postForm.aiSuggestFail"))
+        }
+        setValue("title", data.title, { shouldDirty: true, shouldValidate: true })
+        setValue("description", data.description, { shouldDirty: true, shouldValidate: true })
+        setValue("content", data.content, { shouldDirty: true, shouldValidate: true })
+        if (data.categoryName) {
+          const match = categories.find(
+            (c) => c.name.toLowerCase() === data.categoryName!.toLowerCase()
+          )
+          if (match) {
+            setValue("categoryId", String(match.id), {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          }
+        }
+        toast.success(t("postForm.aiFilled"))
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : t("postForm.aiSuggestFail"))
+      } finally {
+        setAiLoading(false)
+      }
+    }
 
     useEffect(() => {
       let cancelled = false
@@ -415,6 +482,44 @@ function PostForm({ post, mode = "create" }: PostFormProps){
     }
     return (
         <form className="space-y-6" onSubmit={handleSubmit(onFormSubmit)}>
+            <div className="space-y-3 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+              <div className="flex items-start gap-2">
+                <div className="mt-0.5 rounded-lg bg-primary/15 p-1.5">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">{t("postForm.aiTitle")}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{t("postForm.aiHint")}</p>
+                </div>
+              </div>
+              <textarea
+                value={aiBrief}
+                onChange={(e) => setAiBrief(e.target.value.slice(0, 2000))}
+                placeholder={t("postForm.aiPlaceholder")}
+                rows={3}
+                disabled={isPending || aiLoading}
+                className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+              />
+              <Button
+                type="button"
+                className="rounded-full"
+                disabled={isPending || aiLoading || aiBrief.trim().length < 5}
+                onClick={() => void applyAiSuggestion()}
+              >
+                {aiLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t("postForm.aiGenerating")}
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    {t("postForm.aiGenerate")}
+                  </>
+                )}
+              </Button>
+            </div>
+
             <div className="space-y-2">
                 {/* Title */}
                 <Label htmlFor="title">Title</Label>

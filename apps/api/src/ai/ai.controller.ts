@@ -5,11 +5,13 @@ import { CurrentUserId } from "../common/decorators/current-user-id.decorator.js
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard.js"
 import { AiService } from "./ai.service.js"
 import { ChatDto } from "./dto/chat.dto.js"
+import { SuggestPostDto } from "./dto/suggest-post.dto.js"
 import { TranslateDto } from "./dto/translate.dto.js"
 
 const aiChatTtl = Number(process.env.AI_CHAT_THROTTLE_TTL_MS ?? 60_000)
 const aiChatLimit = Number(process.env.AI_CHAT_THROTTLE_LIMIT ?? 20)
 const aiTranslateLimit = Number(process.env.AI_TRANSLATE_THROTTLE_LIMIT ?? 40)
+const aiSuggestLimit = Number(process.env.AI_SUGGEST_THROTTLE_LIMIT ?? 15)
 
 @Controller("ai")
 export class AiController {
@@ -27,7 +29,6 @@ export class AiController {
     return this.ai.translate(dto.text, dto.targetLanguage)
   }
 
-  /** Stricter limit than global default — per user (via optional JWT middleware + tracker). */
   @UseGuards(JwtAuthGuard)
   @Throttle({
     default: {
@@ -38,5 +39,21 @@ export class AiController {
   @Post("chat")
   async chat(@CurrentUserId() _userId: string, @Body() dto: ChatDto) {
     return this.ai.chat(dto.messages)
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Throttle({
+    default: {
+      ttl: aiChatTtl,
+      limit: aiSuggestLimit,
+    },
+  })
+  @Post("suggest-post")
+  async suggestPost(@CurrentUserId() _userId: string, @Body() dto: SuggestPostDto) {
+    return this.ai.suggestPost({
+      brief: dto.brief,
+      locale: dto.locale,
+      categoryNames: dto.categoryNames,
+    })
   }
 }

@@ -296,6 +296,17 @@
     "reactionsEmpty": "아직 반응이 없습니다.",
     "comment": "댓글"
   },
+  "postForm": {
+    "aiTitle": "AI 글쓰기 도우미",
+    "aiHint": "올리고 싶은 내용을 요약하세요 — AI가 제목·설명·본문·카테고리를 채워 줍니다.",
+    "aiPlaceholder": "예: 오늘 Next.js App Router를 배웠는데 처음엔 헷갈렸지만 재미있었어요…",
+    "aiGenerate": "제안하고 폼 채우기",
+    "aiGenerating": "생성 중…",
+    "aiBriefTooShort": "요약을 최소 5자 이상 입력하세요.",
+    "aiFilled": "제안에 따라 폼을 채웠습니다 — 원하는 대로 수정하세요.",
+    "aiSuggestFail": "제안을 만들 수 없습니다. 다시 시도하세요.",
+    "aiRateLimited": "요청이 너무 많습니다. 잠시 후 다시 시도하세요."
+  },
   "moments": {
     "title": "모먼트",
     "friendsFallback": "친구",

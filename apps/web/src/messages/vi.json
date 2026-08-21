@@ -296,6 +296,17 @@
     "reactionsEmpty": "Chưa có ai thả cảm xúc.",
     "comment": "Bình luận"
   },
+  "postForm": {
+    "aiTitle": "AI viết giúp bạn",
+    "aiHint": "Tóm tắt ý bạn muốn đăng — AI sẽ gợi ý và điền tiêu đề, mô tả, nội dung và danh mục.",
+    "aiPlaceholder": "Ví dụ: Hôm nay mình học Next.js, thấy App Router hơi khó nhưng vui…",
+    "aiGenerate": "Gợi ý & điền form",
+    "aiGenerating": "Đang gợi ý…",
+    "aiBriefTooShort": "Viết tóm tắt ít nhất 5 ký tự.",
+    "aiFilled": "Đã điền gợi ý vào form — bạn có thể chỉnh lại.",
+    "aiSuggestFail": "Không tạo được gợi ý. Thử lại sau.",
+    "aiRateLimited": "Quá nhiều yêu cầu. Đợi một chút rồi thử lại."
+  },
   "moments": {
     "title": "Moments",
     "friendsFallback": "Bạn bè",

@@ -296,6 +296,17 @@
     "reactionsEmpty": "No reactions yet.",
     "comment": "Comment"
   },
+  "postForm": {
+    "aiTitle": "AI writing assistant",
+    "aiHint": "Summarize what you want to post — AI suggests and fills title, description, content, and category.",
+    "aiPlaceholder": "e.g. Today I learned Next.js App Router — confusing at first but fun…",
+    "aiGenerate": "Suggest & fill form",
+    "aiGenerating": "Generating…",
+    "aiBriefTooShort": "Write at least 5 characters in your brief.",
+    "aiFilled": "Suggestion filled into the form — edit as you like.",
+    "aiSuggestFail": "Could not generate a suggestion. Try again.",
+    "aiRateLimited": "Too many requests. Wait a moment and try again."
+  },
   "moments": {
     "title": "Moments",
     "friendsFallback": "Friends",
