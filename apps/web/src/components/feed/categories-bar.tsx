@@ -100,12 +100,12 @@ export default function CategoriesBar({
       }
       const res =
         mode === "create"
-          ? await authFetch("/categories", {
+          ? await authFetch("/admin/categories", {
               method: "POST",
               headers: { "content-type": "application/json" },
               body: JSON.stringify(payload),
             })
-          : await authFetch(`/categories/${editingId}`, {
+          : await authFetch(`/admin/categories/${editingId}`, {
               method: "PATCH",
               headers: { "content-type": "application/json" },
               body: JSON.stringify(payload),
@@ -135,7 +135,7 @@ export default function CategoriesBar({
     if (!ok) return
     setBusy(true)
     try {
-      const res = await authFetch(`/categories/${id}`, { method: "DELETE" })
+      const res = await authFetch(`/admin/categories/${id}`, { method: "DELETE" })
       if (!res.ok) {
         const err = await res.json().catch(() => null)
         throw new Error(err?.message ?? "Request failed")

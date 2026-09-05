@@ -8,6 +8,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from "@nestjs/common"
+import { Throttle } from "@nestjs/throttler"
 import { AuthService } from "./auth.service.js"
 import { RegisterDto } from "./dto/register.dto.js"
 import { LoginDto } from "./dto/login.dto.js"
@@ -31,6 +32,8 @@ export class AuthController {
     return this.auth.register(dto)
   }
 
+  /** Limit brute-force attempts (keyed by IP when not authenticated). */
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post("login")
   login(@Body() dto: LoginDto) {
     return this.auth.login(dto)

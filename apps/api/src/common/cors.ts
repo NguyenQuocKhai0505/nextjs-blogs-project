@@ -3,9 +3,15 @@ import type { CorsOptions } from "@nestjs/common/interfaces/external/cors-option
 function collectAllowedOrigins(): Set<string> {
   const allowed = new Set<string>()
   allowed.add("http://localhost:3000")
+  allowed.add("http://localhost:3001") // apps/admin
+  allowed.add("http://127.0.0.1:3000")
+  allowed.add("http://127.0.0.1:3001")
 
   const webUrl = process.env.WEB_URL?.trim()
   if (webUrl) allowed.add(webUrl)
+
+  const adminUrl = process.env.ADMIN_URL?.trim()
+  if (adminUrl) allowed.add(adminUrl)
 
   const extra = process.env.CORS_ORIGINS?.split(",") ?? []
   for (const raw of extra) {

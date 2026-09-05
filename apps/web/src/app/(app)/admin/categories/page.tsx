@@ -61,7 +61,7 @@ export default function AdminCategoriesPage() {
   const create = async () => {
     setBusy(true)
     try {
-      const res = await authFetch("/categories", {
+      const res = await authFetch("/admin/categories", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -92,7 +92,7 @@ export default function AdminCategoriesPage() {
     if (!ok) return
     setBusy(true)
     try {
-      const res = await authFetch(`/categories/${id}`, { method: "DELETE" })
+      const res = await authFetch(`/admin/categories/${id}`, { method: "DELETE" })
       if (!res.ok) throw new Error((await res.json().catch(() => null))?.message ?? "Request failed")
       toast.success("Category deleted")
       await load()

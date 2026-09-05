@@ -9,5 +9,6 @@ import { CategoriesService } from "./categories.service.js"
   imports: [PrismaModule, JwtModule.register({})],
   controllers: [CategoriesController],
   providers: [CategoriesService],
+  exports: [CategoriesService],
 })
 export class CategoriesModule {}

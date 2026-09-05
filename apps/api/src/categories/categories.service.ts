@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common"
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common"
 
 import { PrismaService } from "../prisma/prisma.service.js"
 import { CreateCategoryDto } from "./dto/create-category.dto.js"
@@ -18,7 +18,7 @@ export class CategoriesService {
   constructor(private readonly prisma: PrismaService) {}
 
   findAll() {
-    return (this.prisma as any).category.findMany({
+    return this.prisma.category.findMany({
       orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
     })
   }
@@ -69,16 +69,8 @@ export class CategoriesService {
       .filter((row): row is { id: number; name: string; slug: string; postCount: number } => row != null)
   }
 
-  private async assertAdmin(userId: string) {
-    const u = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true } as any,
-    })
-    if ((u as any)?.role !== "ADMIN") throw new ForbiddenException("Admin only")
-  }
-
   private async assertUniqueSlug(slug: string, excludeId?: number) {
-    const found = await (this.prisma as any).category.findFirst({
+    const found = await this.prisma.category.findFirst({
       where: {
         slug,
         ...(excludeId != null ? { NOT: { id: excludeId } } : {}),
@@ -88,13 +80,12 @@ export class CategoriesService {
     if (found) throw new BadRequestException("Category slug already exists")
   }
 
-  async create(userId: string, dto: CreateCategoryDto) {
-    await this.assertAdmin(userId)
+  async create(dto: CreateCategoryDto) {
     const name = dto.name.trim()
     const slug = (dto.slug?.trim() ? dto.slug.trim() : slugify(name)).slice(0, 100)
     if (!slug) throw new BadRequestException("Invalid slug")
     await this.assertUniqueSlug(slug)
-    return (this.prisma as any).category.create({
+    return this.prisma.category.create({
       data: {
         name,
         slug,
@@ -103,9 +94,8 @@ export class CategoriesService {
     })
   }
 
-  async update(userId: string, id: number, dto: UpdateCategoryDto) {
-    await this.assertAdmin(userId)
-    const existing = await (this.prisma as any).category.findUnique({ where: { id } })
+  async update(id: number, dto: UpdateCategoryDto) {
+    const existing = await this.prisma.category.findUnique({ where: { id } })
     if (!existing) throw new NotFoundException("Category not found")
 
     const nextName = dto.name !== undefined ? dto.name.trim() : undefined
@@ -117,7 +107,7 @@ export class CategoriesService {
       await this.assertUniqueSlug(nextSlug, id)
     }
 
-    return (this.prisma as any).category.update({
+    return this.prisma.category.update({
       where: { id },
       data: {
         ...(nextName !== undefined ? { name: nextName } : {}),
@@ -127,11 +117,10 @@ export class CategoriesService {
     })
   }
 
-  async remove(userId: string, id: number) {
-    await this.assertAdmin(userId)
-    const existing = await (this.prisma as any).category.findUnique({ where: { id } })
+  async remove(id: number) {
+    const existing = await this.prisma.category.findUnique({ where: { id } })
     if (!existing) throw new NotFoundException("Category not found")
-    await (this.prisma as any).category.delete({ where: { id } })
+    await this.prisma.category.delete({ where: { id } })
     return { success: true }
   }
 }

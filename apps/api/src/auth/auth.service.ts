@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common"
 import { JwtService } from "@nestjs/jwt"
+import { UserRole } from "@prisma/client"
 import { PrismaService } from "../prisma/prisma.service.js"
 import { RegisterDto } from "./dto/register.dto.js"
 import { LoginDto } from "./dto/login.dto.js"
@@ -28,6 +29,7 @@ export class AuthService {
         name: dto.name.trim(),
         email,
         emailVerified: false,
+        role: UserRole.USER,
         accounts: {
           create: {
             id: randomUUID(),
@@ -49,13 +51,19 @@ export class AuthService {
       where: { email },
       include: { accounts: true },
     })
-    if (!user) throw new UnauthorizedException("Invalid credentials")
+    if (!user) {
+      throw new UnauthorizedException("Account does not exist")
+    }
 
     const account =
       user.accounts.find(
         (a: { providerId: string }) => a.providerId === "credentials"
       ) ?? null
-    if (!account) throw new UnauthorizedException("Invalid credentials")
+    if (!account) {
+      throw new UnauthorizedException(
+        "This account has no password login. Use Google/Facebook, or contact support."
+      )
+    }
     if (!account.password) {
       throw new UnauthorizedException(
         "Password login not available for this account. Use Google/Facebook login."
@@ -63,7 +71,9 @@ export class AuthService {
     }
 
     const ok = await bcrypt.compare(dto.password, account.password)
-    if (!ok) throw new UnauthorizedException("Invalid credentials")
+    if (!ok) {
+      throw new UnauthorizedException("Incorrect password")
+    }
 
     return this.issueTokens(user.id)
   }
@@ -126,6 +136,7 @@ export class AuthService {
             `${payload.provider}-${payload.providerAccountId}@local.invalid`,
           avatarUrl: payload.avatarUrl,
           emailVerified: payload.email ? true : false,
+          role: UserRole.USER,
         },
       })
     }

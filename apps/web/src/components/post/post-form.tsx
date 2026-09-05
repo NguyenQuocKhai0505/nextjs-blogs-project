@@ -232,7 +232,7 @@ function PostForm({ post, mode = "create" }: PostFormProps){
         return
       }
       try {
-        const res = await authFetch("/categories", {
+        const res = await authFetch("/admin/categories", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({

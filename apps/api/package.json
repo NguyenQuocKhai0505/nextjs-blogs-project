@@ -10,7 +10,9 @@
     "migrate:deploy": "node scripts/migrate-deploy.mjs",
     "lint": "node -e \"process.exit(0)\"",
     "prisma:generate": "prisma generate && node scripts/fix-prisma-client-link.mjs",
-    "postinstall": "node scripts/fix-prisma-client-link.mjs"
+    "postinstall": "node scripts/fix-prisma-client-link.mjs",
+    "roles:check": "node scripts/check-roles.mjs",
+    "roles:promote": "node scripts/promote-admin.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

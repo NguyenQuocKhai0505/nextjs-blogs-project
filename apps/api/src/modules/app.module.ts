@@ -3,6 +3,7 @@ import { APP_GUARD } from "@nestjs/core"
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler"
 import { ConfigModule } from "@nestjs/config"
 
+import { AdminModule } from "../admin/admin.module.js"
 import { AiModule } from "../ai/ai.module.js"
 import { ReelsModule } from "../reels/reel.module.js"
 import { ReportsModule } from "../reports/reports.module.js"
@@ -62,6 +63,7 @@ function throttlerRootOptions() {
     SharesModule,
     ReportsModule,
     MomentsModule,
+    AdminModule,
   ],
   controllers: [HealthController],
   providers: [
