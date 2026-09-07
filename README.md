@@ -1,64 +1,63 @@
-# Ksocial — Mạng xã hội (monorepo)
+# Ksocial
 
-Ứng dụng mạng xã hội full-stack: bài viết đa phương tiện, tương tác (like, bình luận), theo dõi, thông báo, chat trực tiếp (Socket.IO), khám phá người dùng và đa ngôn ngữ giao diện.
+Full-stack social platform in an **npm workspaces** monorepo: user app, REST/realtime API, and admin console.
 
-## Kiến trúc tổng quan
+| App | Stack | Port (dev) |
+|-----|--------|------------|
+| [`apps/web`](./apps/web) | Next.js (App Router), React, Tailwind | `3000` |
+| [`apps/api`](./apps/api) | NestJS, Prisma, PostgreSQL, Socket.IO | `4000` (`/v1`) |
+| [`apps/admin`](./apps/admin) | Next.js admin UI (ADMIN role) | `3001` |
 
-| Thành phần | Công nghệ | Thư mục |
-|------------|-----------|---------|
-| Frontend | Next.js (App Router), React, Tailwind, Radix UI | `apps/web` |
-| Backend | NestJS, Prisma ORM, PostgreSQL | `apps/api` |
-| Realtime | Socket.IO (chat, tùy chọn thông báo) | `apps/api` + client |
+## Features
 
-Chi tiết kiến trúc và luồng nghiệp vụ: xem thư mục [`docs/`](./docs/).
+- Auth (JWT; optional Google OAuth), profiles, follow graph, discover/search
+- Posts with media, reactions, threaded comments, categories
+- Moments, stories/reels-related modules, saved posts, reports
+- Realtime chat (Socket.IO), presence, in-app notifications
+- AI helpers (optional, env-gated)
+- Admin: dashboard, category CRUD under `/v1/admin/*` with **RolesGuard**
 
-## Yêu cầu môi trường
+## Quick start
 
-- Node.js 20+
-- PostgreSQL
-- (Tùy chọn) tài khoản lưu trữ media nếu cấu hình upload qua API
-
-## Cài đặt và chạy phát triển
-
-Từ thư mục gốc repository:
+**Requirements:** Node.js 20+, PostgreSQL
 
 ```bash
 npm install
+cp apps/api/.env.example apps/api/.env      # set DATABASE_URL, JWT secrets
+cp apps/web/.env.example apps/web/.env      # NEXT_PUBLIC_API_URL=http://127.0.0.1:4000/v1
+cp apps/admin/.env.example apps/admin/.env.local
+
+cd apps/api && npx prisma migrate deploy && npx prisma generate && cd ../..
 npm run dev
 ```
 
-Mặc định:
+| Service | URL |
+|---------|-----|
+| Web | http://localhost:3000 |
+| API health | http://localhost:4000/v1/health |
+| Admin | http://localhost:3001 |
 
-- **Web:** http://localhost:3000  
-- **API:** http://localhost:4000/v1  
-- **Kiểm tra API:** `GET http://localhost:4000/v1/health`
+Useful scripts: `npm run dev:web` · `npm run dev:api` · `npm run dev:admin`
 
-## Biến môi trường
+### Admin accounts
 
-- Sao chép `apps/web/.env.example` → `apps/web/.env` (đặc biệt `NEXT_PUBLIC_API_URL` trỏ tới API, ví dụ `http://127.0.0.1:4000/v1`).
-- Sao chép `apps/api/.env.example` → `apps/api/.env` (chuỗi kết nối PostgreSQL, JWT, CORS, v.v.).
-
-## Cơ sở dữ liệu (Prisma)
-
-Sau khi chỉnh `schema.prisma` hoặc lần đầu clone:
+Admins are assigned in the database only (not via public register). From `apps/api`:
 
 ```bash
-cd apps/api
-npx prisma migrate deploy
-npx prisma generate
+npm run roles:promote -- you@email.com
+# or create: node scripts/promote-admin.mjs you@email.com YourPassword123
 ```
 
-## Tài liệu dự án
+## Documentation
 
-| Tài liệu | Nội dung |
-|----------|----------|
-| [docs/README.md](./docs/README.md) | Mục lục tài liệu |
-| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Kiến trúc hệ thống, module, dữ liệu |
-| [docs/API.md](./docs/API.md) | REST API (`/v1`) và ghi chú Socket.IO chat |
-| [docs/DEPLOY.md](./docs/DEPLOY.md) | Hướng dẫn deploy production |
-| [docs/PRESENTATION-EN.md](./docs/PRESENTATION-EN.md) | Gợi ý thuyết trình / demo (tiếng Anh, Markdown) |
-| [docs/PRESENTATION-EN.docx](./docs/PRESENTATION-EN.docx) | Cùng nội dung — file Word (`.docx`) |
+| Doc | Description |
+|-----|-------------|
+| [docs/README.md](./docs/README.md) | Documentation index |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | System design |
+| [docs/API.md](./docs/API.md) | REST `/v1` and Socket.IO notes |
+| [docs/DEPLOY.md](./docs/DEPLOY.md) | Production deployment |
+| [apps/admin/README.md](./apps/admin/README.md) | Admin app setup |
 
-## Giấy phép & đóng góp
+## License
 
-Theo quy định môn học / nhóm thực hiện dự án.
+Personal / academic project — rights reserved by the author unless otherwise stated.

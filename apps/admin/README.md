@@ -1,31 +1,30 @@
-# Ksocial Admin (`apps/admin`)
+# Ksocial Admin
 
-Next.js control plane on **port 3001**. Shares auth API with `apps/web` / `apps/api`.
+Next.js admin UI on port **3001**. Uses the same Nest API as `apps/web`.
 
 ## Setup
 
 ```bash
 cp .env.example .env.local
+# from repo root:
 npm run dev:admin
-# or from root: npm run dev
 ```
-
-Env (public only):
 
 | Variable | Purpose |
 |----------|---------|
 | `NEXT_PUBLIC_API_URL` | API base including `/v1` |
-| `NEXT_PUBLIC_ACCESS_TOKEN_KEY` | localStorage/cookie key for JWT |
+| `NEXT_PUBLIC_ACCESS_TOKEN_KEY` | Browser storage key for JWT |
 
-JWT **values** are stored after login — never in env. `JWT_ACCESS_SECRET` stays on the API.
+Do not put JWT secrets in the admin app. Assign **ADMIN** in the database (`apps/api` promote script).
 
-## Auth layout (like web)
+## Structure
 
-- `(auth)/login` — public login, ADMIN role required
-- `(protected)/*` — `AdminGuard` + `AdminShell`
+- `(auth)/login` — sign-in; requires `role === ADMIN`
+- `(protected)/*` — `AdminGuard` + shell (dashboard, categories, …)
 
-## Test
+## Smoke test
 
-1. Open http://localhost:3001 → redirect `/login`
-2. Sign in with an ADMIN account
-3. Dashboard loads `GET /v1/admin/dashboard`
+1. http://localhost:3001 → redirects to `/login`
+2. Sign in as ADMIN
+3. Dashboard calls `GET /v1/admin/dashboard`
+4. Categories CRUD via `GET/POST/PATCH/DELETE /v1/admin/categories`

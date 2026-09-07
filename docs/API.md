@@ -1,127 +1,146 @@
-# API REST & Socket.IO — Ksocial
+# REST API & Socket.IO — Ksocial
 
-Tất cả đường dẫn dưới đây có tiền tố **`/v1`** (ví dụ đầy đủ: `http://localhost:4000/v1/health`).
+All paths below are under **`/v1`** (example: `http://localhost:4000/v1/health`).
 
-**Header xác thực (khi bắt buộc):** `Authorization: Bearer <access_token>`.
+**Auth header (when required):** `Authorization: Bearer <access_token>`.
 
 ---
 
 ## Health
 
-| Phương thức | Đường dẫn | Auth | Mô tả |
-|-------------|-----------|------|--------|
-| GET | `/health` | Không | Kiểm tra API sống |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/health` | No | Liveness check |
 
 ---
 
-## Auth (`/v1` — controller auth)
+## Auth
 
-| Phương thức | Đường dẫn | Auth | Mô tả |
-|-------------|-----------|------|--------|
-| POST | `/register` | Không | Đăng ký |
-| POST | `/login` | Không | Đăng nhập, nhận JWT |
-| POST | `/socket-token` | Có | Token phụ cho socket (nếu dùng) |
-| GET | `/google` | Không | Bắt đầu OAuth Google |
-| GET | `/google/callback` | Không | Callback OAuth |
-
----
-
-## Người dùng & quan hệ (controller gốc `""`)
-
-| Phương thức | Đường dẫn | Auth | Mô tả |
-|-------------|-----------|------|--------|
-| GET | `/me` | Có | Thông tin user hiện tại |
-| PATCH | `/me` | Có | Cập nhật profile |
-| POST | `/me/presence` | Có | Heartbeat presence (`last_seen_at`) |
-| GET | `/me/mutual-friends/status` | Có | Bạn chung follow + online/lastSeen |
-| GET | `/me/mutual-friends?q=` | Có | Danh sách mutual (lọc tên/email) |
-| GET | `/users/discover?q=&limit=` | Không | Khám phá user (public directory) |
-| GET | `/users/:id` | Không | Hồ sơ public |
-| GET | `/users/:id/relationship` | Có | youFollow / followsYou / mutual |
-| POST | `/users/:id/follow` | Có | Follow |
-| DELETE | `/users/:id/follow` | Có | Unfollow |
-| GET | `/search-users?q=&limit=` | Không | Tìm user (header search) |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/auth/register` | No | Register |
+| POST | `/auth/login` | No | Login, returns JWT |
+| POST | `/auth/socket-token` | Yes | Short-lived socket token |
+| GET | `/auth/google` | No | Start Google OAuth |
+| GET | `/auth/google/callback` | No | OAuth callback |
 
 ---
 
-## Bài viết (`/posts`)
+## Users & relationships
 
-| Phương thức | Đường dẫn | Auth | Mô tả |
-|-------------|-----------|------|--------|
-| GET | `/posts?categoryIds=&days=` | Không | Danh sách bài (lọc category, số ngày) |
-| GET | `/posts/by-author/:authorId` | Không | Bài theo tác giả |
-| GET | `/posts/:slug` | Không | Chi tiết theo slug |
-| POST | `/posts` | Có | Tạo bài |
-| PATCH | `/posts/:id` | Có | Sửa bài (chủ hoặc admin) |
-| DELETE | `/posts/:id` | Có | Xóa bài |
-| GET | `/posts/id/:postId/liked` | Có | Trạng thái like |
-| POST | `/posts/id/:postId/like` | Có | Toggle like |
-| GET | `/posts/id/:postId/comments` | Không | Danh sách comment |
-| POST | `/posts/id/:postId/comments` | Có | Thêm comment |
-| DELETE | `/posts/id/:postId/comments/:commentId` | Có | Xóa comment |
-
----
-
-## Danh mục (`/categories`)
-
-| Phương thức | Đường dẫn | Auth | Mô tả |
-|-------------|-----------|------|--------|
-| GET | `/categories/trending?days=&limit=` | Không | Category nhiều bài nhất |
-| GET | `/categories` | Không | Liệt kê category |
-| POST | `/categories` | Có (admin) | Tạo |
-| PATCH | `/categories/:id` | Có (admin) | Sửa |
-| DELETE | `/categories/:id` | Có (admin) | Xóa |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/me` | Yes | Current user |
+| PATCH | `/me` | Yes | Update profile |
+| POST | `/me/presence` | Yes | Presence heartbeat (`last_seen_at`) |
+| GET | `/me/mutual-friends/status` | Yes | Mutual friends + online/lastSeen |
+| GET | `/me/mutual-friends?q=` | Yes | Mutual friends list |
+| GET | `/users/discover?q=&limit=` | No | Discover users |
+| GET | `/users/:id` | No | Public profile |
+| GET | `/users/:id/relationship` | Yes | Follow relationship flags |
+| POST | `/users/:id/follow` | Yes | Follow |
+| DELETE | `/users/:id/follow` | Yes | Unfollow |
+| GET | `/search-users?q=&limit=` | No | User search |
 
 ---
 
-## Upload (`/upload`)
+## Posts
 
-| Phương thức | Đường dẫn | Auth | Mô tả |
-|-------------|-----------|------|--------|
-| POST | `/upload` | Có | Upload file, trả URL |
-
----
-
-## Thông báo in-app (`/app-notifications`)
-
-| Phương thức | Đường dẫn | Auth | Mô tả |
-|-------------|-----------|------|--------|
-| GET | `/app-notifications?cursor=&take=` | Có | Danh sách |
-| GET | `/app-notifications/unread-count` | Có | Số chưa đọc |
-| POST | `/app-notifications/mark-all-read` | Có | Đánh dấu đã đọc hết |
-
----
-
-## Chat (`/` — `ChatController`)
-
-| Phương thức | Đường dẫn | Auth | Mô tả |
-|-------------|-----------|------|--------|
-| GET | `/conversations` | Có | Danh sách hội thoại + `unreadCount` |
-| POST | `/conversations` | Có | Mở/tạo 1-1 `{ userId }` |
-| POST | `/conversations/groups` | Có | Tạo nhóm |
-| DELETE | `/conversations/:id` | Có | Ẩn hội thoại (theo user) |
-| GET | `/conversations/:id/messages` | Có | Tin nhắn |
-| POST | `/conversations/:id/read` | Có | Đánh dấu đọc `{ lastReadMessageId? }` |
-| POST | `/messages` | Có | Gửi tin `{ conversationId, content?, imageUrl?, videoUrl? }` |
-| POST | `/messages/:messageId/recall` | Có | Thu hồi tin (trong cửa sổ thời gian) |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/posts?categoryIds=&days=` | No | List posts |
+| GET | `/posts/by-author/:authorId` | No | Posts by author |
+| GET | `/posts/:slug` | No | Post by slug |
+| POST | `/posts` | Yes | Create post |
+| PATCH | `/posts/:id` | Yes | Update (author or admin) |
+| DELETE | `/posts/:id` | Yes | Delete post |
+| GET | `/posts/id/:postId/liked` | Yes | Liked state |
+| POST | `/posts/id/:postId/like` | Yes | Toggle like |
+| GET | `/posts/id/:postId/comments` | No | List comments |
+| POST | `/posts/id/:postId/comments` | Yes | Add comment |
+| DELETE | `/posts/id/:postId/comments/:commentId` | Yes | Delete comment |
 
 ---
 
-## AI (tùy chọn)
+## Categories (public read-only)
 
-| Phương thức | Đường dẫn | Auth | Mô tả |
-|-------------|-----------|------|--------|
-| POST | `/ai/chat` | Theo cấu hình module | Chat AI |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/categories/trending?days=&limit=` | No | Top categories by recent posts |
+| GET | `/categories` | No | List categories |
+
+Mutations are **not** on this controller. Use **Admin** routes below.
+
+---
+
+## Admin (`/admin/*`) — JWT + RolesGuard (`ADMIN`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/admin/dashboard` | ADMIN | Counts (users, posts, categories, pending reports) |
+| GET | `/admin/categories` | ADMIN | List categories |
+| POST | `/admin/categories` | ADMIN | Create |
+| PATCH | `/admin/categories/:id` | ADMIN | Update |
+| DELETE | `/admin/categories/:id` | ADMIN | Delete |
+
+Promote ADMIN (ops only, from `apps/api`):
+
+```bash
+node scripts/promote-admin.mjs <email> [password]
+```
+
+---
+
+## Upload
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/upload` | Yes | Upload file, returns URL |
+
+---
+
+## In-app notifications
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/app-notifications?cursor=&take=` | Yes | List |
+| GET | `/app-notifications/unread-count` | Yes | Unread count |
+| POST | `/app-notifications/mark-all-read` | Yes | Mark all read |
+
+---
+
+## Chat
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/conversations` | Yes | Conversations + `unreadCount` |
+| POST | `/conversations` | Yes | Open/create DM `{ userId }` |
+| POST | `/conversations/groups` | Yes | Create group |
+| DELETE | `/conversations/:id` | Yes | Hide conversation (per user) |
+| GET | `/conversations/:id/messages` | Yes | Messages |
+| POST | `/conversations/:id/read` | Yes | Mark read `{ lastReadMessageId? }` |
+| POST | `/messages` | Yes | Send message |
+| POST | `/messages/:messageId/recall` | Yes | Recall message (time window) |
+
+---
+
+## AI (optional)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/ai/chat` | JWT | AI chat (throttled; needs `GEMINI_API_KEY`) |
+| POST | `/ai/translate` | JWT | Translate |
+| POST | `/ai/suggest-post` | JWT | Suggest post fields |
 
 ---
 
 ## Socket.IO — Chat
 
-- **URL:** cùng host với API, không có suffix `/v1` trên socket (client dùng base URL đã chuẩn hóa trong `apiSocketUrl()`).
-- **Auth:** JWT trong handshake (`auth: { token }`).
-- **Client → server:** `conversations:join` `{ conversationIds }`, `presence:ping`.
-- **Server → client:** `message:created`, `message:revoked` (và các sự kiện khác nếu mở rộng).
+- **URL:** same host as the API (no `/v1` on the socket path).
+- **Auth:** JWT in handshake (`auth: { token }`).
+- **Client → server:** `conversations:join`, `presence:ping`.
+- **Server → client:** `message:created`, `message:revoked` (and related events).
 
 ---
 
-*Để biết chi tiết body/response chính xác, tra DTO và service tương ứng trong `apps/api/src`.*
+For exact request/response bodies, see DTOs and services under `apps/api/src`.

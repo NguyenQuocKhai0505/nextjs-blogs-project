@@ -148,13 +148,7 @@ export default function AdminCategoriesPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="admin-brand text-2xl font-bold tracking-tight">Categories</h2>
-        <p className="mt-1 text-sm text-[var(--admin-muted)]">
-          Manage via <code className="text-sky-400">/admin/categories</code> — ADMIN only
-          (RolesGuard).
-        </p>
-      </div>
+      <h2 className="admin-brand text-2xl font-bold tracking-tight">Categories</h2>
 
       {error ? (
         <p

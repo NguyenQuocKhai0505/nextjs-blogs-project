@@ -1,84 +1,69 @@
-# Kiến trúc hệ thống — Ksocial
+# Architecture — Ksocial
 
-## 1. Tổng quan
+## 1. Overview
 
-Hệ thống gồm hai ứng dụng độc lập trong một monorepo:
+Three apps in one monorepo:
 
-- **`apps/web`**: ứng dụng Next.js (App Router). Giao diện người dùng, gọi HTTP tới API Nest qua `NEXT_PUBLIC_API_URL`, lưu JWT ở client (cookie + `localStorage`) để `Authorization: Bearer`.
-- **`apps/api`**: ứng dụng NestJS, prefix toàn cục **`/v1`**. Xử lý nghiệp vụ, Prisma truy cập PostgreSQL, Socket.IO cho chat realtime.
+| App | Role |
+|-----|------|
+| **`apps/web`** | Next.js social client. Calls Nest via `NEXT_PUBLIC_API_URL`. JWT in `localStorage` + cookie; `Authorization: Bearer` on protected calls. |
+| **`apps/api`** | NestJS, global prefix **`/v1`**. Prisma → PostgreSQL. Socket.IO for chat on the same API host. |
+| **`apps/admin`** | Next.js control UI (port 3001). Same auth API; only users with DB role **`ADMIN`** may enter. |
 
-Luồng điển hình: trình duyệt → Next.js → REST `/v1/*` → Nest + Prisma → PostgreSQL; chat mở thêm kết nối WebSocket tới cùng host API (Socket.IO).
+Typical flow: Browser → Next.js → REST `/v1/*` → Nest + Prisma → PostgreSQL. Chat adds a WebSocket to the API host.
 
 ## 2. Backend (NestJS)
 
-### 2.1 Module chính
+### 2.1 Modules
 
-| Khu vực | Trách nhiệm |
-|---------|-------------|
-| `auth` | Đăng ký, đăng nhập, JWT access token; tùy chọn OAuth Google |
-| `users` | Hồ sơ công khai, follow/unfollow, quan hệ, discover, tìm kiếm user, mutual friends, **presence** (`last_seen_at`, ping) |
-| `posts` | CRUD bài viết, like, comment (thread `parentId`), lọc theo category / khoảng thời gian |
-| `categories` | Danh mục bài viết; admin CRUD; **trending** theo số bài trong N ngày |
-| `upload` | Upload media (multipart), trả URL cho frontend gắn vào bài/chat |
-| `chat` | Hội thoại 1-1 và nhóm (mutual friends), tin nhắn, đọc/tin chưa đọc, ẩn hội thoại, thu hồi tin; **ChatGateway** (Socket.IO) |
-| `notifications` | `app-notifications` tổng hợp, unread count, đánh dấu đã đọc |
-| `ai` | (Tùy chọn) endpoint chat AI |
+| Area | Responsibility |
+|------|----------------|
+| `auth` | Register, login, JWT; optional Google OAuth. New users always get role `USER`. |
+| `users` | Profiles, follow, discover, search, mutual friends, presence (`last_seen_at`) |
+| `posts` | CRUD, likes/reactions, threaded comments, filters |
+| `categories` | Public **read**; mutations only via **`/admin/categories`** |
+| `admin` | Dashboard stats, admin category CRUD, `RolesGuard` |
+| `upload` | Multipart upload → media URL |
+| `chat` | Direct/group chat, read state, hide, recall; **ChatGateway** |
+| `notifications` | In-app notifications, unread |
+| `moments` / `stories` / `reels` / `saved` / `shares` / `reports` | Feature modules as in `apps/api/src` |
+| `ai` | Optional Gemini-backed helpers (env-gated, throttled) |
 
-### 2.2 Xác thực
+### 2.2 Auth & authorization
 
-- JWT access: header `Authorization: Bearer <token>`.
-- Một số route public: ví dụ `GET /posts`, `GET /users/discover`, `GET /search-users`, `GET /categories/trending`.
+- Access JWT: `Authorization: Bearer <token>` (`sub` = user id; role is **not** trusted from the token alone).
+- **`RolesGuard`** + `@Roles(ADMIN)` loads `user.role` from the database for `/admin/*`.
+- ADMIN is assigned only via DB / ops scripts (`scripts/promote-admin.mjs`), never via public register.
 
-### 2.3 Cơ sở dữ liệu (Prisma)
+### 2.3 Data (Prisma)
 
-Schema tại `apps/api/prisma/schema.prisma`. Các khối chính:
+Schema: `apps/api/prisma/schema.prisma`. Core models include **User** (`role`, `lastSeenAt`), **Follow**, **Post**, **Category**, **Conversation** / **Message**, **AppNotification**, **Moment**, **Report**, etc.
 
-- **User**: profile, `role` (USER/ADMIN), **`last_seen_at`** (presence).
-- **Follow**: quan hệ follower/following; **mutual** = hai chiều follow (dùng cho chat 1-1).
-- **Post**, **PostLike**, **Comment**, **Category**.
-- **Conversation** (`DIRECT` | `GROUP`), **ConversationMember**, **Message** (có thể **revoked**), **ConversationReadState** (cursor đọc), **ConversationHide** (ẩn hội thoại theo user).
-- **AppNotification**, **AppNotificationCounter** (in-app notifications).
+### 2.4 Realtime (chat)
 
-### 2.4 Realtime — Chat (Socket.IO)
+- Gateway: `apps/api/src/chat/chat.gateway.ts`
+- Auth via JWT on handshake; rooms `conv:<id>`
+- Events such as `message:created`, `message:revoked`, `conversations:join`, `presence:ping`
 
-- Gateway: `apps/api/src/chat/chat.gateway.ts`.
-- Client xác thực bằng JWT (handshake `auth.token`).
-- Room: `conv:<conversationId>`; sự kiện ví dụ: `message:created`, `message:revoked`.
-- Client emit: `conversations:join`, `presence:ping` (cập nhật `last_seen_at`).
+### 2.5 Presence
 
-### 2.5 Chat: tin chưa đọc (read cursor)
+- `last_seen_at` via `POST /me/presence`, socket lifecycle, and `presence:ping`
+- UI “online” heuristic: typically last seen within ~3 minutes
 
-Mỗi cặp **(user, conversation)** có tối đa một bản ghi **`ConversationReadState`** với `last_read_message_id`.
+## 3. Frontends
 
-- **Unread (inbound)** = số tin do **người khác** gửi có `id` **lớn hơn** mốc đọc (nếu chưa có bản ghi read state, mốc coi như `0`).
-- **Đánh dấu đọc:** `POST /v1/conversations/:id/read` với body tùy chọn `lastReadMessageId`; server không cho “lùi” mốc so với giá trị đã lưu.
-- UI: `apps/web/src/components/contact/contact-client.tsx` (tải tin, socket, badge).
+### Web (`apps/web`)
 
-### 2.6 Presence (online / “hoạt động X phút trước”)
+- `(app)/` shell for authenticated UX; `(auth)/` for login
+- `lib/api.ts`, `lib/auth-fetch.ts`, i18n under `src/messages` (en / vi / ko)
 
-- Cập nhật **`user.last_seen_at`** qua: `POST /v1/me/presence` (heartbeat định kỳ từ web), kết nối/ngắt socket chat, và `presence:ping`.
-- **Online** (gợi ý UI): coi là online nếu `last_seen_at` trong khoảng **3 phút** gần nhất (hằng số server; có thể đổi trong code).
+### Admin (`apps/admin`)
 
-## 3. Frontend (Next.js)
+- `(auth)/login` — public; requires ADMIN after `/me`
+- `(protected)/*` — `AdminGuard` + shell (dashboard, categories, …)
 
-### 3.1 Cấu trúc gợi ý
+## 4. Operations
 
-- `src/app/(app)/`: layout đã đăng nhập (shell, sidebar, rail).
-- `src/components/`: feed, post, contact/chat, layout, notifications, search, v.v.
-- `src/lib/api.ts`: `apiUrl()` — ghép base URL API đã gồm `/v1`.
-- `src/lib/auth-fetch.ts`: gắn Bearer token cho request cần đăng nhập.
-- `src/messages/*.json`: i18n (en, vi, ko).
-
-### 3.2 Tìm kiếm header
-
-Gọi trực tiếp **`GET /v1/search-users`** (không qua Route Handler Next). Điều hướng “xem thêm” và Enter: **`/discover?q=...`**.
-
-## 4. Triển khai và vận hành
-
-- API và Web có thể build độc lập (`apps/api`, `apps/web`).
-- PostgreSQL bắt buộc; chạy migration trước khi start API production.
-- CORS API cần khớp origin web (`WEB_URL` / cấu hình Nest).
-
----
-
-*Tài liệu này phản ánh codebase tại thời điểm biên soạn; khi refactor lớn nên cập nhật song song.*
+- Build apps independently; PostgreSQL + migrations required for API
+- CORS: allow web (`WEB_URL`) and admin (`ADMIN_URL` / `CORS_ORIGINS`, e.g. `http://localhost:3001`)
+- See [DEPLOY.md](./DEPLOY.md)

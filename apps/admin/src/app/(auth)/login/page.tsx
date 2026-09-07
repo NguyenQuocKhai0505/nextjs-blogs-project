@@ -130,7 +130,7 @@ export default function AdminLoginPage() {
           Admin sign in
         </h1>
         <p className="mt-1 text-sm text-[var(--admin-muted)]">
-          Control plane — ADMIN role required
+          Sign in with an admin account
         </p>
       </div>
 

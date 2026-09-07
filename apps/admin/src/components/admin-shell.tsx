@@ -95,15 +95,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 border-b border-[var(--admin-border)] bg-[var(--admin-bg)]/85 px-6 py-3 backdrop-blur-md md:px-8">
-          <p className="text-xs text-[var(--admin-muted)]">
-            Control plane · API via{" "}
-            <code className="text-sky-400/90">NEXT_PUBLIC_API_URL</code>
-          </p>
-        </header>
-        <main className="min-w-0 flex-1 p-6 md:p-8">{children}</main>
-      </div>
+      <main className="min-w-0 flex-1 p-6 md:p-8">{children}</main>
     </div>
   )
 }

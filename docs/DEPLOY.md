@@ -1,18 +1,19 @@
-# Hướng dẫn triển khai (deploy) — Ksocial
+# Deployment — Ksocial
 
-Monorepo gồm **Next.js** (`apps/web`) và **NestJS** (`apps/api`) + **PostgreSQL**. Hai dịch vụ nên deploy riêng; database dùng dịch vụ managed (Neon, Supabase, Railway Postgres, v.v.).
+Monorepo: **Next.js** (`apps/web`, optional `apps/admin`) and **NestJS** (`apps/api`) + **PostgreSQL**. Deploy API and frontends separately; use managed Postgres (Neon, Supabase, Render, etc.).
 
-## 1. Chuẩn bị
+## 1. Prepare
 
-1. **PostgreSQL** — lấy chuỗi `DATABASE_URL` (PostgreSQL, có SSL nếu nhà cung cấp yêu cầu).
-2. **Biến môi trường API** — xem `apps/api/.env.example` (JWT, Cloudinary nếu dùng upload, `WEB_URL` cho CORS).
-3. **Biến môi trường Web** — `NEXT_PUBLIC_API_URL` phải là URL **public HTTPS** của API, **kết thúc bằng `/v1`** (ví dụ `https://api.example.com/v1`).
+1. **PostgreSQL** — obtain `DATABASE_URL` (use SSL if the provider requires it).
+2. **API env** — copy `apps/api/.env.example` (JWT, Cloudinary if used, `WEB_URL` / `CORS_ORIGINS`).
+3. **Web env** — `NEXT_PUBLIC_API_URL` = public HTTPS API URL ending with `/v1`.
+4. **Admin (optional)** — same API URL; allow the admin origin in CORS (`ADMIN_URL` or `CORS_ORIGINS`).
 
 ## 2. Deploy API (NestJS)
 
-### Build & start (máy chủ hoặc PaaS)
+### Build & start
 
-Từ thư mục **`apps/api`** (hoặc cấu hình working directory tương đương):
+From **`apps/api`** (or an equivalent working directory):
 
 ```bash
 npm ci
@@ -22,136 +23,131 @@ npm run build
 npm run start
 ```
 
-- Lệnh listen mặc định: cổng **`PORT`** (nhiều nền tảng gán `PORT` tự động).
-- Đảm bảo **`DATABASE_URL`** trỏ đúng DB production.
+- Listen port: **`PORT`** (many platforms inject this automatically).
+- Ensure **`DATABASE_URL`** points at production Postgres.
 
-### Gợi ý nền tảng
+### Platform tips
 
-| Nền tảng | Ghi chú |
-|----------|---------|
-| **Railway / Render / Fly.io** | Chọn Node, root `apps/api`, start `npm run start`, build kèm `prisma migrate deploy` như trên. |
-| **VPS (Ubuntu)** | PM2/systemd chạy `node dist/main.js`, Nginx reverse proxy HTTPS → `localhost:PORT`. |
+| Platform | Notes |
+|----------|--------|
+| **Railway / Render / Fly.io** | Node service; run migrate + generate + build; start with `npm run start`. For npm workspaces, prefer **repo root** as the service root and `npm run … -w apps/api`. |
+| **VPS (Ubuntu)** | PM2/systemd → `node dist/main.js`, Nginx HTTPS reverse proxy. |
 
 ### CORS & Socket.IO
 
-- Đặt **`WEB_URL`** = URL gốc của frontend (ví dụ `https://app.example.com`) để CORS và handshake Socket.IO đúng.
-- Client chat kết nối WebSocket tới **cùng host với API** (không có `/v1` trên socket); firewall/proxy phải **bật WebSocket**.
+- Set **`WEB_URL`** to the frontend origin (e.g. `https://app.example.com`) for CORS and Socket.IO.
+- Chat WebSocket uses the **same API host** (no `/v1` on the socket URL). Proxies must allow WebSocket upgrades.
 
 ## 3. Deploy Web (Next.js)
 
-### Vercel (phổ biến)
+### Vercel
 
-1. Import repo GitHub.
+1. Import the GitHub repo.
 2. **Root Directory:** `apps/web`.
-3. **Environment Variables:** `NEXT_PUBLIC_API_URL=https://<api-domain>/v1` (và các biến khác trong `apps/web/.env.example` nếu cần).
-4. Build mặc định: `next build` — deploy xong mở URL Vercel.
+3. **Env:** `NEXT_PUBLIC_API_URL=https://<api-domain>/v1`.
+4. Deploy with default `next build`.
 
-### Build local kiểm tra
+### Local production check
 
 ```bash
 npm run build -w apps/web
 npm run start -w apps/web
 ```
 
-## 4. Thứ tự khuyến nghị
+## 4. Recommended order
 
-1. Tạo DB → chạy **`prisma migrate deploy`** trên API (hoặc CI) một lần.
-2. Deploy **API** → lấy URL public (HTTPS).
-3. Cập nhật **`NEXT_PUBLIC_API_URL`** và deploy **Web**.
-4. Kiểm tra: đăng nhập, tải feed, thử chat (WebSocket).
+1. Create DB → run **`prisma migrate deploy`** once.
+2. Deploy **API** → copy public HTTPS URL.
+3. Set **`NEXT_PUBLIC_API_URL`** and deploy **Web**.
+4. Verify login, feed, and chat (WebSocket).
 
-## 5. Lưu ý bảo mật
+## 5. Security
 
-- Không commit file `.env`; dùng biến môi trường trên hosting.
-- JWT secret production phải **dài, ngẫu nhiên**, khác môi trường dev.
-- Bật HTTPS cho cả web và API.
+- Never commit `.env`; use host env vars.
+- Use long random JWT secrets in production (different from dev).
+- Use HTTPS for web and API.
 
-## 6. CI (tùy chọn)
+## 6. CI (optional)
 
-Có thể thêm bước trong GitHub Actions: `npm ci`, `npx prisma migrate deploy` (cần `DATABASE_URL` secret), `npm run build` cho từng app — tuỳ team; deploy thực tế vẫn thường do Vercel/Railway kích hoạt từ push.
+GitHub Actions can run `npm ci`, migrate (with `DATABASE_URL` secret), and `npm run build` per app. Many teams still deploy via Vercel/Render on git push.
 
 ---
 
-## 7. Kịch bản cụ thể: **Frontend Vercel + Backend Render**
+## 7. Concrete path: **Vercel (web) + Render (API)**
 
-### 7.1 Tạo PostgreSQL
+### 7.1 PostgreSQL on Render
 
-1. Vào [Render Dashboard](https://dashboard.render.com) → **New** → **PostgreSQL**.
-2. Chọn region, tạo instance → copy **Internal Database URL** hoặc **External Database URL** (URL dạng `postgresql://...`).
-3. Gán vào biến **`DATABASE_URL`** của Web Service API (bước sau). Nếu API và DB cùng Render, internal URL thường ổn định và nhanh hơn.
+1. [Render Dashboard](https://dashboard.render.com) → **New** → **PostgreSQL**.
+2. Copy **Internal** or **External** Database URL (`postgresql://...`).
+3. Use it as **`DATABASE_URL`** on the API web service. Prefer Internal URL when API and DB are both on Render.
 
-### 7.2 Deploy API (NestJS) trên Render — **Web Service**
+### 7.2 API Web Service on Render
 
-1. **New** → **Web Service** → kết nối repo GitHub `nextjs-blogs-project`.
-2. Cấu hình:
-   - **Name:** ví dụ `ksocial-api`
-   - **Region:** gần bạn nhất
-   - **Branch:** `master` (hoặc `main`)
-   - **Root Directory:** `apps/api`  
-     *(Render chỉ build đúng package Nest trong monorepo.)*
-   - **Runtime:** `Node`
-   - **Build Command:**
+Because this repo is an **npm workspaces** monorepo, a reliable setup is:
 
-     ```bash
-     npm ci && npx prisma migrate deploy && npx prisma generate && npm run build
-     ```
+| Field | Value |
+|--------|--------|
+| Repo | `nextjs-blogs-project` |
+| Branch | `master` (or `main`) |
+| Root Directory | *(empty = repo root)* |
+| Build | `npm ci && npm run migrate:deploy -w apps/api && npm run prisma:generate -w apps/api && npm run build -w apps/api` |
+| Start | `npm run start -w apps/api` |
 
-   - **Start Command:**
+Alternative: Root Directory `apps/api` with `npm ci` only if dependency install works in that layout.
 
-     ```bash
-     npm run start
-     ```
+**Minimum env vars:**
 
-     Render tự inject **`PORT`** — `main.ts` đã dùng `process.env.PORT`, không cần set tay.
+| Variable | Meaning |
+|----------|---------|
+| `DATABASE_URL` | Postgres URL |
+| `JWT_ACCESS_SECRET` | Long random secret |
+| `JWT_SOCKET_SECRET` | Different secret for socket tokens |
+| `WEB_URL` | Frontend Vercel origin (no trailing slash), e.g. `https://ksocial.vercel.app` |
+| `CLOUDINARY_*` | Required if you use API uploads |
+| `GOOGLE_*` / `WEB_AUTH_CALLBACK_URL` | Only if Google OAuth is enabled |
 
-3. **Environment** (Environment Variables), tối thiểu:
+Create the service → wait for build. API URL example: `https://ksocial-api.onrender.com`.
 
-   | Biến | Ý nghĩa |
-   |------|--------|
-   | `DATABASE_URL` | Chuỗi Postgres (từ bước 7.1) |
-   | `JWT_ACCESS_SECRET` | Chuỗi bí mật dài, ngẫu nhiên (production) |
-   | `JWT_SOCKET_SECRET` | Khác access secret; dùng cho token socket nếu có |
-   | `WEB_URL` | URL **frontend Vercel** (không có slash cuối), ví dụ `https://ksocial.vercel.app` — **CORS + Socket.IO** |
-   | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Bắt buộc nếu dùng upload ảnh/video qua API |
-   | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` | Chỉ khi bật Google OAuth; `GOOGLE_CALLBACK_URL` = `https://<api-host>/v1/auth/google/callback` |
-   | `WEB_AUTH_CALLBACK_URL` | Thường `https://<domain-vercel>/auth/callback` (frontend sau OAuth) |
+REST base: `https://ksocial-api.onrender.com/v1`  
+Health: `https://ksocial-api.onrender.com/v1/health`
 
-4. **Create Web Service** → đợi build xong. URL API dạng: `https://ksocial-api.onrender.com`.
+**Render free tier:** the service may sleep; first request can be slow (cold start).
 
-5. **Quan trọng:** mọi REST client dùng prefix **`/v1`**. URL đầy đủ ví dụ:  
-   `https://ksocial-api.onrender.com/v1/health`
+**WebSocket:** supported on Render Node web services; chat uses the API host without `/v1`.
 
-**Lưu ý Render free:** service có thể **sleep** khi không có traffic vài phút; lần đầu gọi API sẽ chậm (cold start). Gói trả phí giữ máy luôn chạy.
+### 7.3 Web on Vercel
 
-**WebSocket:** Render Web Service (Node) hỗ trợ WebSocket; chat dùng cùng host API (không path `/v1` trên socket). Nếu sau này đặt reverse proxy, bật upgrade WebSocket.
-
-### 7.3 Deploy Web (Next.js) trên **Vercel**
-
-1. [Vercel](https://vercel.com) → **Add New Project** → import cùng repo GitHub.
+1. [Vercel](https://vercel.com) → **Add New Project** → same GitHub repo.
 2. **Root Directory:** `apps/web`
-3. **Framework Preset:** Next.js (mặc định).
-4. **Environment Variables:**
+3. **Framework:** Next.js
+4. **Env:**
 
-   | Biến | Giá trị |
-   |------|--------|
-   | `NEXT_PUBLIC_API_URL` | `https://<tên-service-render>.onrender.com/v1` — **bắt buộc có `/v1` ở cuối** |
+| Variable | Value |
+|----------|--------|
+| `NEXT_PUBLIC_API_URL` | `https://<render-service>.onrender.com/v1` |
 
-5. **Deploy**. Lấy URL production Vercel (ví dụ `https://ksocial.vercel.app`).
+5. Deploy → copy the Vercel URL (e.g. `https://ksocial.vercel.app`).
 
-### 7.4 Nối vòng CORS / OAuth
+### 7.4 Wire CORS / OAuth
 
-1. Vào lại **Render** → service API → chỉnh **`WEB_URL`** = đúng URL Vercel production (sau khi deploy xong bước 7.3).
-2. Nếu dùng Google OAuth: callback và `WEB_AUTH_CALLBACK_URL` phải khớp domain Vercel + route API.
+1. On Render API, set **`WEB_URL`** to the real Vercel URL, then redeploy.
+2. For Google OAuth, align callback URLs with Vercel + API hosts.
 
-### 7.5 Kiểm tra nhanh
+### 7.5 Smoke test
 
-1. Mở `https://<api>.onrender.com/v1/health` → kỳ vọng 200.
-2. Mở site Vercel → đăng ký/đăng nhập → feed.
-3. Mở **Messages** → thử chat (kiểm tra socket nếu có lỗi, xem tab Network → WS).
+1. `GET …/v1/health` → 200.
+2. Open Vercel site → register/login → feed.
+3. Open Messages → send a chat message (check Network → WS if issues).
 
-### 7.6 Thứ tự làm lần đầu (tóm tắt)
+### 7.6 First-time checklist
 
-1. Postgres trên Render → có `DATABASE_URL`.  
-2. Web Service API (`apps/api`) + env → deploy → copy URL `https://xxx.onrender.com`.  
-3. Vercel `apps/web` + `NEXT_PUBLIC_API_URL=https://xxx.onrender.com/v1` → deploy.  
-4. Cập nhật `WEB_URL` trên Render = URL Vercel → **Manual Deploy** hoặc push commit rỗng để redeploy nếu cần.
+1. Postgres on Render → `DATABASE_URL`.
+2. Deploy API → `https://xxx.onrender.com`.
+3. Deploy Vercel web with `NEXT_PUBLIC_API_URL=https://xxx.onrender.com/v1`.
+4. Set `WEB_URL` on Render to the Vercel URL → redeploy API if needed.
+
+### 7.7 Admin (optional)
+
+- Second Vercel project, Root Directory `apps/admin`.
+- Same `NEXT_PUBLIC_API_URL`.
+- Add admin origin to `CORS_ORIGINS` / `ADMIN_URL` on the API.
