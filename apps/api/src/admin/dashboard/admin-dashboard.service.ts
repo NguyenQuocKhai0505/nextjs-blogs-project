@@ -1,10 +1,10 @@
 import { Injectable } from "@nestjs/common"
 import { ReportStatus } from "@prisma/client"
 
-import { PrismaService } from "../prisma/prisma.service.js"
+import { PrismaService } from "../../prisma/prisma.service.js"
 
 @Injectable()
-export class AdminService {
+export class AdminDashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   async dashboard() {

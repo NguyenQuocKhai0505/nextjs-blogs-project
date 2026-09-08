@@ -12,12 +12,12 @@ import {
 import { UserRole } from "@prisma/client"
 import { Throttle } from "@nestjs/throttler"
 
-import { CategoriesService } from "../categories/categories.service.js"
-import { CreateCategoryDto } from "../categories/dto/create-category.dto.js"
-import { UpdateCategoryDto } from "../categories/dto/update-category.dto.js"
-import { Roles } from "../common/decorators/roles.decorator.js"
-import { JwtAuthGuard } from "../common/guards/jwt-auth.guard.js"
-import { RolesGuard } from "../common/guards/roles.guard.js"
+import { CategoriesService } from "../../categories/categories.service.js"
+import { CreateCategoryDto } from "../../categories/dto/create-category.dto.js"
+import { UpdateCategoryDto } from "../../categories/dto/update-category.dto.js"
+import { Roles } from "../../common/decorators/roles.decorator.js"
+import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard.js"
+import { RolesGuard } from "../../common/guards/roles.guard.js"
 
 /**
  * Admin-only category mutations + list.

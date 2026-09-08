@@ -104,6 +104,27 @@ export function ReactionPicker({
   const [listOpen, setListOpen] = useState(false)
   const [listFilter, setListFilter] = useState<ReactionType | null>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const openPicker = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current)
+      closeTimerRef.current = null
+    }
+    setPickerOpen(true)
+  }, [])
+
+  const scheduleClosePicker = useCallback(() => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+    // Brief delay so the cursor can cross the Like → emoji bridge without closing.
+    closeTimerRef.current = setTimeout(() => setPickerOpen(false), 180)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+    }
+  }, [])
 
   const openReactionList = useCallback((filter: ReactionType | null = null) => {
     if (reactionCount <= 0) return
@@ -181,34 +202,37 @@ export function ReactionPicker({
     <div
       ref={wrapRef}
       className={cn("relative inline-flex items-center gap-2", className)}
-      onMouseEnter={() => setPickerOpen(true)}
-      onMouseLeave={() => setPickerOpen(false)}
+      onMouseEnter={openPicker}
+      onMouseLeave={scheduleClosePicker}
     >
       {pickerOpen && (
-        <div
-          className="absolute bottom-full left-0 z-20 mb-2 flex gap-1 rounded-full border bg-card px-2 py-1.5 shadow-lg"
-          role="toolbar"
-          aria-label="Choose reaction"
-        >
-          {REACTION_TYPES.map((type) => (
-            <button
-              key={type}
-              type="button"
-              title={REACTION_LABEL[type]}
-              disabled={busy}
-              className={cn(
-                "grid h-9 w-9 place-items-center rounded-full text-xl transition-transform hover:scale-110 hover:bg-muted",
-                myReaction === type && "bg-primary/15 ring-2 ring-primary/40"
-              )}
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                void pick(type)
-              }}
-            >
-              {REACTION_EMOJI[type]}
-            </button>
-          ))}
+        // Outer shell: padding-bottom is a hover bridge (margin was a dead gap and closed the picker).
+        <div className="absolute bottom-full left-0 z-20 pb-2 pt-1">
+          <div
+            className="flex gap-1 rounded-full border bg-card px-2 py-1.5 shadow-lg"
+            role="toolbar"
+            aria-label="Choose reaction"
+          >
+            {REACTION_TYPES.map((type) => (
+              <button
+                key={type}
+                type="button"
+                title={REACTION_LABEL[type]}
+                disabled={busy}
+                className={cn(
+                  "grid h-9 w-9 place-items-center rounded-full text-xl transition-transform hover:scale-110 hover:bg-muted",
+                  myReaction === type && "bg-primary/15 ring-2 ring-primary/40"
+                )}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  void pick(type)
+                }}
+              >
+                {REACTION_EMOJI[type]}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -226,6 +250,7 @@ export function ReactionPicker({
           e.stopPropagation()
           void pick(myReaction ?? "LIKE")
         }}
+        onFocus={openPicker}
       >
         {activeEmoji ? (
           <span

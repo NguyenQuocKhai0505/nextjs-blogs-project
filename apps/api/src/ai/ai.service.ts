@@ -36,52 +36,92 @@ export class AiService {
     })
   }
 
+  private async withGemini<T>(run: () => Promise<T>): Promise<T> {
+    try {
+      return await run()
+    } catch (err) {
+      if (
+        err instanceof BadRequestException ||
+        err instanceof ServiceUnavailableException ||
+        err instanceof InternalServerErrorException
+      ) {
+        throw err
+      }
+
+      const message = err instanceof Error ? err.message : String(err)
+      const cause =
+        err instanceof Error && err.cause instanceof Error
+          ? `${err.cause.message}`
+          : ""
+      const detail = `${message} ${cause}`.toLowerCase()
+
+      if (
+        detail.includes("unable_to_verify_leaf_signature") ||
+        detail.includes("certificate") ||
+        detail.includes("fetch failed")
+      ) {
+        throw new ServiceUnavailableException(
+          "AI network/TLS error. On local Windows set ALLOW_INSECURE_TLS=1 in apps/api/.env (antivirus SSL scan). On Render use GEMINI_MODEL=gemini-2.5-flash and redeploy."
+        )
+      }
+
+      throw new ServiceUnavailableException(
+        message.startsWith("AI ") ? message : `AI request failed: ${message}`
+      )
+    }
+  }
+
   async translate(
     text: string,
     targetLanguage: "en" | "ko" | "vi"
   ): Promise<{ text: string; targetLanguage: "en" | "ko" | "vi" }> {
     const trimmed = text.trim()
     if (!trimmed) {
-      throw new InternalServerErrorException("Empty text")
+      throw new BadRequestException("Empty text")
     }
 
     const langName = TARGET_LANGUAGE_NAMES[targetLanguage]
-    const model = this.getModel(
-      `You are a professional translator. Translate chat messages accurately and naturally into ${langName}. Return ONLY the translated text — no quotes, labels, or explanations.`
-    )
 
-    const result = await model.generateContent(trimmed)
-    const translated = result.response.text().trim()
-    if (!translated) {
-      throw new InternalServerErrorException("Empty translation")
-    }
+    return this.withGemini(async () => {
+      const model = this.getModel(
+        `You are a professional translator. Translate chat messages accurately and naturally into ${langName}. Return ONLY the translated text — no quotes, labels, or explanations.`
+      )
 
-    return { text: translated, targetLanguage }
+      const result = await model.generateContent(trimmed)
+      const translated = result.response.text().trim()
+      if (!translated) {
+        throw new InternalServerErrorException("Empty translation")
+      }
+
+      return { text: translated, targetLanguage }
+    })
   }
 
   async chat(messages: ChatMessageDto[]): Promise<{ text: string }> {
-    const model = this.getModel(
-      "You are a helpful assistant inside the Ksocial app. Be concise and accurate. Match the user's language when possible."
-    )
-
     if (!messages.length) {
-      throw new InternalServerErrorException("No messages")
+      throw new BadRequestException("No messages")
     }
 
     const last = messages[messages.length - 1]
     if (last.role !== "user") {
-      throw new InternalServerErrorException("Last message must be from user")
+      throw new BadRequestException("Last message must be from user")
     }
 
-    const history = messages.slice(0, -1).map((m) => ({
-      role: m.role === "user" ? ("user" as const) : ("model" as const),
-      parts: [{ text: m.content }],
-    }))
+    return this.withGemini(async () => {
+      const model = this.getModel(
+        "You are a helpful assistant inside the Ksocial app. Be concise and accurate. Match the user's language when possible."
+      )
 
-    const chat = model.startChat({ history })
-    const result = await chat.sendMessage(last.content)
-    const text = result.response.text()
-    return { text }
+      const history = messages.slice(0, -1).map((m) => ({
+        role: m.role === "user" ? ("user" as const) : ("model" as const),
+        parts: [{ text: m.content }],
+      }))
+
+      const chat = model.startChat({ history })
+      const result = await chat.sendMessage(last.content)
+      const text = result.response.text()
+      return { text }
+    })
   }
 
   async suggestPost(input: {
@@ -106,8 +146,9 @@ export class AiService {
         ? `Pick categoryName as the best match from this list only (exact string): ${JSON.stringify(categories)}. If none fit, use null.`
         : `Set categoryName to null.`
 
-    const model = this.getModel(
-      `You help users write social posts for Ksocial.
+    return this.withGemini(async () => {
+      const model = this.getModel(
+        `You help users write social posts for Ksocial.
 Write in ${langName}.
 Return ONLY valid JSON (no markdown fences) with keys:
 - title: string, 3–120 chars, catchy but natural
@@ -116,33 +157,34 @@ Return ONLY valid JSON (no markdown fences) with keys:
 - categoryName: string or null
 ${categoryHint}
 Do not invent facts beyond the user's brief. Expand briefly and helpfully.`
-    )
+      )
 
-    const result = await model.generateContent(
-      `User brief:\n${brief}\n\nRespond with JSON only.`
-    )
-    const raw = result.response.text().trim()
-    const parsed = this.parseSuggestJson(raw)
+      const result = await model.generateContent(
+        `User brief:\n${brief}\n\nRespond with JSON only.`
+      )
+      const raw = result.response.text().trim()
+      const parsed = this.parseSuggestJson(raw)
 
-    const title = this.clamp(parsed.title, 3, 255)
-    const description = this.clamp(parsed.description, 5, 255)
-    const content = this.clamp(parsed.content, 10, 8000)
-    if (!title || !description || !content) {
-      throw new InternalServerErrorException("AI returned incomplete post fields")
-    }
-
-    let categoryName: string | null = null
-    if (typeof parsed.categoryName === "string" && parsed.categoryName.trim()) {
-      const wanted = parsed.categoryName.trim()
-      if (categories.length === 0) {
-        categoryName = wanted
-      } else {
-        const match = categories.find((c) => c.toLowerCase() === wanted.toLowerCase())
-        categoryName = match ?? null
+      const title = this.clamp(parsed.title, 3, 255)
+      const description = this.clamp(parsed.description, 5, 255)
+      const content = this.clamp(parsed.content, 10, 8000)
+      if (!title || !description || !content) {
+        throw new InternalServerErrorException("AI returned incomplete post fields")
       }
-    }
 
-    return { title, description, content, categoryName }
+      let categoryName: string | null = null
+      if (typeof parsed.categoryName === "string" && parsed.categoryName.trim()) {
+        const wanted = parsed.categoryName.trim()
+        if (categories.length === 0) {
+          categoryName = wanted
+        } else {
+          const match = categories.find((c) => c.toLowerCase() === wanted.toLowerCase())
+          categoryName = match ?? null
+        }
+      }
+
+      return { title, description, content, categoryName }
+    })
   }
 
   private clamp(value: unknown, min: number, max: number): string {

@@ -20,7 +20,9 @@ Do not put JWT secrets in the admin app. Assign **ADMIN** in the database (`apps
 ## Structure
 
 - `(auth)/login` — sign-in; requires `role === ADMIN`
-- `(protected)/*` — `AdminGuard` + shell (dashboard, categories, …)
+- `(protected)/*` — `AdminGuard` + shell (dashboard, categories, posts, …)
+
+API admin modules live under `apps/api/src/admin/{dashboard,categories,posts}/`.
 
 ## Smoke test
 
@@ -28,3 +30,4 @@ Do not put JWT secrets in the admin app. Assign **ADMIN** in the database (`apps
 2. Sign in as ADMIN
 3. Dashboard calls `GET /v1/admin/dashboard`
 4. Categories CRUD via `GET/POST/PATCH/DELETE /v1/admin/categories`
+5. Posts authors via `GET /v1/admin/posts/by-user`
