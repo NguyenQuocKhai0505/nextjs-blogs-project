@@ -34,4 +34,4 @@ import { AdminUsersService } from "./users/admin-users.service.js"
     AdminUsersService,
   ],
 })
-export class AdminModule {}
+export class AdminModule {} 
