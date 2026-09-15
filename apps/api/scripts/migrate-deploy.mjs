@@ -2,12 +2,12 @@
 /**
  * Production migrate helper:
  * - Fresh DB: just migrate deploy
- * - Existing DB: clear removed failed migration (P3009) then deploy
+ * - Older DBs may still reference a removed migration folder → clear that row only
  * Render Start/Build: npm run migrate:deploy
  */
 import { execSync } from "node:child_process"
 
-/** Removed migration — may still be marked failed on older production DBs */
+/** Removed from repo; may still appear in _prisma_migrations on old production DBs */
 const ORPHAN_MIGRATION = "20260606130000_story_reactions"
 
 function run(cmd, { allowFail = false, input } = {}) {
@@ -39,15 +39,10 @@ function migrationsTableExists() {
 
 if (migrationsTableExists()) {
   console.log(
-    "[migrate-deploy] _prisma_migrations exists — clearing orphan if present..."
+    `[migrate-deploy] clearing orphan row if present: ${ORPHAN_MIGRATION}`
   )
-  // resolve only works when the migration folder still exists locally (often fails — OK)
-  run(`npx prisma migrate resolve --rolled-back ${ORPHAN_MIGRATION}`, {
-    allowFail: true,
-  })
-  run(`npx prisma migrate resolve --applied ${ORPHAN_MIGRATION}`, {
-    allowFail: true,
-  })
+  // Do NOT use `migrate resolve` — it requires the migration folder to exist (P3017)
+  // and fails loudly on fresh DBs (P3011). SQL delete is enough.
   run("npx prisma db execute --stdin", {
     allowFail: true,
     input: `DELETE FROM "_prisma_migrations" WHERE migration_name = '${ORPHAN_MIGRATION}';\n`,

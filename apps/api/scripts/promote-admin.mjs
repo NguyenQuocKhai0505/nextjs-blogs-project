@@ -27,7 +27,20 @@ if (!email) {
   process.exit(1)
 }
 
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL })
+const connectionString = process.env.DATABASE_URL
+if (!connectionString) {
+  console.error("DATABASE_URL is not set")
+  process.exit(1)
+}
+
+// Render External URL needs SSL; Windows often fails verify-full → treat as reachable with soft SSL.
+const isRemote =
+  /render\.com|sslmode=require/i.test(connectionString) ||
+  process.env.ALLOW_INSECURE_TLS === "1"
+const pool = new pg.Pool({
+  connectionString,
+  ...(isRemote ? { ssl: { rejectUnauthorized: false } } : {}),
+})
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) })
 
 try {

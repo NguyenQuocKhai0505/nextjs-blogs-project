@@ -8,6 +8,8 @@ import { AdminDashboardController } from "./dashboard/admin-dashboard.controller
 import { AdminDashboardService } from "./dashboard/admin-dashboard.service.js"
 import { AdminPostsController } from "./posts/admin-posts.controller.js"
 import { AdminPostsService } from "./posts/admin-posts.service.js"
+import { AdminUsersController } from "./users/admin-users.controller.js"
+import { AdminUsersService } from "./users/admin-users.service.js"
 
 /**
  * Admin BFF surface inside the API monolith.
@@ -24,7 +26,12 @@ import { AdminPostsService } from "./posts/admin-posts.service.js"
     AdminDashboardController,
     AdminCategoriesController,
     AdminPostsController,
+    AdminUsersController,
   ],
-  providers: [AdminDashboardService, AdminPostsService],
+  providers: [
+    AdminDashboardService,
+    AdminPostsService,
+    AdminUsersService,
+  ],
 })
 export class AdminModule {}
