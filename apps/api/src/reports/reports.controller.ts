@@ -49,4 +49,13 @@ export class ReportsController {
   ) {
     return this.reports.updateStatus(userId, id, dto)
   }
+
+  @Post(":id/ai-review")
+  @UseGuards(JwtAuthGuard)
+  aiReview(
+    @CurrentUserId() userId: string,
+    @Param("id", ParseIntPipe) id: number
+  ) {
+    return this.reports.aiReview(userId, id)
+  }
 }

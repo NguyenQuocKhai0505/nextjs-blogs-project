@@ -8,5 +8,6 @@ import { AiService } from "./ai.service.js"
   imports: [JwtModule.register({})],
   controllers: [AiController],
   providers: [AiService],
+  exports: [AiService],
 })
 export class AiModule {}

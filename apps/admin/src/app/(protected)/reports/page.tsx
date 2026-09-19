@@ -37,6 +37,14 @@ type ReportItem = {
   reporter: Reporter
 }
 
+type AiReview = {
+  likelyViolation: boolean
+  severity: string
+  summary: string
+  suggestedAction: string
+  suggestedWarnMessage: string
+}
+
 function apiErrorMessage(data: unknown, fallback: string) {
   if (!data || typeof data !== "object") return fallback
   const msg = (data as { message?: unknown }).message
@@ -60,6 +68,7 @@ export default function AdminReportsPage() {
   const [busyId, setBusyId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Record<number, boolean>>({})
+  const [aiById, setAiById] = useState<Record<number, AiReview>>({})
   const { toast, confirm, prompt } = useFeedback()
 
   const load = useCallback(async () => {
@@ -143,6 +152,39 @@ export default function AdminReportsPage() {
     if (!res.ok) throw new Error(apiErrorMessage(data, "Update failed"))
   }
 
+  async function runAiReview(reportId: number) {
+    setBusyId(reportId)
+    setError(null)
+    try {
+      const res = await authFetch(`/reports/${reportId}/ai-review`, {
+        method: "POST",
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(apiErrorMessage(data, "AI review failed"))
+
+      setAiById((m) => ({
+        ...m,
+        [reportId]: {
+          likelyViolation: Boolean(data.likelyViolation),
+          severity: String(data.severity ?? "medium"),
+          summary: String(data.summary ?? ""),
+          suggestedAction: String(data.suggestedAction ?? "needs_human"),
+          suggestedWarnMessage: String(
+            data.suggestedWarnMessage ??
+              "Your content was removed for violating community guidelines."
+          ),
+        },
+      }))
+      toast.success("AI review ready.")
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "AI review failed"
+      setError(msg)
+      toast.error(msg)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   /** Uphold: xóa bài (nếu POST) + warn author + đánh dấu REVIEWED */
   async function uphold(report: ReportItem) {
     const ok = await confirm({
@@ -175,6 +217,7 @@ export default function AdminReportsPage() {
             title: "Warn the author",
             description: "Optional — cancel to skip sending a warning.",
             defaultValue:
+              aiById[report.id]?.suggestedWarnMessage ??
               "Your content was removed for violating community guidelines.",
             confirmLabel: "Send warning",
             cancelLabel: "Skip warning",
@@ -361,23 +404,53 @@ export default function AdminReportsPage() {
                 )}
 
                 {r.status === "PENDING" ? (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void uphold(r)}
-                      className="rounded-full bg-red-500/90 px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
-                    >
-                      Uphold (delete + warn)
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void dismiss(r)}
-                      className="rounded-full border border-[var(--admin-border)] px-4 py-1.5 text-sm disabled:opacity-50"
-                    >
-                      Dismiss
-                    </button>
+                  <div className="mt-4 space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      {r.targetKind === "POST" ? (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void runAiReview(r.id)}
+                          className="rounded-full border border-violet-400/40 px-4 py-1.5 text-sm text-violet-200 hover:bg-violet-500/10 disabled:opacity-50"
+                        >
+                          AI review
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void uphold(r)}
+                        className="rounded-full bg-red-500/90 px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+                      >
+                        Uphold (delete + warn)
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void dismiss(r)}
+                        className="rounded-full border border-[var(--admin-border)] px-4 py-1.5 text-sm disabled:opacity-50"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                    {aiById[r.id] ? (
+                      <div className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-sm">
+                        <p className="text-violet-100">
+                          {aiById[r.id].likelyViolation
+                            ? "Likely violation"
+                            : "Maybe OK"}
+                          {" · "}
+                          {aiById[r.id].severity}
+                          {" · suggest "}
+                          <span className="font-semibold">
+                            {aiById[r.id].suggestedAction}
+                          </span>
+                        </p>
+                        <p className="mt-1 text-[var(--admin-muted)]">
+                          {aiById[r.id].summary}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
               </li>

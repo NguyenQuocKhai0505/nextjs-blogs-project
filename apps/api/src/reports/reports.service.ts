@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from "@nestjs/common"
 import { Prisma, ReportStatus, ReportTargetKind, UserRole } from "@prisma/client"
+import { AiService } from "../ai/ai.service.js"
 import { PrismaService } from "../prisma/prisma.service.js"
 import { CreateReportDto } from "./dto/create-report.dto.js"
 import { UpdateReportStatusDto } from "./dto/update-report-status.dto.js"
@@ -33,7 +34,10 @@ const reportedPostSelect = {
 
 @Injectable()
 export class ReportsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ai: AiService
+  ) {}
 
   private async assertAdmin(userId: string) {
     const u = await this.prisma.user.findUnique({
@@ -215,6 +219,45 @@ export class ReportsService {
       id: row.id,
       status: row.status,
       reviewedAt: row.reviewedAt?.toISOString() ?? null,
+    }
+  }
+
+  async aiReview(adminId: string, reportId: number) {
+    await this.assertAdmin(adminId)
+
+    const report = await this.prisma.report.findUnique({
+      where: { id: reportId },
+    })
+    if (!report) throw new NotFoundException("Report not found")
+
+    if (report.targetKind !== ReportTargetKind.POST) {
+      throw new BadRequestException("AI review currently supports POST only")
+    }
+
+    const postId = Number(report.targetId)
+    if (!Number.isFinite(postId) || postId <= 0) {
+      throw new BadRequestException("Invalid post id")
+    }
+
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { title: true, description: true, content: true },
+    })
+    if (!post) {
+      throw new NotFoundException("Reported post no longer exists")
+    }
+
+    const review = await this.ai.reviewReportContent({
+      reason: report.reason,
+      details: report.details,
+      title: post.title,
+      description: post.description,
+      content: post.content,
+    })
+
+    return {
+      reportId: report.id,
+      ...review,
     }
   }
 }

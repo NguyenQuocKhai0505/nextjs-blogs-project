@@ -21,6 +21,15 @@ export type SuggestPostResult = {
   categoryName: string | null
 }
 
+export type ReportAiReviewResult = {
+  likelyViolation: boolean
+  severity: "low" | "medium" | "high"
+  summary: string
+  suggestedAction: "uphold" | "dismiss" | "needs_human"
+  suggestedWarnMessage: string
+}
+
+
 @Injectable()
 export class AiService {
   private getModel(systemInstruction?: string) {
@@ -186,7 +195,83 @@ Do not invent facts beyond the user's brief. Expand briefly and helpfully.`
       return { title, description, content, categoryName }
     })
   }
+    async reviewReportContent(input: {
+      reason: string
+      details?: string | null
+      title?: string | null
+      description?: string | null
+      content?: string | null
+    }): Promise<ReportAiReviewResult> {
+      const body = [input.title, input.description, input.content]
+        .filter((s) => typeof s === "string" && s.trim())
+        .join("\n\n")
+        .trim()
 
+      if (!body) {
+        throw new BadRequestException("No content to review")
+      }
+
+      return this.withGemini(async () => {
+        const model = this.getModel(
+          `You are a content-moderation assistant for a social app (Ksocial).
+  Decide if the reported post likely violates guidelines
+  (hate, harassment, threats, severe abusive profanity, spam).
+  Avoid false positives (quotes, jokes without abuse, educational mentions).
+  Return ONLY valid JSON (no markdown fences) with keys:
+  - likelyViolation: boolean
+  - severity: "low" | "medium" | "high"
+  - summary: string (1–2 sentences in English)
+  - suggestedAction: "uphold" | "dismiss" | "needs_human"
+  - suggestedWarnMessage: string (short warning to send the author if uphold)
+  Never invent facts beyond the provided text.`
+        )
+
+        const prompt = [
+          `Report reason: ${input.reason}`,
+          input.details ? `Reporter details: ${input.details}` : null,
+          `Post content:\n${body.slice(0, 6000)}`,
+          `Respond with JSON only.`,
+        ]
+          .filter(Boolean)
+          .join("\n\n")
+
+        const result = await model.generateContent(prompt)
+        const raw = result.response.text().trim()
+        const parsed = this.parseSuggestJson(raw)
+
+        const severityRaw = String(parsed.severity ?? "medium").toLowerCase()
+        const severity =
+          severityRaw === "low" || severityRaw === "high"
+            ? severityRaw
+            : "medium"
+
+        const actionRaw = String(
+          parsed.suggestedAction ?? "needs_human"
+        ).toLowerCase()
+        const suggestedAction =
+          actionRaw === "uphold" || actionRaw === "dismiss"
+            ? actionRaw
+            : "needs_human"
+
+        const warn =
+          typeof parsed.suggestedWarnMessage === "string" &&
+          parsed.suggestedWarnMessage.trim()
+            ? parsed.suggestedWarnMessage.trim().slice(0, 500)
+            : "Your content was removed for violating community guidelines."
+
+        return {
+          likelyViolation: Boolean(parsed.likelyViolation),
+          severity,
+          summary:
+            typeof parsed.summary === "string" && parsed.summary.trim()
+              ? parsed.summary.trim().slice(0, 500)
+              : "No summary",
+          suggestedAction,
+          suggestedWarnMessage: warn,
+        }
+      })
+    }
+  
   private clamp(value: unknown, min: number, max: number): string {
     if (typeof value !== "string") return ""
     const t = value.trim()
