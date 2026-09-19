@@ -10,12 +10,26 @@ import { PrismaService } from "../prisma/prisma.service.js"
 import { CreateReportDto } from "./dto/create-report.dto.js"
 import { UpdateReportStatusDto } from "./dto/update-report-status.dto.js"
 
+/** Who filed the report (User relation on Report). */
 const reporterSelect = {
   id: true,
   name: true,
   email: true,
   avatarUrl: true,
 } satisfies Prisma.UserSelect
+
+/** Reported post payload so admin can read content + warn author. */
+const reportedPostSelect = {
+  id: true,
+  slug: true,
+  title: true,
+  description: true,
+  content: true,
+  authorId: true,
+  author: {
+    select: { id: true, name: true, email: true, avatarUrl: true },
+  },
+} satisfies Prisma.PostSelect
 
 @Injectable()
 export class ReportsService {
@@ -135,7 +149,7 @@ export class ReportsService {
       postIds.length > 0
         ? await this.prisma.post.findMany({
             where: { id: { in: postIds } },
-            select: { id: true, slug: true, title: true },
+            select: reportedPostSelect,
           })
         : []
     const postById = new Map(posts.map((p) => [p.id, p]))
@@ -152,6 +166,16 @@ export class ReportsService {
           targetId: r.targetId,
           targetSlug: postMeta?.slug ?? null,
           targetTitle: postMeta?.title ?? null,
+          targetDescription: postMeta?.description ?? null,
+          targetContent: postMeta?.content ?? null,
+          targetAuthor: postMeta?.author
+            ? {
+                userId: postMeta.author.id,
+                name: postMeta.author.name,
+                email: postMeta.author.email,
+                avatarUrl: postMeta.author.avatarUrl,
+              }
+            : null,
           reason: r.reason,
           details: r.details,
           status: r.status,
