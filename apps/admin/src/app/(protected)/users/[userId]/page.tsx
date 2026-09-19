@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
+import { useFeedback } from "@/components/feedback"
 type UserDetail = {
   userId: string
   name: string
@@ -44,6 +45,7 @@ export default function AdminUserDetailPage(){
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { toast, prompt } = useFeedback()
 
   const load = useCallback(async () =>{
     if(!userId) return
@@ -85,10 +87,13 @@ export default function AdminUserDetailPage(){
   }, [load])
 
   async function warnUser() {
-    const message = window.prompt(
-      "Warning message to send to this user:",
-      "Your content may violate community guidelines. Please review our rules."
-    )
+    const message = await prompt({
+      title: "Warn user",
+      description: "This sends an in-app warning notification to the user.",
+      defaultValue:
+        "Your content may violate community guidelines. Please review our rules.",
+      confirmLabel: "Send warning",
+    })
     if (message == null) return
     setBusy(true)
     setError(null)
@@ -100,9 +105,11 @@ export default function AdminUserDetailPage(){
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(apiErrorMessage(data, "Warn failed"))
-      window.alert("Warning sent.")
+      toast.success("Warning sent.")
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Warn failed")
+      const msg = e instanceof Error ? e.message : "Warn failed"
+      setError(msg)
+      toast.error(msg)
     } finally {
       setBusy(false)
     }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
+import { useFeedback } from "@/components/feedback"
 
 type Category = {
   id: number
@@ -24,6 +25,7 @@ export default function AdminCategoriesPage() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { toast, confirm } = useFeedback()
 
   const [name, setName] = useState("")
   const [slug, setSlug] = useState("")
@@ -88,15 +90,24 @@ export default function AdminCategoriesPage() {
       setSlug("")
       setSortOrder("0")
       await load()
+      toast.success("Category created.")
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Create failed")
+      const msg = e instanceof Error ? e.message : "Create failed"
+      setError(msg)
+      toast.error(msg)
     } finally {
       setBusy(false)
     }
   }
 
   async function remove(id: number) {
-    if (!window.confirm("Delete this category?")) return
+    const ok = await confirm({
+      title: "Delete category?",
+      description: "This cannot be undone.",
+      confirmLabel: "Delete",
+      danger: true,
+    })
+    if (!ok) return
     setBusy(true)
     setError(null)
     try {
@@ -104,8 +115,11 @@ export default function AdminCategoriesPage() {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(apiErrorMessage(data, "Delete failed"))
       await load()
+      toast.success("Category deleted.")
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Delete failed")
+      const msg = e instanceof Error ? e.message : "Delete failed"
+      setError(msg)
+      toast.error(msg)
     } finally {
       setBusy(false)
     }
@@ -136,8 +150,11 @@ export default function AdminCategoriesPage() {
       if (!res.ok) throw new Error(apiErrorMessage(data, "Update failed"))
       setEditingId(null)
       await load()
+      toast.success("Category updated.")
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Update failed")
+      const msg = e instanceof Error ? e.message : "Update failed"
+      setError(msg)
+      toast.error(msg)
     } finally {
       setBusy(false)
     }

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
+import { useFeedback } from "@/components/feedback"
 
 type AuthorProfile = {
   userId: string
@@ -43,6 +44,7 @@ export default function AdminUserPostsPage() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { toast, confirm, prompt } = useFeedback()
 
   const load = useCallback(async () => {
     if (!userId) return
@@ -93,7 +95,13 @@ export default function AdminUserPostsPage() {
   }, [load])
 
   async function deletePost(postId: number) {
-    if (!window.confirm("Delete this post permanently?")) return
+    const ok = await confirm({
+      title: "Delete this post?",
+      description: "The post will be permanently removed.",
+      confirmLabel: "Delete",
+      danger: true,
+    })
+    if (!ok) return
     setBusy(true)
     setError(null)
     try {
@@ -101,18 +109,24 @@ export default function AdminUserPostsPage() {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(apiErrorMessage(data, "Delete failed"))
       await load()
+      toast.success("Post deleted.")
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Delete failed")
+      const msg = e instanceof Error ? e.message : "Delete failed"
+      setError(msg)
+      toast.error(msg)
     } finally {
       setBusy(false)
     }
   }
 
   async function warnUser() {
-    const message = window.prompt(
-      "Warning message to send to this user:",
-      "Your content may violate community guidelines. Please review our rules."
-    )
+    const message = await prompt({
+      title: "Warn user",
+      description: "This sends an in-app warning notification.",
+      defaultValue:
+        "Your content may violate community guidelines. Please review our rules.",
+      confirmLabel: "Send warning",
+    })
     if (message == null) return
     setBusy(true)
     setError(null)
@@ -124,9 +138,11 @@ export default function AdminUserPostsPage() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(apiErrorMessage(data, "Warn failed"))
-      window.alert("Warning notification sent.")
+      toast.success("Warning notification sent.")
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Warn failed")
+      const msg = e instanceof Error ? e.message : "Warn failed"
+      setError(msg)
+      toast.error(msg)
     } finally {
       setBusy(false)
     }

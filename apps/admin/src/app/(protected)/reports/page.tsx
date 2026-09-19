@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
+import { useFeedback } from "@/components/feedback"
 
 type Reporter = {
   id: string
@@ -59,6 +60,7 @@ export default function AdminReportsPage() {
   const [busyId, setBusyId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Record<number, boolean>>({})
+  const { toast, confirm, prompt } = useFeedback()
 
   const load = useCallback(async () => {
     setError(null)
@@ -143,13 +145,14 @@ export default function AdminReportsPage() {
 
   /** Uphold: xóa bài (nếu POST) + warn author + đánh dấu REVIEWED */
   async function uphold(report: ReportItem) {
-    if (
-      !window.confirm(
-        "Mark as valid violation? This may delete the post and warn the author."
-      )
-    ) {
-      return
-    }
+    const ok = await confirm({
+      title: "Uphold this report?",
+      description:
+        "Mark as a valid violation. This may delete the post and warn the author.",
+      confirmLabel: "Uphold",
+      danger: true,
+    })
+    if (!ok) return
 
     setBusyId(report.id)
     setError(null)
@@ -168,11 +171,14 @@ export default function AdminReportsPage() {
         }
 
         if (report.targetAuthor?.userId) {
-          const warnMsg =
-            window.prompt(
-              "Warning message for the author:",
-              "Your content was removed for violating community guidelines."
-            ) ?? undefined
+          const warnMsg = await prompt({
+            title: "Warn the author",
+            description: "Optional — cancel to skip sending a warning.",
+            defaultValue:
+              "Your content was removed for violating community guidelines.",
+            confirmLabel: "Send warning",
+            cancelLabel: "Skip warning",
+          })
           if (warnMsg != null) {
             const w = await authFetch(
               `/admin/posts/by-user/${report.targetAuthor.userId}/warn`,
@@ -192,22 +198,33 @@ export default function AdminReportsPage() {
 
       await patchStatus(report.id, "REVIEWED")
       await load()
+      toast.success("Report upheld.")
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Uphold failed")
+      const msg = e instanceof Error ? e.message : "Uphold failed"
+      setError(msg)
+      toast.error(msg)
     } finally {
       setBusyId(null)
     }
   }
 
   async function dismiss(report: ReportItem) {
-    if (!window.confirm("Dismiss this report? Content will stay.")) return
+    const ok = await confirm({
+      title: "Dismiss this report?",
+      description: "The content will stay published.",
+      confirmLabel: "Dismiss",
+    })
+    if (!ok) return
     setBusyId(report.id)
     setError(null)
     try {
       await patchStatus(report.id, "DISMISSED")
       await load()
+      toast.success("Report dismissed.")
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Dismiss failed")
+      const msg = e instanceof Error ? e.message : "Dismiss failed"
+      setError(msg)
+      toast.error(msg)
     } finally {
       setBusyId(null)
     }
