@@ -1,7 +1,9 @@
 @import "tailwindcss";
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
 
-:root {
+:root,
+html.dark,
+html[data-theme="dark"] {
   --admin-bg: #070b14;
   --admin-panel: #0f1623;
   --admin-panel-2: #141c2c;
@@ -11,8 +13,27 @@
   --admin-text: #f1f5f9;
   --admin-muted: #94a3b8;
   --admin-danger: #f87171;
+  --admin-hover: rgba(255, 255, 255, 0.05);
+  --admin-soft: rgba(0, 0, 0, 0.25);
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Outfit", "Plus Jakarta Sans", sans-serif;
+  color-scheme: dark;
+}
+
+html.light,
+html[data-theme="light"] {
+  --admin-bg: #f1f5f9;
+  --admin-panel: #ffffff;
+  --admin-panel-2: #f8fafc;
+  --admin-border: #e2e8f0;
+  --admin-accent: #0284c7;
+  --admin-accent-dim: rgba(14, 165, 233, 0.12);
+  --admin-text: #0f172a;
+  --admin-muted: #64748b;
+  --admin-danger: #dc2626;
+  --admin-hover: rgba(15, 23, 42, 0.04);
+  --admin-soft: rgba(15, 23, 42, 0.04);
+  color-scheme: light;
 }
 
 html,
@@ -22,6 +43,7 @@ body {
   background: var(--admin-bg);
   color: var(--admin-text);
   font-family: var(--font-sans);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 * {
@@ -37,6 +59,15 @@ body {
   background: radial-gradient(
     ellipse 70% 50% at 50% -10%,
     rgba(56, 189, 248, 0.18),
+    transparent 70%
+  );
+}
+
+html.light .admin-auth-glow,
+html[data-theme="light"] .admin-auth-glow {
+  background: radial-gradient(
+    ellipse 70% 50% at 50% -10%,
+    rgba(14, 165, 233, 0.2),
     transparent 70%
   );
 }

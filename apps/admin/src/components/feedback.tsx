@@ -153,7 +153,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
           >
             <h3
               id="admin-confirm-title"
-              className="admin-brand text-lg font-semibold text-white"
+              className="admin-brand text-lg font-semibold text-[var(--admin-text)]"
             >
               {confirmState.title}
             </h3>
@@ -165,7 +165,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
             <div className="mt-6 flex justify-end gap-2">
               <button
                 type="button"
-                className="rounded-full border border-[var(--admin-border)] px-4 py-2 text-sm hover:bg-white/5"
+                className="rounded-full border border-[var(--admin-border)] px-4 py-2 text-sm hover:bg-[var(--admin-hover)]"
                 onClick={() => {
                   confirmState.resolve(false)
                   setConfirmState(null)
@@ -218,7 +218,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
           >
             <h3
               id="admin-prompt-title"
-              className="admin-brand text-lg font-semibold text-white"
+              className="admin-brand text-lg font-semibold text-[var(--admin-text)]"
             >
               {promptState.title}
             </h3>
@@ -233,12 +233,12 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
               value={promptValue}
               placeholder={promptState.placeholder}
               onChange={(e) => setPromptValue(e.target.value)}
-              className="mt-4 w-full resize-y rounded-xl border border-[var(--admin-border)] bg-black/25 px-3 py-2 text-sm outline-none focus:border-sky-500/60 focus:ring-2 focus:ring-sky-500/20"
+              className="mt-4 w-full resize-y rounded-xl border border-[var(--admin-border)] bg-[var(--admin-soft)] px-3 py-2 text-sm outline-none focus:border-sky-500/60 focus:ring-2 focus:ring-sky-500/20"
             />
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
-                className="rounded-full border border-[var(--admin-border)] px-4 py-2 text-sm hover:bg-white/5"
+                className="rounded-full border border-[var(--admin-border)] px-4 py-2 text-sm hover:bg-[var(--admin-hover)]"
                 onClick={() => {
                   promptState.resolve(null)
                   setPromptState(null)

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
+import { useLocale } from "@/lib/i18n/locale-context"
 
 type UserRow = {
   userId: string
@@ -34,6 +35,7 @@ function formatDate(iso: string | null) {
 }
 
 export default function AdminUsersPage() {
+  const { t } = useLocale()
   const [q, setQ] = useState("")
   const [role, setRole] = useState("") // "" | "USER" | "ADMIN"
   const [page, setPage] = useState(1)
@@ -95,21 +97,23 @@ export default function AdminUsersPage() {
   }, [q, role, page])
 
   const inputClass =
-    "rounded-xl border border-[var(--admin-border)] bg-black/25 px-3 py-2 text-sm outline-none focus:border-sky-500/60 focus:ring-2 focus:ring-sky-500/20"
+    "rounded-xl border border-[var(--admin-border)] bg-[var(--admin-soft)] px-3 py-2 text-sm outline-none focus:border-sky-500/60 focus:ring-2 focus:ring-sky-500/20"
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="admin-brand text-2xl font-bold tracking-tight">Users</h2>
+        <h2 className="admin-brand text-2xl font-bold tracking-tight">
+          {t("users.title")}
+        </h2>
         <p className="mt-1 text-sm text-[var(--admin-muted)]">
-          All accounts — search by name/email, filter by role.
+          {t("users.subtitle")}
         </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <input
           className={cn(inputClass, "w-full max-w-md")}
-          placeholder="Search name or email…"
+          placeholder={t("users.searchPlaceholder")}
           value={q}
           onChange={(e) => {
             setQ(e.target.value)
@@ -124,7 +128,7 @@ export default function AdminUsersPage() {
             setPage(1)
           }}
         >
-          <option value="">All roles</option>
+          <option value="">{t("users.allRoles")}</option>
           <option value="USER">USER</option>
           <option value="ADMIN">ADMIN</option>
         </select>
@@ -140,19 +144,19 @@ export default function AdminUsersPage() {
       ) : null}
 
       {loading ? (
-        <p className="text-sm text-[var(--admin-muted)]">Loading…</p>
+        <p className="text-sm text-[var(--admin-muted)]">{t("common.loading")}</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-[var(--admin-muted)]">No users found.</p>
+        <p className="text-sm text-[var(--admin-muted)]">{t("users.empty")}</p>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-[var(--admin-border)]">
           <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="border-b border-[var(--admin-border)] bg-black/20 text-[var(--admin-muted)]">
+            <thead className="border-b border-[var(--admin-border)] bg-[var(--admin-soft)] text-[var(--admin-muted)]">
               <tr>
-                <th className="px-4 py-3 font-medium">User</th>
-                <th className="px-4 py-3 font-medium">Role</th>
-                <th className="px-4 py-3 font-medium">Posts</th>
-                <th className="px-4 py-3 font-medium">Joined</th>
-                <th className="px-4 py-3 font-medium">Last seen</th>
+                <th className="px-4 py-3 font-medium">{t("nav.users")}</th>
+                <th className="px-4 py-3 font-medium">{t("users.role")}</th>
+                <th className="px-4 py-3 font-medium">{t("nav.posts")}</th>
+                <th className="px-4 py-3 font-medium">{t("users.joined")}</th>
+                <th className="px-4 py-3 font-medium">{t("users.lastSeen")}</th>
               </tr>
             </thead>
             <tbody>
@@ -174,12 +178,12 @@ export default function AdminUsersPage() {
                           className="h-9 w-9 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="grid h-9 w-9 place-items-center rounded-full bg-sky-500/20 text-xs font-semibold text-sky-300">
+                        <div className="grid h-9 w-9 place-items-center rounded-full bg-sky-500/20 text-xs font-semibold text-sky-500">
                           {u.name.slice(0, 1).toUpperCase() || "?"}
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="truncate font-medium text-white">{u.name}</p>
+                        <p className="truncate font-medium text-[var(--admin-text)]">{u.name}</p>
                         <p className="truncate text-xs text-[var(--admin-muted)]">
                           {u.email}
                         </p>
@@ -191,14 +195,14 @@ export default function AdminUsersPage() {
                       className={cn(
                         "rounded-full px-2.5 py-0.5 text-xs font-semibold",
                         u.role === "ADMIN"
-                          ? "bg-sky-500/20 text-sky-300"
-                          : "bg-white/10 text-[var(--admin-muted)]"
+                          ? "bg-sky-500/20 text-sky-600"
+                          : "bg-[var(--admin-soft)] text-[var(--admin-muted)]"
                       )}
                     >
                       {u.role}
                     </span>
                   </td>
-                  <td className="px-4 py-3 tabular-nums text-sky-300">
+                  <td className="px-4 py-3 tabular-nums text-sky-600">
                     {u.postCount}
                   </td>
                   <td className="px-4 py-3 text-[var(--admin-muted)]">
@@ -216,7 +220,7 @@ export default function AdminUsersPage() {
 
       <div className="flex items-center justify-between gap-3 pt-2">
         <p className="text-xs text-[var(--admin-muted)]">
-          {total} users · page {page}/{totalPages}
+          {total} {t("users.usersCount")} · {page}/{totalPages}
         </p>
         <div className="flex gap-2">
           <button
@@ -225,7 +229,7 @@ export default function AdminUsersPage() {
             className="rounded-full border border-[var(--admin-border)] px-4 py-1.5 text-sm disabled:opacity-40"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
-            Prev
+            {t("common.prev")}
           </button>
           <button
             type="button"
@@ -233,7 +237,7 @@ export default function AdminUsersPage() {
             className="rounded-full border border-[var(--admin-border)] px-4 py-1.5 text-sm disabled:opacity-40"
             onClick={() => setPage((p) => p + 1)}
           >
-            Next
+            {t("common.next")}
           </button>
         </div>
       </div>

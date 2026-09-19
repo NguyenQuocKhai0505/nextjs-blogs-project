@@ -5,6 +5,7 @@ import Link from "next/link"
 import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
 import { useFeedback } from "@/components/feedback"
+import { useLocale } from "@/lib/i18n/locale-context"
 
 type Reporter = {
   id: string
@@ -62,6 +63,7 @@ function formatDate(iso: string) {
 }
 
 export default function AdminReportsPage() {
+  const { t } = useLocale()
   const [status, setStatus] = useState("PENDING")
   const [items, setItems] = useState<ReportItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -175,7 +177,7 @@ export default function AdminReportsPage() {
           ),
         },
       }))
-      toast.success("AI review ready.")
+      toast.success(t("reports.aiReady"))
     } catch (e) {
       const msg = e instanceof Error ? e.message : "AI review failed"
       setError(msg)
@@ -188,10 +190,9 @@ export default function AdminReportsPage() {
   /** Uphold: xóa bài (nếu POST) + warn author + đánh dấu REVIEWED */
   async function uphold(report: ReportItem) {
     const ok = await confirm({
-      title: "Uphold this report?",
-      description:
-        "Mark as a valid violation. This may delete the post and warn the author.",
-      confirmLabel: "Uphold",
+      title: t("reports.upholdConfirm"),
+      description: t("reports.upholdDesc"),
+      confirmLabel: t("reports.upholdBtn"),
       danger: true,
     })
     if (!ok) return
@@ -214,13 +215,13 @@ export default function AdminReportsPage() {
 
         if (report.targetAuthor?.userId) {
           const warnMsg = await prompt({
-            title: "Warn the author",
-            description: "Optional — cancel to skip sending a warning.",
+            title: t("reports.warnAuthor"),
+            description: t("reports.warnAuthorDesc"),
             defaultValue:
               aiById[report.id]?.suggestedWarnMessage ??
-              "Your content was removed for violating community guidelines.",
-            confirmLabel: "Send warning",
-            cancelLabel: "Skip warning",
+              t("reports.defaultWarn"),
+            confirmLabel: t("reports.sendWarning"),
+            cancelLabel: t("reports.skipWarning"),
           })
           if (warnMsg != null) {
             const w = await authFetch(
@@ -241,7 +242,7 @@ export default function AdminReportsPage() {
 
       await patchStatus(report.id, "REVIEWED")
       await load()
-      toast.success("Report upheld.")
+      toast.success(t("reports.upheld"))
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Uphold failed"
       setError(msg)
@@ -253,9 +254,9 @@ export default function AdminReportsPage() {
 
   async function dismiss(report: ReportItem) {
     const ok = await confirm({
-      title: "Dismiss this report?",
-      description: "The content will stay published.",
-      confirmLabel: "Dismiss",
+      title: t("reports.dismissConfirm"),
+      description: t("reports.dismissDesc"),
+      confirmLabel: t("reports.dismiss"),
     })
     if (!ok) return
     setBusyId(report.id)
@@ -263,7 +264,7 @@ export default function AdminReportsPage() {
     try {
       await patchStatus(report.id, "DISMISSED")
       await load()
-      toast.success("Report dismissed.")
+      toast.success(t("reports.dismissedToast"))
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Dismiss failed"
       setError(msg)
@@ -274,16 +275,16 @@ export default function AdminReportsPage() {
   }
 
   const selectClass =
-    "rounded-xl border border-[var(--admin-border)] bg-black/25 px-3 py-2 text-sm outline-none focus:border-sky-500/60"
+    "rounded-xl border border-[var(--admin-border)] bg-[var(--admin-soft)] px-3 py-2 text-sm outline-none focus:border-sky-500/60"
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="admin-brand text-2xl font-bold tracking-tight">
-          Reports
+          {t("reports.title")}
         </h2>
         <p className="mt-1 text-sm text-[var(--admin-muted)]">
-          Review user reports — uphold (delete + warn) or dismiss.
+          {t("reports.subtitle")}
         </p>
       </div>
 
@@ -292,10 +293,10 @@ export default function AdminReportsPage() {
         value={status}
         onChange={(e) => setStatus(e.target.value)}
       >
-        <option value="PENDING">PENDING</option>
-        <option value="REVIEWED">REVIEWED</option>
-        <option value="DISMISSED">DISMISSED</option>
-        <option value="">All</option>
+        <option value="PENDING">{t("reports.pending")}</option>
+        <option value="REVIEWED">{t("reports.reviewed")}</option>
+        <option value="DISMISSED">{t("reports.dismissed")}</option>
+        <option value="">{t("common.all")}</option>
       </select>
 
       {error ? (
@@ -308,9 +309,9 @@ export default function AdminReportsPage() {
       ) : null}
 
       {loading ? (
-        <p className="text-sm text-[var(--admin-muted)]">Loading…</p>
+        <p className="text-sm text-[var(--admin-muted)]">{t("common.loading")}</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-[var(--admin-muted)]">No reports.</p>
+        <p className="text-sm text-[var(--admin-muted)]">{t("reports.empty")}</p>
       ) : (
         <ul className="space-y-4">
           {items.map((r) => {
@@ -326,9 +327,9 @@ export default function AdminReportsPage() {
                     <p className="text-xs text-[var(--admin-muted)]">
                       #{r.id} · {r.targetKind} · {formatDate(r.createdAt)}
                     </p>
-                    <p className="mt-1 font-medium text-white">
-                      Reason:{" "}
-                      <span className="text-amber-200">{r.reason}</span>
+                    <p className="mt-1 font-medium text-[var(--admin-text)]">
+                      {t("reports.reason")}:{" "}
+                      <span className="text-amber-600">{r.reason}</span>
                     </p>
                     {r.details ? (
                       <p className="mt-1 text-sm text-[var(--admin-muted)]">
@@ -336,7 +337,8 @@ export default function AdminReportsPage() {
                       </p>
                     ) : null}
                     <p className="mt-2 text-xs text-[var(--admin-muted)]">
-                      Reporter: {r.reporter.name} ({r.reporter.email})
+                      {t("reports.reporter")}: {r.reporter.name} (
+                      {r.reporter.email})
                     </p>
                   </div>
                   <span
@@ -355,26 +357,26 @@ export default function AdminReportsPage() {
 
                 {r.targetKind === "POST" ? (
                   <div className="mt-4 rounded-xl border border-[var(--admin-border)]/80 bg-black/20 p-4">
-                    <p className="font-medium text-white">
+                    <p className="font-medium text-[var(--admin-text)]">
                       {r.targetTitle || `(post #${r.targetId})`}
                     </p>
                     {r.targetAuthor ? (
                       <p className="mt-1 text-xs text-[var(--admin-muted)]">
-                        Author:{" "}
+                        {t("reports.author")}:{" "}
                         <Link
                           href={`/users/${r.targetAuthor.userId}`}
-                          className="text-sky-400 hover:underline"
+                          className="text-sky-500 hover:underline"
                         >
                           {r.targetAuthor.name}
                         </Link>
                       </p>
                     ) : (
-                      <p className="mt-1 text-xs text-red-300/80">
-                        Post may already be deleted.
+                      <p className="mt-1 text-xs text-red-500/80">
+                        {t("reports.postDeleted")}
                       </p>
                     )}
                     {r.targetDescription ? (
-                      <p className="mt-2 text-sm text-white/70">
+                      <p className="mt-2 text-sm text-[var(--admin-text)]/70">
                         {r.targetDescription}
                       </p>
                     ) : null}
@@ -382,15 +384,17 @@ export default function AdminReportsPage() {
                       <>
                         <button
                           type="button"
-                          className="mt-2 text-xs text-sky-400 hover:underline"
+                          className="mt-2 text-xs text-sky-500 hover:underline"
                           onClick={() =>
                             setExpanded((m) => ({ ...m, [r.id]: !open }))
                           }
                         >
-                          {open ? "Hide content" : "Read full content"}
+                          {open
+                            ? t("reports.hideContent")
+                            : t("reports.readContent")}
                         </button>
                         {open ? (
-                          <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap text-sm text-white/80">
+                          <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap text-sm text-[var(--admin-text)]/80">
                             {r.targetContent}
                           </pre>
                         ) : null}
@@ -413,7 +417,7 @@ export default function AdminReportsPage() {
                           onClick={() => void runAiReview(r.id)}
                           className="rounded-full border border-violet-400/40 px-4 py-1.5 text-sm text-violet-200 hover:bg-violet-500/10 disabled:opacity-50"
                         >
-                          AI review
+                          {t("reports.aiReview")}
                         </button>
                       ) : null}
                       <button
@@ -422,7 +426,7 @@ export default function AdminReportsPage() {
                         onClick={() => void uphold(r)}
                         className="rounded-full bg-red-500/90 px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
                       >
-                        Uphold (delete + warn)
+                        {t("reports.uphold")}
                       </button>
                       <button
                         type="button"
@@ -430,18 +434,19 @@ export default function AdminReportsPage() {
                         onClick={() => void dismiss(r)}
                         className="rounded-full border border-[var(--admin-border)] px-4 py-1.5 text-sm disabled:opacity-50"
                       >
-                        Dismiss
+                        {t("reports.dismiss")}
                       </button>
                     </div>
                     {aiById[r.id] ? (
                       <div className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-sm">
-                        <p className="text-violet-100">
+                        <p className="text-violet-700 dark:text-violet-100">
                           {aiById[r.id].likelyViolation
-                            ? "Likely violation"
-                            : "Maybe OK"}
+                            ? t("reports.likelyViolation")
+                            : t("reports.maybeOk")}
                           {" · "}
                           {aiById[r.id].severity}
-                          {" · suggest "}
+                          {" · "}
+                          {t("reports.suggest")}{" "}
                           <span className="font-semibold">
                             {aiById[r.id].suggestedAction}
                           </span>

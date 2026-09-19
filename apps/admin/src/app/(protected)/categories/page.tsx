@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
 import { useFeedback } from "@/components/feedback"
+import { useLocale } from "@/lib/i18n/locale-context"
 
 type Category = {
   id: number
@@ -21,6 +22,7 @@ function apiErrorMessage(data: unknown, fallback: string) {
 }
 
 export default function AdminCategoriesPage() {
+  const { t } = useLocale()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -90,7 +92,7 @@ export default function AdminCategoriesPage() {
       setSlug("")
       setSortOrder("0")
       await load()
-      toast.success("Category created.")
+      toast.success(t("categories.created"))
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Create failed"
       setError(msg)
@@ -102,9 +104,9 @@ export default function AdminCategoriesPage() {
 
   async function remove(id: number) {
     const ok = await confirm({
-      title: "Delete category?",
-      description: "This cannot be undone.",
-      confirmLabel: "Delete",
+      title: t("categories.deleteConfirm"),
+      description: t("categories.deleteDesc"),
+      confirmLabel: t("common.delete"),
       danger: true,
     })
     if (!ok) return
@@ -115,7 +117,7 @@ export default function AdminCategoriesPage() {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(apiErrorMessage(data, "Delete failed"))
       await load()
-      toast.success("Category deleted.")
+      toast.success(t("categories.deleted"))
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Delete failed"
       setError(msg)
@@ -150,7 +152,7 @@ export default function AdminCategoriesPage() {
       if (!res.ok) throw new Error(apiErrorMessage(data, "Update failed"))
       setEditingId(null)
       await load()
-      toast.success("Category updated.")
+      toast.success(t("categories.updated"))
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Update failed"
       setError(msg)
@@ -161,11 +163,13 @@ export default function AdminCategoriesPage() {
   }
 
   const inputClass =
-    "w-full rounded-xl border border-[var(--admin-border)] bg-black/25 px-3 py-2 text-sm outline-none focus:border-sky-500/60 focus:ring-2 focus:ring-sky-500/20"
+    "w-full rounded-xl border border-[var(--admin-border)] bg-[var(--admin-soft)] px-3 py-2 text-sm outline-none focus:border-sky-500/60 focus:ring-2 focus:ring-sky-500/20"
 
   return (
     <div className="space-y-8">
-      <h2 className="admin-brand text-2xl font-bold tracking-tight">Categories</h2>
+      <h2 className="admin-brand text-2xl font-bold tracking-tight">
+        {t("categories.title")}
+      </h2>
 
       {error ? (
         <p
@@ -183,10 +187,14 @@ export default function AdminCategoriesPage() {
           void create()
         }}
       >
-        <h3 className="text-sm font-semibold text-white">Create category</h3>
+        <h3 className="text-sm font-semibold text-[var(--admin-text)]">
+          {t("categories.create")}
+        </h3>
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="block space-y-1.5">
-            <span className="text-xs text-[var(--admin-muted)]">Name</span>
+            <span className="text-xs text-[var(--admin-muted)]">
+              {t("categories.name")}
+            </span>
             <input
               className={inputClass}
               value={name}
@@ -196,7 +204,9 @@ export default function AdminCategoriesPage() {
             />
           </label>
           <label className="block space-y-1.5">
-            <span className="text-xs text-[var(--admin-muted)]">Slug (optional)</span>
+            <span className="text-xs text-[var(--admin-muted)]">
+              {t("categories.slugOptional")}
+            </span>
             <input
               className={inputClass}
               value={slug}
@@ -205,7 +215,9 @@ export default function AdminCategoriesPage() {
             />
           </label>
           <label className="block space-y-1.5">
-            <span className="text-xs text-[var(--admin-muted)]">Sort order</span>
+            <span className="text-xs text-[var(--admin-muted)]">
+              {t("categories.sortOrder")}
+            </span>
             <input
               className={inputClass}
               value={sortOrder}
@@ -220,16 +232,18 @@ export default function AdminCategoriesPage() {
           disabled={busy || !name.trim()}
           className="rounded-full bg-sky-500 px-5 py-2 text-sm font-semibold text-slate-950 hover:bg-sky-400 disabled:opacity-60"
         >
-          {busy ? "Saving…" : "Create"}
+          {busy ? t("categories.saving") : t("categories.createBtn")}
         </button>
       </form>
 
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-white">All categories</h3>
+        <h3 className="text-sm font-semibold text-[var(--admin-text)]">
+          {t("categories.all")}
+        </h3>
         {loading ? (
-          <p className="text-sm text-[var(--admin-muted)]">Loading…</p>
+          <p className="text-sm text-[var(--admin-muted)]">{t("common.loading")}</p>
         ) : categories.length === 0 ? (
-          <p className="text-sm text-[var(--admin-muted)]">No categories yet.</p>
+          <p className="text-sm text-[var(--admin-muted)]">{t("categories.empty")}</p>
         ) : (
           categories.map((c) => (
             <div
@@ -267,24 +281,26 @@ export default function AdminCategoriesPage() {
                       onClick={() => void saveEdit()}
                       className="rounded-full bg-sky-500 px-4 py-1.5 text-sm font-semibold text-slate-950 disabled:opacity-60"
                     >
-                      Save
+                      {t("common.save")}
                     </button>
                     <button
                       type="button"
                       disabled={busy}
                       onClick={() => setEditingId(null)}
-                      className="rounded-full px-4 py-1.5 text-sm text-[var(--admin-muted)] hover:text-white"
+                      className="rounded-full px-4 py-1.5 text-sm text-[var(--admin-muted)] hover:text-[var(--admin-text)]"
                     >
-                      Cancel
+                      {t("common.cancel")}
                     </button>
                   </div>
                 </div>
               ) : (
                 <>
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-white">{c.name}</p>
+                    <p className="truncate font-medium text-[var(--admin-text)]">
+                      {c.name}
+                    </p>
                     <p className="truncate text-xs text-[var(--admin-muted)]">
-                      {c.slug} · sort {c.sortOrder}
+                      {c.slug} · {t("categories.sort")} {c.sortOrder}
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-2">
@@ -292,17 +308,17 @@ export default function AdminCategoriesPage() {
                       type="button"
                       disabled={busy}
                       onClick={() => startEdit(c)}
-                      className="rounded-lg px-3 py-1.5 text-sm text-sky-300 hover:bg-sky-500/10 disabled:opacity-60"
+                      className="rounded-lg px-3 py-1.5 text-sm text-sky-500 hover:bg-sky-500/10 disabled:opacity-60"
                     >
-                      Edit
+                      {t("categories.edit")}
                     </button>
                     <button
                       type="button"
                       disabled={busy}
                       onClick={() => void remove(c.id)}
-                      className="rounded-lg px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10 disabled:opacity-60"
+                      className="rounded-lg px-3 py-1.5 text-sm text-red-500 hover:bg-red-500/10 disabled:opacity-60"
                     >
-                      Delete
+                      {t("common.delete")}
                     </button>
                   </div>
                 </>

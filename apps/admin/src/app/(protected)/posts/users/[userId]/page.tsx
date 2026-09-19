@@ -6,6 +6,7 @@ import { useParams } from "next/navigation"
 import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
 import { useFeedback } from "@/components/feedback"
+import { useLocale } from "@/lib/i18n/locale-context"
 
 type AuthorProfile = {
   userId: string
@@ -35,6 +36,7 @@ function apiErrorMessage(data: unknown, fallback: string) {
 }
 
 export default function AdminUserPostsPage() {
+  const { t } = useLocale()
   const params = useParams()
   const userId = typeof params.userId === "string" ? params.userId : ""
 
@@ -96,9 +98,9 @@ export default function AdminUserPostsPage() {
 
   async function deletePost(postId: number) {
     const ok = await confirm({
-      title: "Delete this post?",
-      description: "The post will be permanently removed.",
-      confirmLabel: "Delete",
+      title: t("posts.deleteConfirm"),
+      description: t("posts.deleteDesc"),
+      confirmLabel: t("common.delete"),
       danger: true,
     })
     if (!ok) return
@@ -109,7 +111,7 @@ export default function AdminUserPostsPage() {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(apiErrorMessage(data, "Delete failed"))
       await load()
-      toast.success("Post deleted.")
+      toast.success(t("posts.deleted"))
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Delete failed"
       setError(msg)
@@ -121,11 +123,10 @@ export default function AdminUserPostsPage() {
 
   async function warnUser() {
     const message = await prompt({
-      title: "Warn user",
-      description: "This sends an in-app warning notification.",
-      defaultValue:
-        "Your content may violate community guidelines. Please review our rules.",
-      confirmLabel: "Send warning",
+      title: t("users.warnTitle"),
+      description: t("users.warnDesc"),
+      defaultValue: t("users.warnDefault"),
+      confirmLabel: t("users.sendWarning"),
     })
     if (message == null) return
     setBusy(true)
@@ -138,7 +139,7 @@ export default function AdminUserPostsPage() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(apiErrorMessage(data, "Warn failed"))
-      toast.success("Warning notification sent.")
+      toast.success(t("users.warnSent"))
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Warn failed"
       setError(msg)
@@ -153,18 +154,18 @@ export default function AdminUserPostsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/posts"
-          className="text-sm text-sky-400 hover:text-sky-300 hover:underline"
+          className="text-sm text-sky-500 hover:underline"
         >
-          ← Back to authors
+          {t("posts.backAuthors")}
         </Link>
         {user ? (
           <button
             type="button"
             disabled={busy}
             onClick={() => void warnUser()}
-            className="rounded-full border border-amber-500/50 bg-amber-500/10 px-4 py-1.5 text-sm font-medium text-amber-200 hover:bg-amber-500/20 disabled:opacity-50"
+            className="rounded-full border border-amber-500/50 bg-amber-500/10 px-4 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-500/20 disabled:opacity-50 dark:text-amber-200"
           >
-            Warn user
+            {t("users.warn")}
           </button>
         ) : null}
       </div>
@@ -179,9 +180,9 @@ export default function AdminUserPostsPage() {
       ) : null}
 
       {loading ? (
-        <p className="text-sm text-[var(--admin-muted)]">Loading…</p>
+        <p className="text-sm text-[var(--admin-muted)]">{t("common.loading")}</p>
       ) : !user ? (
-        <p className="text-sm text-[var(--admin-muted)]">User not found.</p>
+        <p className="text-sm text-[var(--admin-muted)]">{t("posts.notFound")}</p>
       ) : (
         <>
           <div className="relative rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-panel)] p-5">
@@ -199,7 +200,7 @@ export default function AdminUserPostsPage() {
                   className="h-14 w-14 rounded-full object-cover"
                 />
               ) : (
-                <div className="grid h-14 w-14 place-items-center rounded-full bg-sky-500/20 text-lg font-semibold text-sky-300">
+                <div className="grid h-14 w-14 place-items-center rounded-full bg-sky-500/20 text-lg font-semibold text-sky-500">
                   {user.name.slice(0, 1).toUpperCase() || "?"}
                 </div>
               )}
@@ -210,10 +211,11 @@ export default function AdminUserPostsPage() {
                 <p className="truncate text-sm text-[var(--admin-muted)]">
                   {user.email}
                 </p>
-                <p className="mt-1 text-sm text-sky-300">
-                  {user.postCount} {user.postCount === 1 ? "post" : "posts"}
+                <p className="mt-1 text-sm text-sky-500">
+                  {user.postCount}{" "}
+                  {user.postCount === 1 ? t("posts.post") : t("posts.posts")}
                   {user.pendingReportedPostCount > 0
-                    ? ` · ${user.pendingReportedPostCount} with pending reports`
+                    ? ` · ${user.pendingReportedPostCount} ${t("posts.pendingWith")}`
                     : ""}
                 </p>
               </div>
@@ -221,9 +223,13 @@ export default function AdminUserPostsPage() {
           </div>
 
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-white">Posts</h3>
+            <h3 className="text-sm font-semibold text-[var(--admin-text)]">
+              {t("nav.posts")}
+            </h3>
             {posts.length === 0 ? (
-              <p className="text-sm text-[var(--admin-muted)]">No posts.</p>
+              <p className="text-sm text-[var(--admin-muted)]">
+                {t("posts.emptyPosts")}
+              </p>
             ) : (
               posts.map((post) => {
                 const open = !!expanded[post.id]
@@ -238,11 +244,15 @@ export default function AdminUserPostsPage() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-medium text-white">{post.title}</p>
+                          <p className="font-medium text-[var(--admin-text)]">
+                            {post.title}
+                          </p>
                           {post.pendingReportCount > 0 ? (
-                            <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-semibold text-red-300">
-                              {post.pendingReportCount} pending report
-                              {post.pendingReportCount === 1 ? "" : "s"}
+                            <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-semibold text-red-600 dark:text-red-300">
+                              {post.pendingReportCount}{" "}
+                              {post.pendingReportCount === 1
+                                ? t("posts.pendingReport")
+                                : t("posts.pendingReports")}
                             </span>
                           ) : null}
                         </div>
@@ -267,20 +277,22 @@ export default function AdminUserPostsPage() {
                             }))
                           }
                         >
-                          {open ? "Hide content" : "View content"}
+                          {open
+                            ? t("posts.hideContent")
+                            : t("posts.viewContent")}
                         </button>
                         <button
                           type="button"
                           disabled={busy}
-                          className="rounded-full border border-red-500/40 px-3 py-1 text-xs text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                          className="rounded-full border border-red-500/40 px-3 py-1 text-xs text-red-600 hover:bg-red-500/10 disabled:opacity-50 dark:text-red-300"
                           onClick={() => void deletePost(post.id)}
                         >
-                          Delete
+                          {t("common.delete")}
                         </button>
                       </div>
                     </div>
                     {open ? (
-                      <div className="mt-3 whitespace-pre-wrap rounded-lg border border-[var(--admin-border)] bg-black/20 p-3 text-sm text-[var(--admin-text)]">
+                      <div className="mt-3 whitespace-pre-wrap rounded-lg border border-[var(--admin-border)] bg-[var(--admin-soft)] p-3 text-sm text-[var(--admin-text)]">
                         {post.content || "(empty)"}
                       </div>
                     ) : null}

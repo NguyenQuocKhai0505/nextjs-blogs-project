@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
+import { useLocale } from "@/lib/i18n/locale-context"
 
 type AuthorCard = {
   userId: string
@@ -23,6 +24,7 @@ function apiErrorMessage(data: unknown, fallback: string) {
 }
 
 export default function AdminPostsPage() {
+  const { t } = useLocale()
   const [q, setQ] = useState("")
   const [page, setPage] = useState(1)
   const [items, setItems] = useState<AuthorCard[]>([])
@@ -69,29 +71,30 @@ export default function AdminPostsPage() {
   }
 
   useEffect(() => {
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       void load(q, page)
     }, 300)
-    return () => clearTimeout(t)
+    return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, page])
 
   const inputClass =
-    "w-full max-w-md rounded-xl border border-[var(--admin-border)] bg-black/25 px-3 py-2 text-sm outline-none focus:border-sky-500/60 focus:ring-2 focus:ring-sky-500/20"
+    "w-full max-w-md rounded-xl border border-[var(--admin-border)] bg-[var(--admin-soft)] px-3 py-2 text-sm outline-none focus:border-sky-500/60 focus:ring-2 focus:ring-sky-500/20"
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="admin-brand text-2xl font-bold tracking-tight">Posts</h2>
+        <h2 className="admin-brand text-2xl font-bold tracking-tight">
+          {t("posts.title")}
+        </h2>
         <p className="mt-1 text-sm text-[var(--admin-muted)]">
-          Authors who have posts — search by name or email. Red badge = posts with
-          pending reports.
+          {t("posts.subtitle")}
         </p>
       </div>
 
       <input
         className={inputClass}
-        placeholder="Search name or email…"
+        placeholder={t("posts.searchPlaceholder")}
         value={q}
         onChange={(e) => {
           setQ(e.target.value)
@@ -109,9 +112,9 @@ export default function AdminPostsPage() {
       ) : null}
 
       {loading ? (
-        <p className="text-sm text-[var(--admin-muted)]">Loading…</p>
+        <p className="text-sm text-[var(--admin-muted)]">{t("common.loading")}</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-[var(--admin-muted)]">No authors found.</p>
+        <p className="text-sm text-[var(--admin-muted)]">{t("posts.empty")}</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
@@ -124,10 +127,7 @@ export default function AdminPostsPage() {
               )}
             >
               {item.pendingReportedPostCount > 0 ? (
-                <span
-                  className="absolute right-3 top-3 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white"
-                  title="Posts with pending reports"
-                >
+                <span className="absolute right-3 top-3 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
                   {item.pendingReportedPostCount > 99
                     ? "99+"
                     : item.pendingReportedPostCount}
@@ -143,19 +143,22 @@ export default function AdminPostsPage() {
                     className="h-10 w-10 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="grid h-10 w-10 place-items-center rounded-full bg-sky-500/20 text-sm font-semibold text-sky-300">
+                  <div className="grid h-10 w-10 place-items-center rounded-full bg-sky-500/20 text-sm font-semibold text-sky-500">
                     {item.name.slice(0, 1).toUpperCase() || "?"}
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-white">{item.name}</p>
+                  <p className="truncate font-medium text-[var(--admin-text)]">
+                    {item.name}
+                  </p>
                   <p className="truncate text-sm text-[var(--admin-muted)]">
                     {item.email}
                   </p>
                 </div>
               </div>
-              <p className="mt-4 text-sm tabular-nums text-sky-300">
-                {item.postCount} {item.postCount === 1 ? "post" : "posts"}
+              <p className="mt-4 text-sm tabular-nums text-sky-500">
+                {item.postCount}{" "}
+                {item.postCount === 1 ? t("posts.post") : t("posts.posts")}
               </p>
             </Link>
           ))}
@@ -164,7 +167,7 @@ export default function AdminPostsPage() {
 
       <div className="flex items-center justify-between gap-3 pt-2">
         <p className="text-xs text-[var(--admin-muted)]">
-          {total} authors · page {page}/{totalPages}
+          {total} {t("posts.authors")} · {page}/{totalPages}
         </p>
         <div className="flex gap-2">
           <button
@@ -173,7 +176,7 @@ export default function AdminPostsPage() {
             className="rounded-full border border-[var(--admin-border)] px-4 py-1.5 text-sm disabled:opacity-40"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
-            Prev
+            {t("common.prev")}
           </button>
           <button
             type="button"
@@ -181,7 +184,7 @@ export default function AdminPostsPage() {
             className="rounded-full border border-[var(--admin-border)] px-4 py-1.5 text-sm disabled:opacity-40"
             onClick={() => setPage((p) => p + 1)}
           >
-            Next
+            {t("common.next")}
           </button>
         </div>
       </div>
