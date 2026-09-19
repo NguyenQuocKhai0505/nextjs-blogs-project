@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
 
@@ -161,7 +162,10 @@ export default function AdminUsersPage() {
                   className="border-b border-[var(--admin-border)]/60 last:border-0"
                 >
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
+                    <Link
+                      href={`/users/${u.userId}`}
+                      className="flex items-center gap-3 hover:opacity-90"
+                    >
                       {u.avatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -180,7 +184,7 @@ export default function AdminUsersPage() {
                           {u.email}
                         </p>
                       </div>
-                    </div>
+                    </Link>
                   </td>
                   <td className="px-4 py-3">
                     <span

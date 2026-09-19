@@ -1,7 +1,6 @@
-import { Injectable } from "@nestjs/common"
+import { Injectable, NotFoundException } from "@nestjs/common"
 import { Prisma, UserRole } from "@prisma/client"
 import { PrismaService } from "../../prisma/prisma.service.js"
-
 
 @Injectable()
 export class AdminUsersService{
@@ -73,4 +72,45 @@ export class AdminUsersService{
             totalPages: Math.max(1, Math.ceil(total/limit)),
         }
         }
+    async getUser(userId:string){
+        const user = await this.prisma.user.findUnique({
+            where: {id: userId},
+            select:{
+                id: true,
+                name: true,
+                email: true,
+                avatarUrl: true,
+                role: true,
+                bio:true,
+                emailVerified: true,
+                createdAt: true,
+                lastSeenAt: true,
+                _count: {
+                    select:{
+                        posts: true,
+                        followers: true,
+                        following: true
+                    }
+                }
+            }
+        })
+        if(!user){
+            throw new NotFoundException("User not found")
+        }
+
+        return {
+            userId: user.id,
+            name: user.name,
+            email: user.email,
+            avatarUrl: user.avatarUrl,
+            role: user.role,
+            bio: user.bio,
+            emailVerified: user.emailVerified,
+            createdAt: user.createdAt,
+            lastSeenAt: user.lastSeenAt,
+            postCount: user._count.posts,
+            followerCount: user._count.followers,
+            followingCount: user._count.following,
+        }
+    }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from "@nestjs/common"
+import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common"
 import { UserRole } from "@prisma/client"
 import { Throttle } from "@nestjs/throttler"
 import { Roles } from "../../common/decorators/roles.decorator.js"
@@ -25,5 +25,10 @@ export class AdminUsersController{
             page: page ? Number(page) : undefined,
             limit: limit ? Number(limit) : undefined,
         })
+    }
+
+    @Get(":userId")
+    getOne(@Param("userId") userId: string) {
+      return this.adminUsersService.getUser(userId)
     }
 }
