@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import Image from "next/image"
 import { ChevronLeft, ChevronRight, Eye, Plus, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
@@ -182,9 +183,9 @@ export function StoryViewer({
 
   if (!group || !story) return null
 
-  return (
+  return createPortal(
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="fixed inset-0 z-[70] flex items-center justify-center">
         <button
           type="button"
           className="absolute inset-0 bg-black/85 backdrop-blur-[2px]"
@@ -261,7 +262,7 @@ export function StoryViewer({
           </div>
 
           {/* Header */}
-          <div className="absolute left-0 right-0 top-5 z-40 flex items-center gap-2 px-3">
+          <div className="absolute left-0 right-0 top-8 z-40 flex items-center gap-2 px-3">
             <div className="flex min-w-0 flex-1 items-center gap-2.5">
               <Avatar className="h-9 w-9 shrink-0 ring-2 ring-white/40">
                 <AvatarImage src={group.user.avatarUrl ?? undefined} />
@@ -406,6 +407,7 @@ export function StoryViewer({
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </>,
+    document.body
   )
 }
