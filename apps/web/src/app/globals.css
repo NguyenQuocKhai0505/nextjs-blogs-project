@@ -143,6 +143,18 @@
     var(--background);
 }
 
+/* Sticky + backdrop-filter headers can composite above portals in some browsers */
+body[data-ks-story-open] .ks-app-shell > header {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.ks-story-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+}
+
 .dark .ks-app-shell {
   background:
     radial-gradient(ellipse 70% 40% at 50% -15%, color-mix(in oklch, var(--primary) 18%, transparent), transparent),

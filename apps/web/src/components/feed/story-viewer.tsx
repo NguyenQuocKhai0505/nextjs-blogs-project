@@ -109,6 +109,16 @@ export function StoryViewer({
   }, [story, markViewed])
 
   useEffect(() => {
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    document.body.dataset.ksStoryOpen = "true"
+    return () => {
+      document.body.style.overflow = prevOverflow
+      delete document.body.dataset.ksStoryOpen
+    }
+  }, [])
+
+  useEffect(() => {
     clearTimer()
     if (!story) return
 
@@ -185,7 +195,12 @@ export function StoryViewer({
 
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[70] flex items-center justify-center">
+      <div
+        className="ks-story-overlay fixed inset-0 flex items-center justify-center px-2"
+        style={{ zIndex: 99999 }}
+        role="dialog"
+        aria-modal="true"
+      >
         <button
           type="button"
           className="absolute inset-0 bg-black/85 backdrop-blur-[2px]"
@@ -193,7 +208,7 @@ export function StoryViewer({
           aria-label={t("stories.close")}
         />
 
-        <div className="relative z-10 aspect-[9/16] h-[min(96dvh,920px)] w-full max-w-[420px] overflow-hidden bg-zinc-950 shadow-2xl ring-1 ring-white/10 md:rounded-2xl">
+        <div className="relative z-10 aspect-[9/16] h-[min(92dvh,880px)] w-full max-w-[420px] overflow-hidden bg-zinc-950 shadow-2xl ring-1 ring-white/10 md:rounded-2xl">
           {/* Full-bleed media */}
           <div className="absolute inset-0">
             {story.mediaType === "IMAGE" && story.imageUrl ? (
