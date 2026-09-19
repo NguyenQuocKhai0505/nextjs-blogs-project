@@ -182,6 +182,7 @@
     "noViewers": "No viewers yet",
     "viewersFail": "Could not load viewers",
     "deleted": "Story deleted",
+    "delete": "Delete story",
     "deleteFail": "Could not delete story",
     "close": "Close story"
   },

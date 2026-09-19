@@ -182,6 +182,7 @@
     "noViewers": "Chưa có ai xem",
     "viewersFail": "Không tải được danh sách người xem",
     "deleted": "Đã xóa story",
+    "delete": "Xóa story",
     "deleteFail": "Không xóa được story",
     "close": "Đóng story"
   },

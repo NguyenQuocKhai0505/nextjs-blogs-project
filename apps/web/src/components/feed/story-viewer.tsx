@@ -168,6 +168,8 @@ export function StoryViewer({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") handleClose()
+      if (e.key === "ArrowRight") goNext()
+      if (e.key === "ArrowLeft") goPrev()
     }
     window.addEventListener("keydown", onKey)
     const prev = document.body.style.overflow
@@ -176,7 +178,7 @@ export function StoryViewer({
       window.removeEventListener("keydown", onKey)
       document.body.style.overflow = prev
     }
-  }, [handleClose])
+  }, [handleClose, goNext, goPrev])
 
   if (!group || !story) return null
 
@@ -185,32 +187,66 @@ export function StoryViewer({
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <button
           type="button"
-          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          className="absolute inset-0 bg-black/85 backdrop-blur-[2px]"
           onClick={handleClose}
           aria-label={t("stories.close")}
         />
 
-        <div className="relative z-10 h-full w-full max-w-lg overflow-hidden bg-black shadow-2xl md:h-[min(96dvh,900px)] md:rounded-2xl">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute right-3 top-3 z-50 rounded-full bg-black/60 text-white hover:bg-black/80 hover:text-white"
-            onClick={handleClose}
-            aria-label={t("stories.close")}
-          >
-            <X className="h-5 w-5" />
-          </Button>
+        <div className="relative z-10 aspect-[9/16] h-[min(96dvh,920px)] w-full max-w-[420px] overflow-hidden bg-zinc-950 shadow-2xl ring-1 ring-white/10 md:rounded-2xl">
+          {/* Full-bleed media */}
+          <div className="absolute inset-0">
+            {story.mediaType === "IMAGE" && story.imageUrl ? (
+              <Image
+                src={story.imageUrl}
+                alt=""
+                fill
+                className="object-cover"
+                unoptimized
+                priority
+                sizes="420px"
+              />
+            ) : null}
+            {story.mediaType === "VIDEO" && story.videoUrl ? (
+              <video
+                ref={videoRef}
+                src={story.videoUrl}
+                className="h-full w-full object-cover"
+                autoPlay
+                playsInline
+                onEnded={goNext}
+                onTimeUpdate={(e) => {
+                  const v = e.currentTarget
+                  if (v.duration) {
+                    setProgress((v.currentTime / v.duration) * 100)
+                  }
+                }}
+              />
+            ) : null}
+            {story.mediaType === "TEXT" ? (
+              <div
+                className="flex h-full w-full items-center justify-center p-8"
+                style={{ backgroundColor: story.backgroundColor ?? "#3b82f6" }}
+              >
+                <p className="max-w-sm text-center text-2xl font-semibold leading-snug text-white drop-shadow-md">
+                  {story.textContent}
+                </p>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Top / bottom readability gradients */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-28 bg-gradient-to-b from-black/70 via-black/25 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-24 bg-gradient-to-t from-black/50 to-transparent" />
 
           {/* Progress bars */}
           <div className="absolute left-0 right-0 top-0 z-40 flex gap-1 px-3 pt-3">
             {group.stories.map((s, i) => (
               <div
                 key={s.id}
-                className="h-0.5 flex-1 overflow-hidden rounded-full bg-white/30"
+                className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/35"
               >
                 <div
-                  className="h-full bg-white transition-all duration-100 ease-linear"
+                  className="h-full rounded-full bg-white transition-[width] duration-75 ease-linear"
                   style={{
                     width:
                       i < storyIndex
@@ -225,17 +261,19 @@ export function StoryViewer({
           </div>
 
           {/* Header */}
-          <div className="absolute left-0 right-12 top-6 z-40 flex items-center justify-between px-3">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-9 w-9 border border-white/20">
+          <div className="absolute left-0 right-0 top-5 z-40 flex items-center gap-2 px-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+              <Avatar className="h-9 w-9 shrink-0 ring-2 ring-white/40">
                 <AvatarImage src={group.user.avatarUrl ?? undefined} />
-                <AvatarFallback className="text-xs">
+                <AvatarFallback className="bg-white/20 text-xs text-white">
                   {group.user.name.slice(0, 1).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <p className="text-sm font-semibold text-white">{group.user.name}</p>
-                <p className="text-xs text-white/70">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-white drop-shadow">
+                  {group.user.name}
+                </p>
+                <p className="text-xs text-white/80 drop-shadow">
                   {new Date(story.createdAt).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -243,121 +281,97 @@ export function StoryViewer({
                 </p>
               </div>
             </div>
-            {isOwn ? (
-              <div className="flex items-center gap-1">
-                {onAddStory && (
+
+            <div className="flex shrink-0 items-center gap-0.5">
+              {isOwn ? (
+                <>
+                  {onAddStory ? (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-9 w-9 rounded-full text-white hover:bg-white/15"
+                      onClick={onAddStory}
+                      aria-label={t("stories.add")}
+                    >
+                      <Plus className="h-5 w-5" />
+                    </Button>
+                  ) : null}
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="text-white hover:bg-white/10"
-                    onClick={onAddStory}
+                    className="h-9 w-9 rounded-full text-white hover:bg-white/15"
+                    onClick={() => void loadViewers()}
+                    aria-label={t("stories.viewersTitle")}
                   >
-                    <Plus className="h-5 w-5" />
+                    <Eye className="h-5 w-5" />
                   </Button>
-                )}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="text-white hover:bg-white/10"
-                  onClick={() => void loadViewers()}
-                >
-                  <Eye className="h-5 w-5" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="text-white hover:bg-white/10"
-                  onClick={() => void deleteStory()}
-                >
-                  <Trash2 className="h-5 w-5" />
-                </Button>
-              </div>
-            ) : null}
-          </div>
-
-          {/* Story content */}
-          <div className="relative z-0 flex h-full items-center justify-center pt-14">
-            {story.mediaType === "IMAGE" && story.imageUrl && (
-              <div className="relative h-full w-full">
-                <Image
-                  src={story.imageUrl}
-                  alt=""
-                  fill
-                  className="object-contain"
-                  unoptimized
-                  priority
-                />
-              </div>
-            )}
-            {story.mediaType === "VIDEO" && story.videoUrl && (
-              <video
-                ref={videoRef}
-                src={story.videoUrl}
-                className="max-h-full max-w-full"
-                autoPlay
-                playsInline
-                controls
-                onEnded={goNext}
-                onTimeUpdate={(e) => {
-                  const v = e.currentTarget
-                  if (v.duration) {
-                    setProgress((v.currentTime / v.duration) * 100)
-                  }
-                }}
-              />
-            )}
-            {story.mediaType === "TEXT" && (
-              <div
-                className="flex h-full w-full items-center justify-center p-8"
-                style={{ backgroundColor: story.backgroundColor ?? "#3b82f6" }}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-9 w-9 rounded-full text-white hover:bg-white/15"
+                    onClick={() => void deleteStory()}
+                    aria-label={t("stories.delete")}
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </Button>
+                </>
+              ) : null}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-full text-white hover:bg-white/15"
+                onClick={handleClose}
+                aria-label={t("stories.close")}
               >
-                <p className="max-w-sm text-center text-2xl font-semibold leading-snug text-white">
-                  {story.textContent}
-                </p>
-              </div>
-            )}
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
 
-          {/* Tap zones */}
+          {/* Tap zones — left/right thirds */}
           <button
             type="button"
             aria-label={t("stories.prev")}
-            className="absolute bottom-0 left-0 top-20 z-20 w-1/3"
+            className="absolute bottom-0 left-0 top-16 z-20 w-[32%]"
             onClick={goPrev}
           />
           <button
             type="button"
             aria-label={t("stories.next")}
-            className="absolute bottom-0 right-0 top-20 z-20 w-1/3"
+            className="absolute bottom-0 right-0 top-16 z-20 w-[32%]"
             onClick={goNext}
           />
 
-          {groupIndex > 0 && (
+          {/* Desktop chevrons */}
+          {groupIndex > 0 ? (
             <button
               type="button"
-              className="absolute left-1 top-1/2 z-30 -translate-y-1/2 rounded-full bg-black/40 p-1 text-white"
+              className="absolute left-2 top-1/2 z-30 hidden -translate-y-1/2 rounded-full bg-black/45 p-2 text-white backdrop-blur-sm transition hover:bg-black/60 md:block"
               onClick={() => {
                 setGroupIndex((i) => i - 1)
                 setStoryIndex(0)
                 setProgress(0)
               }}
+              aria-label={t("stories.prev")}
             >
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft className="h-5 w-5" />
             </button>
-          )}
-          {groupIndex < groups.length - 1 && (
+          ) : null}
+          {groupIndex < groups.length - 1 ? (
             <button
               type="button"
-              className="absolute right-1 top-1/2 z-30 -translate-y-1/2 rounded-full bg-black/40 p-1 text-white"
+              className="absolute right-2 top-1/2 z-30 hidden -translate-y-1/2 rounded-full bg-black/45 p-2 text-white backdrop-blur-sm transition hover:bg-black/60 md:block"
               onClick={() => {
                 setGroupIndex((i) => i + 1)
                 setStoryIndex(0)
                 setProgress(0)
               }}
+              aria-label={t("stories.next")}
             >
-              <ChevronRight className="h-6 w-6" />
+              <ChevronRight className="h-5 w-5" />
             </button>
-          )}
+          ) : null}
         </div>
       </div>
 
