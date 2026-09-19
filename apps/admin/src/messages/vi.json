@@ -48,7 +48,14 @@
     "posts": "Bài viết",
     "categories": "Danh mục",
     "pendingReports": "Báo cáo chờ xử lý",
-    "loadFailed": "Tải thất bại"
+    "loadFailed": "Tải thất bại",
+    "chartsTitle": "Hoạt động",
+    "chartsSubtitle": "User, bài viết và report mới trong 7 ngày gần đây.",
+    "last7Days": "7 ngày gần đây",
+    "chartUsers": "User mới",
+    "chartPosts": "Bài mới",
+    "chartReports": "Report mới",
+    "chartEmpty": "Không có hoạt động trong khoảng này."
   },
   "categories": {
     "title": "Danh mục",

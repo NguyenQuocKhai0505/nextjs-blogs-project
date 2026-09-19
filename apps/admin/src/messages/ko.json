@@ -48,7 +48,14 @@
     "posts": "게시물",
     "categories": "카테고리",
     "pendingReports": "대기 중 신고",
-    "loadFailed": "불러오기 실패"
+    "loadFailed": "불러오기 실패",
+    "chartsTitle": "활동",
+    "chartsSubtitle": "최근 7일 신규 사용자·게시물·신고.",
+    "last7Days": "최근 7일",
+    "chartUsers": "신규 사용자",
+    "chartPosts": "신규 게시물",
+    "chartReports": "신규 신고",
+    "chartEmpty": "이 기간에 활동이 없습니다."
   },
   "categories": {
     "title": "카테고리",

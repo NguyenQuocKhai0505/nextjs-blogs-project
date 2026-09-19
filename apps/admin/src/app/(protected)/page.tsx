@@ -6,13 +6,29 @@ import { FolderTree, Flag, FileText, Users } from "lucide-react"
 import { authFetch } from "@/lib/auth-fetch"
 import { cn } from "@/lib/utils"
 import { useLocale } from "@/lib/i18n/locale-context"
+import { MiniBarChart } from "@/components/mini-bar-chart"
+
+type DashboardSeries = {
+  days: string[]
+  users: number[]
+  posts: number[]
+  reports: number[]
+}
 
 type DashboardStats = {
   users: number
   posts: number
   categories: number
   pendingReports: number
+  series?: DashboardSeries
 }
+
+const emptySeries = (): DashboardSeries => ({
+  days: [],
+  users: [],
+  posts: [],
+  reports: [],
+})
 
 export default function AdminDashboardPage() {
   const { t } = useLocale()
@@ -80,6 +96,8 @@ export default function AdminDashboardPage() {
     }
   }, [t])
 
+  const series = stats?.series ?? emptySeries()
+
   return (
     <div className="space-y-8">
       <div>
@@ -120,6 +138,51 @@ export default function AdminDashboardPage() {
             </Link>
           )
         })}
+      </div>
+
+      <div>
+        <h3 className="text-sm font-semibold text-[var(--admin-text)]">
+          {t("dashboard.chartsTitle")}
+        </h3>
+        <p className="mt-0.5 text-xs text-[var(--admin-muted)]">
+          {t("dashboard.chartsSubtitle")}
+        </p>
+        <div className="mt-4 grid gap-4 lg:grid-cols-3">
+          {loading ? (
+            <>
+              <div className="h-48 animate-pulse rounded-2xl bg-[var(--admin-panel)]" />
+              <div className="h-48 animate-pulse rounded-2xl bg-[var(--admin-panel)]" />
+              <div className="h-48 animate-pulse rounded-2xl bg-[var(--admin-panel)]" />
+            </>
+          ) : (
+            <>
+              <MiniBarChart
+                title={t("dashboard.chartUsers")}
+                subtitle={t("dashboard.last7Days")}
+                labels={series.days}
+                values={series.users}
+                color="#38bdf8"
+                emptyLabel={t("dashboard.chartEmpty")}
+              />
+              <MiniBarChart
+                title={t("dashboard.chartPosts")}
+                subtitle={t("dashboard.last7Days")}
+                labels={series.days}
+                values={series.posts}
+                color="#34d399"
+                emptyLabel={t("dashboard.chartEmpty")}
+              />
+              <MiniBarChart
+                title={t("dashboard.chartReports")}
+                subtitle={t("dashboard.last7Days")}
+                labels={series.days}
+                values={series.reports}
+                color="#fbbf24"
+                emptyLabel={t("dashboard.chartEmpty")}
+              />
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
