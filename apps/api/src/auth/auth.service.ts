@@ -6,12 +6,15 @@ import { RegisterDto } from "./dto/register.dto.js"
 import { LoginDto } from "./dto/login.dto.js"
 import bcrypt from "bcryptjs"
 import { randomUUID } from "crypto"
+import { ChangePasswordDto, ConfirmChangePasswordDto } from "./dto/change-password.dto.js"
+import { MailService } from "../mail/email.service.js"
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly jwt: JwtService
+    private readonly jwt: JwtService,
+    private readonly mail: MailService
   ) {}
 
   async register(dto: RegisterDto) {
@@ -76,6 +79,120 @@ export class AuthService {
     }
 
     return this.issueTokens(user.id)
+  }
+
+  /** Step 1: validate current password, email OTP, do NOT change password yet. */
+  async requestChangePassword(userId: string, dto: ChangePasswordDto) {
+    if (dto.newPassword !== dto.confirmPassword) {
+      throw new BadRequestException(
+        "New password and confirm password do not match"
+      )
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException(
+        "New password cannot be the same as the current password"
+      )
+    }
+
+    const account = await this.prisma.account.findFirst({
+      where: { userId, providerId: "credentials" },
+    })
+    if (!account?.password) {
+      throw new BadRequestException(
+        "This account has no password login. Use Google/Facebook."
+      )
+    }
+
+    const ok = await bcrypt.compare(dto.currentPassword, account.password)
+    if (!ok) {
+      throw new UnauthorizedException("Incorrect password")
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } })
+    if (!user?.email) {
+      throw new BadRequestException("User email not found")
+    }
+
+    const otp = String(Math.floor(100000 + Math.random() * 900000))
+    const codeHash = await bcrypt.hash(otp, 10)
+    const pendingPasswordHash = await bcrypt.hash(dto.newPassword, 10)
+
+    await this.prisma.passwordOtp.updateMany({
+      where: { userId, usedAt: null },
+      data: { usedAt: new Date() },
+    })
+
+    await this.prisma.passwordOtp.create({
+      data: {
+        userId,
+        codeHash,
+        pendingPasswordHash,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
+    })
+
+    await this.mail.sendMail({
+      to: user.email,
+      subject: "Ksocial password change code",
+      html: `<p>Your verification code is <b>${otp}</b>.</p>
+             <p>This code is valid for 10 minutes.</p>
+             <p>If you did not request this, ignore this email.</p>`,
+    })
+
+    return { message: "OTP sent to your email" }
+  }
+
+  /** Step 2: verify OTP, apply pending password, notify by email. */
+  async confirmChangePassword(userId: string, dto: ConfirmChangePasswordDto) {
+    const otpRow = await this.prisma.passwordOtp.findFirst({
+      where: {
+        userId,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: "desc" },
+    })
+    if (!otpRow) {
+      throw new BadRequestException("OTP expired or not found. Request a new one.")
+    }
+
+    const otpOk = await bcrypt.compare(dto.otp.trim(), otpRow.codeHash)
+    if (!otpOk) {
+      throw new UnauthorizedException("Invalid OTP")
+    }
+
+    const account = await this.prisma.account.findFirst({
+      where: { userId, providerId: "credentials" },
+    })
+    if (!account) {
+      throw new BadRequestException(
+        "This account has no password login. Use Google/Facebook."
+      )
+    }
+
+    await this.prisma.account.update({
+      where: { id: account.id },
+      data: { password: otpRow.pendingPasswordHash },
+    })
+
+    await this.prisma.passwordOtp.update({
+      where: { id: otpRow.id },
+      data: { usedAt: new Date() },
+    })
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } })
+    if (user?.email) {
+      await this.mail.sendMail({
+        to: user.email,
+        subject: "Your Ksocial password was changed",
+        html: `<p>Your account password was changed successfully.</p>
+               <p>If this wasn't you, reset your password or contact support immediately.</p>
+               <p>Time: ${new Date().toISOString()}</p>`,
+      })
+    }
+
+    return { message: "Password changed successfully" }
   }
 
   issueSocketToken(userId: string) {

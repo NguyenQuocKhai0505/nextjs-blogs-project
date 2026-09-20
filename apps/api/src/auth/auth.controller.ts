@@ -12,10 +12,15 @@ import { Throttle } from "@nestjs/throttler"
 import { AuthService } from "./auth.service.js"
 import { RegisterDto } from "./dto/register.dto.js"
 import { LoginDto } from "./dto/login.dto.js"
+import {
+  ChangePasswordDto,
+  ConfirmChangePasswordDto,
+} from "./dto/change-password.dto.js"
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard.js"
 import { CurrentUserId } from "../common/decorators/current-user-id.decorator.js"
 import { GoogleAuthGuard } from "./google-auth.guard.js"
 import type { Request, Response } from "express"
+
 @Controller("auth")
 export class AuthController {
   private readonly auth: AuthService
@@ -37,6 +42,26 @@ export class AuthController {
   @Post("login")
   login(@Body() dto: LoginDto) {
     return this.auth.login(dto)
+  }
+
+  @Throttle({ default: { ttl: 60_000, limit: 3 } })
+  @Post("change-password/request")
+  @UseGuards(JwtAuthGuard)
+  requestChangePassword(
+    @CurrentUserId() userId: string,
+    @Body() dto: ChangePasswordDto
+  ) {
+    return this.auth.requestChangePassword(userId, dto)
+  }
+
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Post("change-password/confirm")
+  @UseGuards(JwtAuthGuard)
+  confirmChangePassword(
+    @CurrentUserId() userId: string,
+    @Body() dto: ConfirmChangePasswordDto
+  ) {
+    return this.auth.confirmChangePassword(userId, dto)
   }
 
   @Post("socket-token")

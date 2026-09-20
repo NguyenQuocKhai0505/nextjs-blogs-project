@@ -114,6 +114,7 @@ model User {
   closeFriendOf           CloseFriend[] @relation("CloseFriendTarget")
   moments       Moment[]
   momentViews   MomentView[]
+  passwordOtps  PasswordOtp[]
 
   @@map("user")
 }
@@ -497,4 +498,21 @@ model MomentView {
   @@unique([momentId, viewerId], map: "moment_views_moment_viewer_unique")
   @@index([viewerId], map: "moment_views_viewer_idx")
   @@map("moment_views")
+}
+
+
+model PasswordOtp {
+  id                  Int       @id @default(autoincrement())
+  userId              String    @map("user_id") @db.VarChar(255)
+  codeHash            String    @map("code_hash") @db.VarChar(255)
+  /** bcrypt hash of the new password waiting for OTP confirm */
+  pendingPasswordHash String    @map("pending_password_hash") @db.Text
+  expiresAt           DateTime  @map("expires_at")
+  usedAt              DateTime? @map("used_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)], map: "password_otps_user_created_idx")
+  @@map("password_otps")
 }
