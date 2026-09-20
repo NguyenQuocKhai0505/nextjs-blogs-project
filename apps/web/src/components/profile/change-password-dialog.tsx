@@ -6,12 +6,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "../ui/dialog"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
-import { KeyRound } from "lucide-react"
 import { toast } from "sonner"
 import { authFetch } from "@/lib/auth-fetch"
 
@@ -26,8 +24,15 @@ function errorMessage(err: unknown, fallback: string) {
   return fallback
 }
 
-export function ChangePasswordDialog() {
-  const [open, setOpen] = useState(false)
+type ChangePasswordDialogProps = {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+export function ChangePasswordDialog({
+  open,
+  onOpenChange,
+}: ChangePasswordDialogProps) {
   const [step, setStep] = useState<Step>("form")
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
@@ -104,7 +109,7 @@ export function ChangePasswordDialog() {
         return
       }
       toast.success("Password changed successfully")
-      setOpen(false)
+      onOpenChange(false)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong")
     } finally {
@@ -113,13 +118,7 @@ export function ChangePasswordDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button type="button" variant="outline" className="shrink-0 rounded-full">
-          <KeyRound className="mr-2 h-4 w-4" />
-          Change password
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
@@ -175,7 +174,7 @@ export function ChangePasswordDialog() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setOpen(false)}
+                onClick={() => onOpenChange(false)}
                 disabled={isPending}
               >
                 Cancel
@@ -220,7 +219,7 @@ export function ChangePasswordDialog() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setOpen(false)}
+                  onClick={() => onOpenChange(false)}
                   disabled={isPending}
                 >
                   Cancel

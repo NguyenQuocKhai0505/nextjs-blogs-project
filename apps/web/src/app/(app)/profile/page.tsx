@@ -6,7 +6,6 @@ import { getAccessTokenFromCookies } from "@/lib/server-token"
 import { authFetchServer } from "@/lib/auth-fetch-server"
 import { apiUrl } from "@/lib/api"
 import { EditProfileDialog } from "@/components/profile/edit-profile-dialog"
-import { ChangePasswordDialog } from "@/components/profile/change-password-dialog"
 import { ProfilePostsSection } from "@/components/profile/profile-posts-section"
 import type { FeedPost } from "@/lib/types"
 
@@ -64,12 +63,9 @@ export default async function ProfilePage() {
                 <p className="text-sm text-muted-foreground">{me.email}</p>
               </div>
             </div>
-            <div className="flex shrink-0 flex-wrap gap-2">
-              <ChangePasswordDialog />
-              <Button asChild className="rounded-full">
-                <Link href="/post/create">Create post</Link>
-              </Button>
-            </div>
+            <Button asChild className="shrink-0 rounded-full">
+              <Link href="/post/create">Create post</Link>
+            </Button>
           </div>
 
           {me.bio ? (
