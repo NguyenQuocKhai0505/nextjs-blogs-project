@@ -1,0 +1,2 @@
+ALTER TYPE "opt_purpose" RENAME TO "otp_purpose";
+ALTER TYPE "otp_purpose" RENAME VALUE 'RESET_PASSWOPRD' TO 'RESET_PASSWORD';

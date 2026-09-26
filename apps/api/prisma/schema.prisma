@@ -74,6 +74,12 @@ enum ReportStatus {
   @@map("report_status")
 }
 
+enum OtpPurpose {
+  CHANGE_PASSWORD 
+  RESET_PASSWORD
+  @@map("otp_purpose")
+}
+
 model User {
   id                   String         @id @db.VarChar(255)
   name                 String         @db.VarChar(255)
@@ -504,9 +510,11 @@ model MomentView {
 model PasswordOtp {
   id                  Int       @id @default(autoincrement())
   userId              String    @map("user_id") @db.VarChar(255)
+  purpose             OtpPurpose @default(CHANGE_PASSWORD)
   codeHash            String    @map("code_hash") @db.VarChar(255)
   /** bcrypt hash of the new password waiting for OTP confirm */
-  pendingPasswordHash String    @map("pending_password_hash") @db.Text
+  pendingPasswordHash String?    @map("pending_password_hash") @db.Text
+  attempts            Int        @default(0)
   expiresAt           DateTime  @map("expires_at")
   usedAt              DateTime? @map("used_at")
   createdAt           DateTime  @default(now()) @map("created_at")

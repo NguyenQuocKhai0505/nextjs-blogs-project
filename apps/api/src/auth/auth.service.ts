@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common"
 import { JwtService } from "@nestjs/jwt"
-import { UserRole } from "@prisma/client"
+import { OtpPurpose, UserRole } from "@prisma/client"
 import { PrismaService } from "../prisma/prisma.service.js"
 import { RegisterDto } from "./dto/register.dto.js"
 import { LoginDto } from "./dto/login.dto.js"
@@ -8,6 +8,9 @@ import bcrypt from "bcryptjs"
 import { randomUUID } from "crypto"
 import { ChangePasswordDto, ConfirmChangePasswordDto } from "./dto/change-password.dto.js"
 import { MailService } from "../mail/email.service.js"
+import { ForgotPasswordDto, ResetPasswordDto } from "./dto/forgot-password.dto.js"
+
+const MAX_OTP_ATTEMPTS = 5
 
 @Injectable()
 export class AuthService {
@@ -80,8 +83,6 @@ export class AuthService {
 
     return this.issueTokens(user.id)
   }
-
-  /** Step 1: validate current password, email OTP, do NOT change password yet. */
   async requestChangePassword(userId: string, dto: ChangePasswordDto) {
     if (dto.newPassword !== dto.confirmPassword) {
       throw new BadRequestException(
@@ -119,13 +120,14 @@ export class AuthService {
     const pendingPasswordHash = await bcrypt.hash(dto.newPassword, 10)
 
     await this.prisma.passwordOtp.updateMany({
-      where: { userId, usedAt: null },
+      where: { userId,purpose: OtpPurpose.CHANGE_PASSWORD, usedAt: null },
       data: { usedAt: new Date() },
     })
 
     await this.prisma.passwordOtp.create({
       data: {
         userId,
+        purpose: OtpPurpose.CHANGE_PASSWORD,
         codeHash,
         pendingPasswordHash,
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
@@ -143,17 +145,17 @@ export class AuthService {
     return { message: "OTP sent to your email" }
   }
 
-  /** Step 2: verify OTP, apply pending password, notify by email. */
   async confirmChangePassword(userId: string, dto: ConfirmChangePasswordDto) {
     const otpRow = await this.prisma.passwordOtp.findFirst({
       where: {
         userId,
+        purpose: OtpPurpose.CHANGE_PASSWORD,
         usedAt: null,
         expiresAt: { gt: new Date() },
       },
       orderBy: { createdAt: "desc" },
     })
-    if (!otpRow) {
+    if (!otpRow?.pendingPasswordHash) {
       throw new BadRequestException("OTP expired or not found. Request a new one.")
     }
 
@@ -193,6 +195,102 @@ export class AuthService {
     }
 
     return { message: "Password changed successfully" }
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto){
+    const email = dto.email.trim().toLowerCase()
+    const response = {
+      message: "If this email is registered, a reset code has been sent to your email"
+    }
+    const user = await this.prisma.user.findUnique({where: {email}})
+    if(!user) return response
+
+    const account = await this.prisma.account.findFirst({where:{userId: user.id, providerId: "credentials"}})
+    if(!account) return response 
+
+    const otp = String(Math.floor(100000 + Math.random()*900000))
+    const codeHash = await bcrypt.hash(otp,10)
+
+    await this.prisma.passwordOtp.updateMany({
+      where:{userId: user.id, purpose: OtpPurpose.RESET_PASSWORD,usedAt: null},
+      data: {usedAt: new Date()}
+    })
+    await this.prisma.passwordOtp.create({
+      data:{
+        userId: user.id ,
+        purpose: OtpPurpose.RESET_PASSWORD,
+        codeHash,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      }
+    })
+
+    await this.mail.sendMail({
+      to: user.email,
+      subject: "Ksocial password reset code",
+      html: `<p>Your verification code is <b>${otp}</b>.</p>
+             <p>This code is valid for 10 minutes.</p>
+             <p>If you did not request this, ignore this email.</p>`,
+    })
+    return response
+  }
+
+  async resetPassword(dto: ResetPasswordDto){
+    if(dto.newPassword !== dto.confirmPassword){
+      throw new BadRequestException("New Password and Confirm Password do not match")
+    }
+    const email =dto. email.trim().toLowerCase()
+    const invalidCode = new BadRequestException("Invalid or expired code")
+
+    const user = await this.prisma.user.findUnique({where: {email}})
+    if(!user) throw  invalidCode
+
+    const otpRow = await this.prisma.passwordOtp.findFirst({where:{userId: user.id, purpose: OtpPurpose.RESET_PASSWORD, usedAt: null, expiresAt: {gt: new Date()}}, orderBy: {createdAt: "desc"}})
+    if(!otpRow) throw invalidCode
+
+    if (otpRow.attempts >= MAX_OTP_ATTEMPTS) {
+      await this.prisma.passwordOtp.update({
+        where: { id: otpRow.id },
+        data: { usedAt: new Date() },
+      })
+      throw new BadRequestException("Too many attempts. Request a new code.")
+    }
+    
+    const otpOk = await bcrypt.compare(dto.otp.trim(), otpRow.codeHash)
+    if (!otpOk) {
+      await this.prisma.passwordOtp.update({
+        where: { id: otpRow.id },
+        data: { attempts: { increment: 1 } },
+      })
+      throw invalidCode
+    }
+
+    const account = await this.prisma.account.findFirst({
+      where:{userId: user.id, providerId: "credentials"}
+    })
+
+    if(!account) throw invalidCode
+    const passwordHash = await bcrypt.hash(dto.newPassword,10)
+
+    await this.prisma.$transaction([
+      this.prisma.account.update({
+        where: {id: account.id},
+        data: {password: passwordHash},
+      }),
+      this.prisma.passwordOtp.update({
+        where: {id: otpRow.id},
+        data: {usedAt: new Date()}
+      })
+    ])
+
+    await this.mail.sendMail({
+      to: user.email,
+      subject: "Your Ksocial password was reset",
+      html: `<p>Your account password was reset successfully.</p>
+             <p>If this wasn't you, contact support immediately.</p>
+             <p>Time: ${new Date().toISOString()}</p>`,
+    })
+    
+    return { message: "Password reset successfully" }
   }
 
   issueSocketToken(userId: string) {

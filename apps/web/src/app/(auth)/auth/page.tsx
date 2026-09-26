@@ -10,13 +10,14 @@ import { setAccessToken } from "@/lib/token"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ForgotPasswordForm } from "@/components/auth/forgot-password-form"
 
 export default function AuthPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const nextUrl = useMemo(() => searchParams.get("next") ?? "/", [searchParams])
 
-  const [mode, setMode] = useState<"login" | "register">("login")
+  const [mode, setMode] = useState<"login" | "register" | "forgot-password">("login")
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -104,120 +105,151 @@ export default function AuthPage() {
           <span className="ks-brand-text text-2xl">Ksocial</span>
         </Link>
         <h1 className="mt-4 text-xl font-bold tracking-tight">
-          {mode === "login" ? "Welcome back" : "Join Ksocial"}
+          {mode === "forgot-password"
+            ? "Reset your password"
+            : mode === "login"
+              ? "Welcome back"
+              : "Join Ksocial"}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {mode === "login"
-            ? "Sign in to connect with your community"
-            : "Create an account to start sharing"}
+          {mode === "forgot-password"
+            ? "We'll email you a 6-digit code"
+            : mode === "login"
+              ? "Sign in to connect with your community"
+              : "Create an account to start sharing"}
         </p>
       </div>
 
       <div className="space-y-4 px-6 py-6">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11 w-full rounded-full"
-          onClick={loginGoogle}
-        >
-          Continue with Google
-        </Button>
+        {mode === "forgot-password" ? (
+          <ForgotPasswordForm
+            onBackToLogin={() => {
+              setMode("login")
+              setError(null)
+            }}
+          />
+        ) : (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full rounded-full"
+              onClick={loginGoogle}
+            >
+              Continue with Google
+            </Button>
 
-        <div className="relative text-center text-xs text-muted-foreground">
-          <span className="absolute inset-x-0 top-1/2 h-px bg-border" aria-hidden />
-          <span className="relative bg-card px-3">or</span>
-        </div>
-
-        <form className="space-y-3" onSubmit={onSubmit}>
-          {mode === "register" ? (
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                type="text"
-                autoComplete="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="rounded-xl"
-                required
-              />
+            <div className="relative text-center text-xs text-muted-foreground">
+              <span className="absolute inset-x-0 top-1/2 h-px bg-border" aria-hidden />
+              <span className="relative bg-card px-3">or</span>
             </div>
-          ) : null}
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="rounded-xl"
-              required
-            />
-          </div>
+            <form className="space-y-3" onSubmit={onSubmit}>
+              {mode === "register" ? (
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    autoComplete="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="rounded-xl"
+                    required
+                  />
+                </div>
+              ) : null}
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="rounded-xl"
-              required
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="rounded-xl"
+                  required
+                />
+              </div>
 
-          {error ? (
-            <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
-            </p>
-          ) : null}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  {mode === "login" ? (
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+                      onClick={() => {
+                        setMode("forgot-password")
+                        setError(null)
+                      }}
+                    >
+                      Forgot password?
+                    </button>
+                  ) : null}
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="rounded-xl"
+                  required
+                />
+              </div>
 
-          <Button className="h-11 w-full rounded-full" type="submit" disabled={isLoading}>
-            {isLoading
-              ? mode === "login"
-                ? "Signing in..."
-                : "Creating..."
-              : mode === "login"
-                ? "Sign in"
-                : "Sign up"}
-          </Button>
+              {error ? (
+                <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {error}
+                </p>
+              ) : null}
 
-          <div className="text-center text-sm text-muted-foreground">
-            {mode === "login" ? (
-              <>
-                Don&apos;t have an account?{" "}
-                <button
-                  type="button"
-                  className="font-medium text-primary underline-offset-4 hover:underline"
-                  onClick={() => {
-                    setMode("register")
-                    setError(null)
-                  }}
-                >
-                  Sign up
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{" "}
-                <button
-                  type="button"
-                  className="font-medium text-primary underline-offset-4 hover:underline"
-                  onClick={() => {
-                    setMode("login")
-                    setError(null)
-                  }}
-                >
-                  Sign in
-                </button>
-              </>
-            )}
-          </div>
-        </form>
+              <Button className="h-11 w-full rounded-full" type="submit" disabled={isLoading}>
+                {isLoading
+                  ? mode === "login"
+                    ? "Signing in..."
+                    : "Creating..."
+                  : mode === "login"
+                    ? "Sign in"
+                    : "Sign up"}
+              </Button>
+
+              <div className="text-center text-sm text-muted-foreground">
+                {mode === "login" ? (
+                  <>
+                    Don&apos;t have an account?{" "}
+                    <button
+                      type="button"
+                      className="font-medium text-primary underline-offset-4 hover:underline"
+                      onClick={() => {
+                        setMode("register")
+                        setError(null)
+                      }}
+                    >
+                      Sign up
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Already have an account?{" "}
+                    <button
+                      type="button"
+                      className="font-medium text-primary underline-offset-4 hover:underline"
+                      onClick={() => {
+                        setMode("login")
+                        setError(null)
+                      }}
+                    >
+                      Sign in
+                    </button>
+                  </>
+                )}
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </div>
   )

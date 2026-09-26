@@ -16,6 +16,7 @@ import {
   ChangePasswordDto,
   ConfirmChangePasswordDto,
 } from "./dto/change-password.dto.js"
+import { ForgotPasswordDto, ResetPasswordDto } from "./dto/forgot-password.dto.js"
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard.js"
 import { CurrentUserId } from "../common/decorators/current-user-id.decorator.js"
 import { GoogleAuthGuard } from "./google-auth.guard.js"
@@ -42,6 +43,18 @@ export class AuthController {
   @Post("login")
   login(@Body() dto: LoginDto) {
     return this.auth.login(dto)
+  }
+
+  @Throttle({ default: { ttl: 60_000, limit: 3 } })
+  @Post("forgot-password")
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.auth.forgotPassword(dto)
+  }
+
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Post("reset-password")
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.auth.resetPassword(dto)
   }
 
   @Throttle({ default: { ttl: 60_000, limit: 3 } })
@@ -99,4 +112,3 @@ export class AuthController {
     return res.redirect(`${redirectUrl}?token=${encodeURIComponent(accessToken)}`)
   }
 }
-
