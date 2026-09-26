@@ -6,6 +6,7 @@ import { apiUrl } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { FireworksCelebration } from "@/components/effects/fireworks-celebration"
 
 type Step = "email" | "reset" | "done"
 
@@ -90,6 +91,13 @@ export function ForgotPasswordForm({ onBackToLogin }: ForgotPasswordFormProps) {
         <Button className="h-11 w-full rounded-full" onClick={onBackToLogin}>
           Back to sign in
         </Button>
+        <FireworksCelebration
+          open
+          title="Password reset!"
+          description="Your new password is ready. Sign in to continue."
+          redirectLabel="sign in"
+          onFinish={onBackToLogin}
+        />
       </div>
     )
   }

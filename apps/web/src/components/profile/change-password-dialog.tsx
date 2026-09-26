@@ -11,7 +11,9 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 import { authFetch } from "@/lib/auth-fetch"
+import { FireworksCelebration } from "@/components/effects/fireworks-celebration"
 
 type Step = "form" | "otp"
 
@@ -39,6 +41,8 @@ export function ChangePasswordDialog({
   const [confirmPassword, setConfirmPassword] = useState("")
   const [otp, setOtp] = useState("")
   const [isPending, setIsPending] = useState(false)
+  const [celebrating, setCelebrating] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     if (!open) return
@@ -108,8 +112,8 @@ export function ChangePasswordDialog({
         toast.error(errorMessage(data, "Failed to change password"))
         return
       }
-      toast.success("Password changed successfully")
       onOpenChange(false)
+      setCelebrating(true)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong")
     } finally {
@@ -119,6 +123,16 @@ export function ChangePasswordDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      <FireworksCelebration
+        open={celebrating}
+        title="Password changed!"
+        description="Your account is now protected with your new password."
+        redirectLabel="home"
+        onFinish={() => {
+          setCelebrating(false)
+          router.push("/")
+        }}
+      />
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>

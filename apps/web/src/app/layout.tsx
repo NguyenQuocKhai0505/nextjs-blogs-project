@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme/theme-provider"
 import { LocaleProvider } from "@/lib/i18n/locale-context"
 import { Toaster } from "sonner"
 import { ReelsOverlayProvider } from "@/components/reels/reels-overlay-provider"
+import { AppLoadingScreen } from "@/components/layout/app-loading-screen"
 
 function ReelsOverlayRoot({ children }: { children: React.ReactNode }) {
   return <ReelsOverlayProvider>{children}</ReelsOverlayProvider>
@@ -34,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${plusJakarta.variable} ${outfit.variable} antialiased`}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<AppLoadingScreen />}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
