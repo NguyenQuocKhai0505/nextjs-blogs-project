@@ -19,8 +19,10 @@ import {
 import { ForgotPasswordDto, ResetPasswordDto } from "./dto/forgot-password.dto.js"
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard.js"
 import { CurrentUserId } from "../common/decorators/current-user-id.decorator.js"
+import { CurrentSessionId } from "../common/decorators/current-session-id.decorator.js"
 import { GoogleAuthGuard } from "./google-auth.guard.js"
 import type { Request, Response } from "express"
+import { getSessionMeta } from "./session-meta.js"
 
 @Controller("auth")
 export class AuthController {
@@ -34,15 +36,15 @@ export class AuthController {
   }
 
   @Post("register")
-  register(@Body() dto: RegisterDto) {
-    return this.auth.register(dto)
+  register(@Body() dto: RegisterDto, @Req() req: Request) {
+    return this.auth.register(dto, getSessionMeta(req))
   }
 
   /** Limit brute-force attempts (keyed by IP when not authenticated). */
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post("login")
-  login(@Body() dto: LoginDto) {
-    return this.auth.login(dto)
+  login(@Body() dto: LoginDto, @Req() req: Request) {
+    return this.auth.login(dto, getSessionMeta(req))
   }
 
   @Throttle({ default: { ttl: 60_000, limit: 3 } })
@@ -72,9 +74,10 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   confirmChangePassword(
     @CurrentUserId() userId: string,
+    @CurrentSessionId() sessionId: string,
     @Body() dto: ConfirmChangePasswordDto
   ) {
-    return this.auth.confirmChangePassword(userId, dto)
+    return this.auth.confirmChangePassword(userId, dto, sessionId)
   }
 
   @Post("socket-token")
@@ -105,7 +108,8 @@ export class AuthController {
         email: string | null
         name: string
         avatarUrl: string | null
-      }
+      },
+      getSessionMeta(req)
     )
     const redirectUrl =
       process.env.WEB_AUTH_CALLBACK_URL ?? "http://localhost:3000/auth/callback"

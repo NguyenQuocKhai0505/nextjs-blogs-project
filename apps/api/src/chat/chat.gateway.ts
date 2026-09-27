@@ -10,7 +10,7 @@ import { JwtService } from "@nestjs/jwt"
 import type { Server, Socket } from "socket.io"
 import { ChatEvents } from "./chat.events.js"
 import { PrismaService } from "../prisma/prisma.service.js"
-
+import { SessionsService } from "../sessions/session.service.js"
 @WebSocketGateway({
   cors: {
     origin: process.env.WEB_URL ?? "http://localhost:3000",
@@ -24,7 +24,8 @@ export class ChatGateway implements OnGatewayDisconnect {
   constructor(
     private readonly jwt: JwtService,
     private readonly events: ChatEvents,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private readonly sessions: SessionsService  
   ) {}
 
   afterInit() {
@@ -42,23 +43,18 @@ export class ChatGateway implements OnGatewayDisconnect {
       })
   }
 
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     const token =
       (client.handshake.auth?.token as string | undefined) ??
       (client.handshake.query?.token as string | undefined)
     if (!token) return client.disconnect(true)
-
-    try {
-      const payload = this.jwt.verify(token, {
-        secret: process.env.JWT_ACCESS_SECRET ?? "dev_access_secret",
-      }) as { sub?: string; typ?: string }
-      if (!payload?.sub || payload.typ !== "access") return client.disconnect(true)
-      client.data.userId = payload.sub
-      client.join(`user:${payload.sub}`)
-      this.touchPresence(payload.sub)
-    } catch {
-      client.disconnect(true)
-    }
+  
+    const auth = await this.sessions.verifyAccessToken(token)
+    if (!auth) return client.disconnect(true)
+  
+    client.data.userId = auth.userId
+    client.join(`user:${auth.userId}`)
+    this.touchPresence(auth.userId)
   }
 
   handleDisconnect(client: Socket) {

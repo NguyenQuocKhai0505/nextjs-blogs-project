@@ -6,7 +6,7 @@ import {
 } from "@nestjs/websockets";
 import { JwtService } from "@nestjs/jwt";
 import { Server, Socket } from "socket.io";
-
+import { SessionsService } from "../sessions/session.service.js"
 type JwtPayload = { sub?: string; userId?: string; id?: string; typ?: string };
 
 @WebSocketGateway({
@@ -19,7 +19,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
   private online = new Map<string, Set<string>>(); // userId -> socketIds
 
-  constructor(private readonly jwt: JwtService) {}
+  constructor(private readonly jwt: JwtService, private readonly sessions: SessionsService) {}
   
     private extractToken(socket: Socket): string | null {
       const t1 = (socket.handshake.auth as any)?.token;
@@ -31,35 +31,22 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       return null;
     }
   
-  private getUserIdFromToken(token: string): string | null {
-    // Match how `JwtAuthGuard` + `ChatGateway` verify access tokens in this repo.
-    try {
-      const payload = this.jwt.verify<JwtPayload>(token, {
-        secret: process.env.JWT_ACCESS_SECRET ?? "dev_access_secret",
-      });
-      const uid = payload.sub || payload.userId || payload.id || null;
-      if (!uid) return null;
-      if (payload.typ && payload.typ !== "access") return null;
-      return uid;
-    } catch {
-      return null;
-    }
-  }
+
   
   async handleConnection(socket: Socket) {
     const token = this.extractToken(socket);
     if (!token) return socket.disconnect(true);
 
-    const userId = this.getUserIdFromToken(token);
-    if (!userId) return socket.disconnect(true);
+    const auth = await this.sessions.verifyAccessToken(token);
+    if (!auth) return socket.disconnect(true);
 
-    (socket.data as any).userId = userId;
+    const userId = auth.userId;
+    (socket.data as any).userId = auth.userId;
+    socket.join(`user:${auth.userId}`);
 
-    socket.join(`user:${userId}`);
-
-    const set = this.online.get(userId) ?? new Set<string>();
+    const set = this.online.get(auth.userId) ?? new Set<string>();
     set.add(socket.id);
-    this.online.set(userId, set);
+    this.online.set(auth.userId, set);
   }
 
   async handleDisconnect(socket: Socket) {

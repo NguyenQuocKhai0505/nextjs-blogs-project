@@ -21,7 +21,7 @@ import { PrismaModule } from "../prisma/prisma.module.js"
 import { UploadModule } from "../upload/upload.module.js"
 import { UsersModule } from "../users/users.module.js"
 import { HealthController } from "./health.controller.js"
-
+import { SessionsModule } from "../sessions/session.module.js"
 function throttlerRootOptions() {
   const ttl = Number(process.env.THROTTLE_TTL_MS ?? 60_000)
   const limit = Number(process.env.THROTTLE_LIMIT ?? 150)
@@ -64,6 +64,7 @@ function throttlerRootOptions() {
     ReportsModule,
     MomentsModule,
     AdminModule,
+    SessionsModule,
   ],
   controllers: [HealthController],
   providers: [

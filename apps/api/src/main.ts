@@ -1,5 +1,6 @@
 import "reflect-metadata"
 import { NestFactory } from "@nestjs/core"
+import type { NestExpressApplication } from "@nestjs/platform-express"
 import { AppModule } from "./modules/app.module.js"
 import { ValidationPipe } from "@nestjs/common"
 import { buildCorsOptions } from "./common/cors.js"
@@ -15,9 +16,10 @@ function applyLocalTlsBypass() {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: buildCorsOptions(),
   })
+  app.set("trust proxy", 1)
 
   applyLocalTlsBypass()
 
@@ -41,4 +43,3 @@ bootstrap().catch(err => {
   console.error("[api] failed to start", err)
   process.exit(1)
 })
-

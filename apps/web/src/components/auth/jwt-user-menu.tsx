@@ -13,8 +13,17 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { ChangePasswordDialog } from "@/components/profile/change-password-dialog"
+import { DevicesDialog } from "@/components/profile/devices-dialog"
+import { authFetch } from "@/lib/auth-fetch"
 import { clearAccessToken } from "@/lib/token"
-import { KeyRound, LogOut, Settings, User as UserIcon, Flag } from "lucide-react"
+import {
+  Flag,
+  KeyRound,
+  LogOut,
+  MonitorSmartphone,
+  Settings,
+  User as UserIcon,
+} from "lucide-react"
 
 type JwtUserMenuProps = {
   avatarUrl?: string | null
@@ -29,6 +38,23 @@ export default function JwtUserMenu({
 }: JwtUserMenuProps) {
   const router = useRouter()
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
+  const [devicesOpen, setDevicesOpen] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
+
+  const handleLogout = async () => {
+    if (loggingOut) return
+    setLoggingOut(true)
+    try {
+      await authFetch("/auth/logout", { method: "POST" })
+    } catch {
+      // Still clear the local token so the user is signed out on this device.
+    } finally {
+      clearAccessToken()
+      router.refresh()
+      router.push("/auth")
+    }
+  }
+
   const initials =
     displayName?.trim()?.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase() ??
     "U"
@@ -67,6 +93,17 @@ export default function JwtUserMenu({
             <span>Change password</span>
           </DropdownMenuItem>
 
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onSelect={(e) => {
+              e.preventDefault()
+              setDevicesOpen(true)
+            }}
+          >
+            <MonitorSmartphone className="h-4 w-4" />
+            <span>Devices</span>
+          </DropdownMenuItem>
+
           {role === "ADMIN" ? (
             <>
               <DropdownMenuItem
@@ -91,11 +128,8 @@ export default function JwtUserMenu({
           <DropdownMenuItem
             variant="destructive"
             className="cursor-pointer"
-            onClick={() => {
-              clearAccessToken()
-              router.refresh()
-              router.push("/auth")
-            }}
+            disabled={loggingOut}
+            onClick={() => void handleLogout()}
           >
             <LogOut className="h-4 w-4" />
             <span>Log out</span>
@@ -107,6 +141,7 @@ export default function JwtUserMenu({
         open={changePasswordOpen}
         onOpenChange={setChangePasswordOpen}
       />
+      <DevicesDialog open={devicesOpen} onOpenChange={setDevicesOpen} />
     </>
   )
 }

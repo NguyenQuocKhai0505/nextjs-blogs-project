@@ -9,7 +9,10 @@ import { randomUUID } from "crypto"
 import { ChangePasswordDto, ConfirmChangePasswordDto } from "./dto/change-password.dto.js"
 import { MailService } from "../mail/email.service.js"
 import { ForgotPasswordDto, ResetPasswordDto } from "./dto/forgot-password.dto.js"
+import type { SessionMeta } from "./session-meta.js"
+import { SessionsService } from "../sessions/session.service.js"
 
+const ACCESS_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const MAX_OTP_ATTEMPTS = 5
 
 @Injectable()
@@ -17,10 +20,11 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
-    private readonly mail: MailService
+    private readonly mail: MailService,
+    private readonly sessions: SessionsService
   ) {}
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, meta: SessionMeta = {}) {
     const email = dto.email.trim().toLowerCase()
 
     const existing = await this.prisma.user.findUnique({ where: { email } })
@@ -47,10 +51,10 @@ export class AuthService {
       },
     })
 
-    return this.issueTokens(userId)
+    return this.issueTokens(userId, meta)
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, meta: SessionMeta = {}) {
     const email = dto.email.trim().toLowerCase()
 
     const user = await this.prisma.user.findUnique({
@@ -81,7 +85,7 @@ export class AuthService {
       throw new UnauthorizedException("Incorrect password")
     }
 
-    return this.issueTokens(user.id)
+    return this.issueTokens(user.id, meta)
   }
   async requestChangePassword(userId: string, dto: ChangePasswordDto) {
     if (dto.newPassword !== dto.confirmPassword) {
@@ -145,7 +149,11 @@ export class AuthService {
     return { message: "OTP sent to your email" }
   }
 
-  async confirmChangePassword(userId: string, dto: ConfirmChangePasswordDto) {
+  async confirmChangePassword(
+    userId: string,
+    dto: ConfirmChangePasswordDto,
+    currentSessionId: string
+  ) {
     const otpRow = await this.prisma.passwordOtp.findFirst({
       where: {
         userId,
@@ -182,6 +190,8 @@ export class AuthService {
       where: { id: otpRow.id },
       data: { usedAt: new Date() },
     })
+
+    await this.sessions.revokeOthers(userId, currentSessionId)
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } })
     if (user?.email) {
@@ -282,6 +292,8 @@ export class AuthService {
       })
     ])
 
+    await this.sessions.revokeAll(user.id)
+
     await this.mail.sendMail({
       to: user.email,
       subject: "Your Ksocial password was reset",
@@ -305,9 +317,21 @@ export class AuthService {
     }
   }
 
-  private issueTokens(userId: string) {
+  private async issueTokens(userId: string, meta: SessionMeta = {}) {
+    const sessionId = randomUUID()
+
+    await this.prisma.session.create({
+      data: {
+        id: sessionId,
+        userId,
+        expiresAt: new Date(Date.now() + ACCESS_TOKEN_TTL_MS),
+        ipAddress: (meta.ipAddress ?? "unknown").slice(0, 255),
+        userAgent: (meta.userAgent ?? "unknown").slice(0, 255),
+      },
+    })
+
     const accessToken = this.jwt.sign(
-      { sub: userId, typ: "access" },
+      { sub: userId, sid: sessionId, typ: "access" },
       {
         secret: process.env.JWT_ACCESS_SECRET ?? "dev_access_secret",
         expiresIn: "7d",
@@ -315,13 +339,17 @@ export class AuthService {
     )
     return { accessToken }
   }
-  async loginWithOAuth(payload: {
-    provider: "google" | "facebook"
-    providerAccountId: string
-    email: string | null
-    name: string
-    avatarUrl: string | null
-  }) {
+
+  async loginWithOAuth(
+    payload: {
+      provider: "google" | "facebook"
+      providerAccountId: string
+      email: string | null
+      name: string
+      avatarUrl: string | null
+    },
+    meta: SessionMeta = {}
+  ) {
     // 1) Nếu đã có account OAuth => login luôn
     const existingAccount = await this.prisma.account.findFirst({
       where: {
@@ -332,7 +360,7 @@ export class AuthService {
     })
   
     if (existingAccount?.user) {
-      return this.issueTokens(existingAccount.user.id)
+      return this.issueTokens(existingAccount.user.id, meta)
     }
   
     // 2) Nếu chưa có account => tìm user theo email (nếu có)
@@ -367,8 +395,7 @@ export class AuthService {
       },
     })
   
-    return this.issueTokens(user.id)
+    return this.issueTokens(user.id, meta)
   }
 
 }
-

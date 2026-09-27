@@ -139,19 +139,21 @@ model Follow {
 }
 
 model Session {
-  id        String   @id @db.VarChar(255)
-  userId    String   @map("user_id") @db.VarChar(255)
-  token     String   @db.VarChar(255)
-  expiresAt DateTime @map("expires_at")
-  ipAddress String   @map("ip_address") @db.VarChar(255)
-  userAgent String   @map("user_agent") @db.VarChar(255)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @map("updated_at")
-  user      User     @relation(fields: [userId], references: [id])
+  id           String    @id @db.VarChar(255)
+  userId       String    @map("user_id") @db.VarChar(255)
+  token        String?   @db.VarChar(255)
+  expiresAt    DateTime  @map("expires_at")
+  ipAddress    String    @map("ip_address") @db.VarChar(255)
+  userAgent    String    @map("user_agent") @db.VarChar(255)
+  lastActiveAt DateTime  @default(now()) @map("last_active_at")
+  revokedAt    DateTime? @map("revoked_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @map("updated_at")
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, revokedAt], map: "session_user_revoked_idx")
   @@map("session")
 }
-
 model Account {
   id         String   @id @db.VarChar(255)
   userId     String   @map("user_id") @db.VarChar(255)
