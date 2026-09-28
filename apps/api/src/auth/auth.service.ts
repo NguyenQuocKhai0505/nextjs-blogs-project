@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common"
+import { BadRequestException, Injectable, Logger, UnauthorizedException } from "@nestjs/common"
 import { JwtService } from "@nestjs/jwt"
 import { OtpPurpose, UserRole } from "@prisma/client"
 import { PrismaService } from "../prisma/prisma.service.js"
@@ -11,12 +11,23 @@ import { MailService } from "../mail/email.service.js"
 import { ForgotPasswordDto, ResetPasswordDto } from "./dto/forgot-password.dto.js"
 import type { SessionMeta } from "./session-meta.js"
 import { SessionsService } from "../sessions/session.service.js"
+import { describeUserAgent } from "./user-agent.js"
 
 const ACCESS_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const MAX_OTP_ATTEMPTS = 5
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+}
+
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name)
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
@@ -330,6 +341,10 @@ export class AuthService {
       },
     })
 
+    void this.notifyNewLogin(userId, sessionId, meta).catch((err) =>
+      this.logger.warn(`New-login alert failed for user ${userId}: ${String(err)}`)
+    )
+
     const accessToken = this.jwt.sign(
       { sub: userId, sid: sessionId, typ: "access" },
       {
@@ -338,6 +353,46 @@ export class AuthService {
       }
     )
     return { accessToken }
+  }
+
+  private async notifyNewLogin(userId: string, sessionId: string, meta: SessionMeta) {
+    const device = describeUserAgent(meta.userAgent)
+
+    const previous = await this.prisma.session.findMany({
+      where: { userId, id: { not: sessionId } },
+      select: { userAgent: true },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    })
+    if (previous.length === 0) return
+
+    const knownDevice = previous.some((s) => describeUserAgent(s.userAgent) === device)
+    if (knownDevice) return
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true },
+    })
+    if (!user?.email) return
+
+    const webUrl = process.env.WEB_URL ?? "http://localhost:3000"
+    const ip = meta.ipAddress ?? "unknown"
+
+    await this.mail.sendMail({
+      to: user.email,
+      subject: "New sign-in to your Ksocial account",
+      html: `<p>Hi ${escapeHtml(user.name ?? "there")},</p>
+             <p>Your Ksocial account was just signed in from a new device:</p>
+             <ul>
+               <li><b>Device:</b> ${escapeHtml(device)}</li>
+               <li><b>IP address:</b> ${escapeHtml(ip)}</li>
+               <li><b>Time:</b> ${new Date().toUTCString()}</li>
+             </ul>
+             <p>If this was you, you can ignore this email.</p>
+             <p>If you don't recognize it, <a href="${webUrl}">open Ksocial</a>,
+                go to your avatar menu → <b>Devices</b> to sign out that device,
+                then change your password.</p>`,
+    })
   }
 
   async loginWithOAuth(
