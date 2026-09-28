@@ -1,19 +1,29 @@
+import { EventEmitter } from "node:events"
 import { Injectable } from "@nestjs/common"
 import { JwtService } from "@nestjs/jwt"
+import type { Prisma } from "@prisma/client"
 import { PrismaService } from "../prisma/prisma.service.js"
 
 type AccessTokenPayload = { sub?: string; sid?: string; typ?: string }
 
 export type AuthenticatedSession = { userId: string; sessionId: string }
 
+type RevokedListener = (sessionIds: string[]) => void
+
 const TOUCH_INTERVAL_MS = 5 * 60 * 1000
 
 @Injectable()
 export class SessionsService {
+  private readonly revokedEvents = new EventEmitter()
+
   constructor(
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService
   ) {}
+
+  onSessionsRevoked(listener: RevokedListener) {
+    this.revokedEvents.on("revoked", listener)
+  }
 
   async verifyAccessToken(token: string): Promise<AuthenticatedSession | null> {
     let payload: AccessTokenPayload
@@ -61,26 +71,32 @@ export class SessionsService {
   }
 
   async revoke(userId: string, sessionId: string) {
-    const result = await this.prisma.session.updateMany({
-      where: { id: sessionId, userId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    })
-    return result.count > 0
+    const count = await this.revokeWhere({ id: sessionId, userId })
+    return count > 0
   }
 
   async revokeOthers(userId: string, keepSessionId: string) {
-    const result = await this.prisma.session.updateMany({
-      where: { userId, revokedAt: null, id: { not: keepSessionId } },
-      data: { revokedAt: new Date() },
-    })
-    return result.count
+    return this.revokeWhere({ userId, id: { not: keepSessionId } })
   }
 
   async revokeAll(userId: string) {
-    const result = await this.prisma.session.updateMany({
-      where: { userId, revokedAt: null },
+    return this.revokeWhere({ userId })
+  }
+
+  private async revokeWhere(where: Prisma.SessionWhereInput) {
+    const rows = await this.prisma.session.findMany({
+      where: { ...where, revokedAt: null },
+      select: { id: true },
+    })
+    if (rows.length === 0) return 0
+
+    const ids = rows.map((row) => row.id)
+    await this.prisma.session.updateMany({
+      where: { id: { in: ids }, revokedAt: null },
       data: { revokedAt: new Date() },
     })
-    return result.count
+
+    this.revokedEvents.emit("revoked", ids)
+    return ids.length
   }
 }

@@ -6,7 +6,6 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from "@nestjs/websockets"
-import { JwtService } from "@nestjs/jwt"
 import type { Server, Socket } from "socket.io"
 import { ChatEvents } from "./chat.events.js"
 import { PrismaService } from "../prisma/prisma.service.js"
@@ -22,14 +21,18 @@ export class ChatGateway implements OnGatewayDisconnect {
   server!: Server
 
   constructor(
-    private readonly jwt: JwtService,
     private readonly events: ChatEvents,
     private readonly prisma: PrismaService,
-    private readonly sessions: SessionsService  
+    private readonly sessions: SessionsService
   ) {}
 
   afterInit() {
     this.events.setServer(this.server)
+    this.sessions.onSessionsRevoked((sessionIds) => {
+      for (const id of sessionIds) {
+        this.server.in(`session:${id}`).disconnectSockets(true)
+      }
+    })
   }
 
   private touchPresence(userId: string) {
@@ -48,12 +51,14 @@ export class ChatGateway implements OnGatewayDisconnect {
       (client.handshake.auth?.token as string | undefined) ??
       (client.handshake.query?.token as string | undefined)
     if (!token) return client.disconnect(true)
-  
+
     const auth = await this.sessions.verifyAccessToken(token)
     if (!auth) return client.disconnect(true)
-  
+
     client.data.userId = auth.userId
+    client.data.sessionId = auth.sessionId
     client.join(`user:${auth.userId}`)
+    client.join(`session:${auth.sessionId}`)
     this.touchPresence(auth.userId)
   }
 

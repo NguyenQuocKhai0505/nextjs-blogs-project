@@ -15,9 +15,13 @@ export class OptionalJwtUserMiddleware implements NestMiddleware {
     const header = req.headers.authorization
     const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length).trim() : null
     if (token) {
-      const auth = await this.sessions.verifyAccessToken(token)
-      if (auth) {
-        ;(req as Request & { userId?: string }).userId = auth.userId
+      try {
+        const auth = await this.sessions.verifyAccessToken(token)
+        if (auth) {
+          ;(req as Request & { userId?: string }).userId = auth.userId
+        }
+      } catch {
+        // Treat lookup failures as anonymous; route guards still enforce auth.
       }
     }
     next()
