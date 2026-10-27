@@ -5,16 +5,19 @@ import { PrismaService } from "../prisma/prisma.service.js"
 import { RegisterDto } from "./dto/register.dto.js"
 import { LoginDto } from "./dto/login.dto.js"
 import bcrypt from "bcryptjs"
-import { randomUUID } from "crypto"
+import { randomInt, randomUUID } from "crypto"
 import { ChangePasswordDto, ConfirmChangePasswordDto } from "./dto/change-password.dto.js"
 import { MailService } from "../mail/email.service.js"
 import { ForgotPasswordDto, ResetPasswordDto } from "./dto/forgot-password.dto.js"
 import type { SessionMeta } from "./session-meta.js"
 import { SessionsService } from "../sessions/session.service.js"
 import { describeUserAgent } from "./user-agent.js"
+import { LoginTwoFactorDto } from "./dto/login-two-factor.dto.js"
 
 const ACCESS_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const MAX_OTP_ATTEMPTS = 5
+const OTP_TTL_MS = 10 * 60 * 1000
+const TWO_FACTOR_CHALLENGE_TTL = "10m"
 
 function escapeHtml(value: string) {
   return value
@@ -22,6 +25,12 @@ function escapeHtml(value: string) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
+}
+
+function maskEmail(email: string) {
+  const [name, domain] = email.split("@")
+  if (!domain) return email
+  return `${name.slice(0, 1)}***@${domain}`
 }
 
 @Injectable()
@@ -94,6 +103,10 @@ export class AuthService {
     const ok = await bcrypt.compare(dto.password, account.password)
     if (!ok) {
       throw new UnauthorizedException("Incorrect password")
+    }
+
+    if (user.twoFactorEnabled) {
+      return this.startLoginChallenge(user)
     }
 
     return this.issueTokens(user.id, meta)
@@ -355,6 +368,104 @@ export class AuthService {
     return { accessToken }
   }
 
+  async verifyLoginTwoFactor(dto: LoginTwoFactorDto, meta: SessionMeta = {}) {
+    const expired = new UnauthorizedException("Sign-in expired. Please log in again.")
+
+    let payload: { sub?: string; typ?: string }
+    try {
+      payload = this.jwt.verify<{ sub?: string; typ?: string }>(dto.challengeToken, {
+        secret: process.env.JWT_ACCESS_SECRET ?? "dev_access_secret",
+      })
+    } catch {
+      throw expired
+    }
+    if (!payload.sub || payload.typ !== "2fa") throw expired
+
+    await this.verifyOtp(payload.sub, OtpPurpose.LOGIN_2FA, dto.otp)
+    return this.issueTokens(payload.sub, meta)
+  }
+
+  private async startLoginChallenge(user: { id: string; email: string }) {
+    await this.sendOtp(user, OtpPurpose.LOGIN_2FA, "Your Ksocial sign-in code")
+
+    const challengeToken = this.jwt.sign(
+      { sub: user.id, typ: "2fa" },
+      {
+        secret: process.env.JWT_ACCESS_SECRET ?? "dev_access_secret",
+        expiresIn: TWO_FACTOR_CHALLENGE_TTL,
+      }
+    )
+
+    return {
+      requiresTwoFactor: true as const,
+      challengeToken,
+      email: maskEmail(user.email),
+    }
+  }
+
+  private async sendOtp(
+    user: { id: string; email: string },
+    purpose: OtpPurpose,
+    subject: string
+  ) {
+    const otp = String(randomInt(100000, 1000000))
+    const codeHash = await bcrypt.hash(otp, 10)
+
+    await this.prisma.passwordOtp.updateMany({
+      where: { userId: user.id, purpose, usedAt: null },
+      data: { usedAt: new Date() },
+    })
+    await this.prisma.passwordOtp.create({
+      data: {
+        userId: user.id,
+        purpose,
+        codeHash,
+        expiresAt: new Date(Date.now() + OTP_TTL_MS),
+      },
+    })
+
+    await this.mail.sendMail({
+      to: user.email,
+      subject,
+      html: `<p>Your verification code is <b>${otp}</b>.</p>
+             <p>This code is valid for 10 minutes.</p>
+             <p>If you did not request this, change your password immediately.</p>`,
+    })
+  }
+
+  private async verifyOtp(userId: string, purpose: OtpPurpose, otp: string) {
+    const invalid = new BadRequestException("Invalid or expired code")
+
+    const row = await this.prisma.passwordOtp.findFirst({
+      where: { userId, purpose, usedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: "desc" },
+    })
+    if (!row) throw invalid
+
+    if (row.attempts >= MAX_OTP_ATTEMPTS) {
+      await this.prisma.passwordOtp.update({
+        where: { id: row.id },
+        data: { usedAt: new Date() },
+      })
+      throw new BadRequestException("Too many attempts. Request a new code.")
+    }
+
+    const ok = await bcrypt.compare(otp.trim(), row.codeHash)
+    if (!ok) {
+      await this.prisma.passwordOtp.update({
+        where: { id: row.id },
+        data: { attempts: { increment: 1 } },
+      })
+      throw invalid
+    }
+
+    const consumed = await this.prisma.passwordOtp.updateMany({
+      where: { id: row.id, usedAt: null },
+      data: { usedAt: new Date() },
+    })
+    if (consumed.count === 0) throw invalid
+  }
+
   private async notifyNewLogin(userId: string, sessionId: string, meta: SessionMeta) {
     const device = describeUserAgent(meta.userAgent)
 
@@ -413,16 +524,16 @@ export class AuthService {
       },
       include: { user: true },
     })
-  
+
     if (existingAccount?.user) {
       return this.issueTokens(existingAccount.user.id, meta)
     }
-  
+
     // 2) Nếu chưa có account => tìm user theo email (nếu có)
     let user = payload.email
       ? await this.prisma.user.findUnique({ where: { email: payload.email } })
       : null
-  
+
     // 3) Nếu chưa có user => tạo mới
     if (!user) {
       user = await this.prisma.user.create({
@@ -438,7 +549,7 @@ export class AuthService {
         },
       })
     }
-  
+
     // 4) Tạo account OAuth (password = null)
     await this.prisma.account.create({
       data: {
@@ -449,7 +560,7 @@ export class AuthService {
         password: "",
       },
     })
-  
+
     return this.issueTokens(user.id, meta)
   }
 

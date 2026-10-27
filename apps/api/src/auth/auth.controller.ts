@@ -12,6 +12,7 @@ import { Throttle } from "@nestjs/throttler"
 import { AuthService } from "./auth.service.js"
 import { RegisterDto } from "./dto/register.dto.js"
 import { LoginDto } from "./dto/login.dto.js"
+import { LoginTwoFactorDto } from "./dto/login-two-factor.dto.js"
 import {
   ChangePasswordDto,
   ConfirmChangePasswordDto,
@@ -45,6 +46,12 @@ export class AuthController {
   @Post("login")
   login(@Body() dto: LoginDto, @Req() req: Request) {
     return this.auth.login(dto, getSessionMeta(req))
+  }
+
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Post("login/2fa")
+  loginTwoFactor(@Body() dto: LoginTwoFactorDto, @Req() req: Request) {
+    return this.auth.verifyLoginTwoFactor(dto, getSessionMeta(req))
   }
 
   @Throttle({ default: { ttl: 60_000, limit: 3 } })

@@ -77,6 +77,9 @@ enum ReportStatus {
 enum OtpPurpose {
   CHANGE_PASSWORD 
   RESET_PASSWORD
+  LOGIN_2FA
+  ENABLE_2FA 
+  DISABLE_2FA
   @@map("otp_purpose")
 }
 
@@ -88,6 +91,7 @@ model User {
   /** Short public bio / tiểu sử (optional). */
   bio                  String?        @db.Text @map("bio")
   emailVerified        Boolean        @default(false) @map("email_verified")
+  twoFactorEnabled     Boolean        @default(false) @map("two_factor_enable")
   role                 UserRole       @default(USER) @map("role")
   createdAt            DateTime       @default(now()) @map("created_at")
   updatedAt            DateTime       @default(now()) @map("updated_at")
