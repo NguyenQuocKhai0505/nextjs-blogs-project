@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { ChangePasswordDialog } from "@/components/profile/change-password-dialog"
 import { DevicesDialog } from "@/components/profile/devices-dialog"
+import { TwoFactorDialog } from "@/components/profile/two-factor-dialog"
 import { authFetch } from "@/lib/auth-fetch"
 import { clearAccessToken } from "@/lib/token"
 import {
@@ -22,6 +23,7 @@ import {
   LogOut,
   MonitorSmartphone,
   Settings,
+  ShieldCheck,
   User as UserIcon,
 } from "lucide-react"
 
@@ -39,6 +41,7 @@ export default function JwtUserMenu({
   const router = useRouter()
   const [changePasswordOpen, setChangePasswordOpen] = useState(false)
   const [devicesOpen, setDevicesOpen] = useState(false)
+  const [twoFactorOpen, setTwoFactorOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
 
   const handleLogout = async () => {
@@ -104,6 +107,17 @@ export default function JwtUserMenu({
             <span>Devices</span>
           </DropdownMenuItem>
 
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onSelect={(e) => {
+              e.preventDefault()
+              setTwoFactorOpen(true)
+            }}
+          >
+            <ShieldCheck className="h-4 w-4" />
+            <span>Two-factor auth</span>
+          </DropdownMenuItem>
+
           {role === "ADMIN" ? (
             <>
               <DropdownMenuItem
@@ -142,6 +156,7 @@ export default function JwtUserMenu({
         onOpenChange={setChangePasswordOpen}
       />
       <DevicesDialog open={devicesOpen} onOpenChange={setDevicesOpen} />
+      <TwoFactorDialog open={twoFactorOpen} onOpenChange={setTwoFactorOpen} />
     </>
   )
 }
