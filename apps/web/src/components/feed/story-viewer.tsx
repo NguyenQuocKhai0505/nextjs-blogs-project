@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import Image from "next/image"
-import { ChevronLeft, ChevronRight, Eye, Plus, Trash2, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, Eye, Loader2, Plus, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { authFetch } from "@/lib/auth-fetch"
@@ -11,12 +11,6 @@ import type { StoryGroup, StoryItem } from "@/lib/types/stories"
 import { useLocale } from "@/lib/i18n/locale-context"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 
 const IMAGE_DURATION_MS = 5000
 
@@ -46,7 +40,9 @@ export function StoryViewer({
     { user: { id: string; name: string; avatarUrl: string | null }; viewedAt: string }[]
   >([])
   const [viewerCount, setViewerCount] = useState(0)
+  const [viewersLoading, setViewersLoading] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const progressRef = useRef(0)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const group = groups[groupIndex]
@@ -109,6 +105,22 @@ export function StoryViewer({
   }, [story, markViewed])
 
   useEffect(() => {
+    progressRef.current = progress
+  }, [progress])
+
+  useEffect(() => {
+    setViewersOpen(false)
+    progressRef.current = 0
+  }, [groupIndex, storyIndex])
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    if (viewersOpen) video.pause()
+    else void video.play().catch(() => {})
+  }, [viewersOpen])
+
+  useEffect(() => {
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
     document.body.dataset.ksStoryOpen = "true"
@@ -123,11 +135,12 @@ export function StoryViewer({
     if (!story) return
 
     if (story.mediaType === "VIDEO") {
-      setProgress(0)
+      if (!viewersOpen) setProgress(0)
       return
     }
+    if (viewersOpen) return
 
-    const started = Date.now()
+    const started = Date.now() - (progressRef.current / 100) * IMAGE_DURATION_MS
     timerRef.current = setInterval(() => {
       const elapsed = Date.now() - started
       const pct = Math.min(100, (elapsed / IMAGE_DURATION_MS) * 100)
@@ -139,10 +152,14 @@ export function StoryViewer({
     }, 50)
 
     return clearTimer
-  }, [story, groupIndex, storyIndex, goNext, clearTimer])
+  }, [story, groupIndex, storyIndex, goNext, clearTimer, viewersOpen])
 
   async function loadViewers() {
     if (!story) return
+    setViewers([])
+    setViewerCount(0)
+    setViewersLoading(true)
+    setViewersOpen(true)
     try {
       const res = await authFetch(`/stories/${story.id}/views`)
       if (!res.ok) throw new Error()
@@ -152,9 +169,11 @@ export function StoryViewer({
       }
       setViewerCount(data.count)
       setViewers(data.viewers ?? [])
-      setViewersOpen(true)
     } catch {
+      setViewersOpen(false)
       toast.error(t("stories.viewersFail"))
+    } finally {
+      setViewersLoading(false)
     }
   }
 
@@ -178,6 +197,10 @@ export function StoryViewer({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (viewersOpen) {
+        if (e.key === "Escape") setViewersOpen(false)
+        return
+      }
       if (e.key === "Escape") handleClose()
       if (e.key === "ArrowRight") goNext()
       if (e.key === "ArrowLeft") goPrev()
@@ -189,7 +212,7 @@ export function StoryViewer({
       window.removeEventListener("keydown", onKey)
       document.body.style.overflow = prev
     }
-  }, [handleClose, goNext, goPrev])
+  }, [handleClose, goNext, goPrev, viewersOpen])
 
   if (!group || !story) return null
 
@@ -388,40 +411,69 @@ export function StoryViewer({
               <ChevronRight className="h-5 w-5" />
             </button>
           ) : null}
+
+          {viewersOpen ? (
+            <>
+              <button
+                type="button"
+                className="absolute inset-0 z-50 bg-black/40"
+                onClick={() => setViewersOpen(false)}
+                aria-label={t("stories.close")}
+              />
+              <div
+                className="absolute inset-x-0 bottom-0 z-[60] flex max-h-[60%] flex-col rounded-t-2xl bg-background text-foreground shadow-2xl animate-in slide-in-from-bottom duration-200"
+                role="dialog"
+                aria-label={t("stories.viewersTitle")}
+              >
+                <div className="flex items-center justify-between border-b px-4 py-3">
+                  <p className="flex items-center gap-2 text-sm font-semibold">
+                    <Eye className="h-4 w-4" />
+                    {t("stories.viewersTitle")} ({viewerCount})
+                  </p>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 rounded-full"
+                    onClick={() => setViewersOpen(false)}
+                    aria-label={t("stories.close")}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="min-h-24 flex-1 space-y-3 overflow-y-auto px-4 py-3">
+                  {viewersLoading ? (
+                    <div className="flex justify-center py-6 text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    </div>
+                  ) : viewers.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                      {t("stories.noViewers")}
+                    </p>
+                  ) : (
+                    viewers.map((v) => (
+                      <div key={v.user.id} className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={v.user.avatarUrl ?? undefined} />
+                          <AvatarFallback className="text-xs">
+                            {v.user.name.slice(0, 1).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{v.user.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(v.viewedAt).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
-
-      <Dialog open={viewersOpen} onOpenChange={setViewersOpen}>
-        <DialogContent className="max-w-sm rounded-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {t("stories.viewersTitle")} ({viewerCount})
-            </DialogTitle>
-          </DialogHeader>
-          <div className="max-h-64 space-y-2 overflow-y-auto">
-            {viewers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("stories.noViewers")}</p>
-            ) : (
-              viewers.map((v) => (
-                <div key={v.user.id} className="flex items-center gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={v.user.avatarUrl ?? undefined} />
-                    <AvatarFallback className="text-xs">
-                      {v.user.name.slice(0, 1)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{v.user.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(v.viewedAt).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </>,
     document.body
   )
