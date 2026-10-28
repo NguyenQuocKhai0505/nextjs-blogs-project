@@ -12,7 +12,7 @@ import { Throttle } from "@nestjs/throttler"
 import { AuthService } from "./auth.service.js"
 import { RegisterDto } from "./dto/register.dto.js"
 import { LoginDto } from "./dto/login.dto.js"
-import { LoginTwoFactorDto } from "./dto/login-two-factor.dto.js"
+import { LoginTwoFactorDto, TwoFactorCodeDto } from "./dto/login-two-factor.dto.js"
 import {
   ChangePasswordDto,
   ConfirmChangePasswordDto,
@@ -87,6 +87,34 @@ export class AuthController {
     return this.auth.confirmChangePassword(userId, dto, sessionId)
   }
 
+  @Throttle({ default: { ttl: 60_000, limit: 3 } })
+  @Post("2fa/enable/request")
+  @UseGuards(JwtAuthGuard)
+  requestEnableTwoFactor(@CurrentUserId() userId: string) {
+    return this.auth.requestTwoFactorToggle(userId, true)
+  }
+
+  @Throttle({default:{ttl: 60_000, limit: 5}})
+  @Post("2fa/enable/confirm")
+  @UseGuards(JwtAuthGuard)
+  confirmEnableTwoFactor(@CurrentUserId() userId: string, @Body() dto: TwoFactorCodeDto){
+    return this.auth.confirmTwoFactorToggle(userId,true,dto)
+  }
+
+  @Throttle({default:{ttl: 60_000, limit: 3}})
+  @Post("2fa/disable/request")
+  @UseGuards(JwtAuthGuard)
+  requestDisableTwoFactor(@CurrentUserId() userId: string){
+    return this.auth.requestTwoFactorToggle(userId, false)
+  }
+
+  @Throttle({default:{ttl: 60_000, limit: 5}})
+  @Post("2fa/disable/confirm")
+  @UseGuards(JwtAuthGuard)
+  confirmDisableTwoFactor(@CurrentUserId() userId: string, @Body() dto: TwoFactorCodeDto){
+    return this.auth.confirmTwoFactorToggle(userId,false,dto)
+  }
+
   @Post("socket-token")
   @UseGuards(JwtAuthGuard)
   socketToken(@CurrentUserId() userId: string) {
@@ -122,4 +150,5 @@ export class AuthController {
       process.env.WEB_AUTH_CALLBACK_URL ?? "http://localhost:3000/auth/callback"
     return res.redirect(`${redirectUrl}?token=${encodeURIComponent(accessToken)}`)
   }
+
 }

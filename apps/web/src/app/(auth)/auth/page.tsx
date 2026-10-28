@@ -11,6 +11,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form"
+import { TwoFactorLoginForm } from "@/components/auth/two-factor-login-form"
+
+type LoginResponse =
+  | { accessToken: string; requiresTwoFactor?: undefined }
+  | { requiresTwoFactor: true; challengeToken: string; email: string }
 
 export default function AuthPage() {
   const router = useRouter()
@@ -23,6 +28,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [challenge, setChallenge] = useState<{ token: string; email: string } | null>(null)
 
   useEffect(() => {
     function onMessage(ev: MessageEvent) {
@@ -41,35 +47,45 @@ export default function AuthPage() {
     return () => window.removeEventListener("message", onMessage)
   }, [nextUrl, router])
 
+  function finishLogin(accessToken: string) {
+    setAccessToken(accessToken)
+    router.replace(nextUrl)
+    router.refresh()
+  }
+
+  async function submitCredentials() {
+    const endpoint = mode === "login" ? "/auth/login" : "/auth/register"
+    const body =
+      mode === "login"
+        ? { email, password }
+        : { name: name.trim(), email, password }
+
+    const res = await fetch(apiUrl(endpoint), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    })
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => null)
+      throw new Error(data?.message ?? "Request failed")
+    }
+
+    const data = (await res.json()) as LoginResponse
+    if (data.requiresTwoFactor) {
+      setChallenge({ token: data.challengeToken, email: data.email })
+      return
+    }
+    if (!data?.accessToken) throw new Error("Missing accessToken")
+    finishLogin(data.accessToken)
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
-
     try {
-      const endpoint = mode === "login" ? "/auth/login" : "/auth/register"
-      const body =
-        mode === "login"
-          ? { email, password }
-          : { name: name.trim(), email, password }
-
-      const res = await fetch(apiUrl(endpoint), {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-      })
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null)
-        throw new Error(data?.message ?? "Request failed")
-      }
-
-      const data = (await res.json()) as { accessToken: string }
-      if (!data?.accessToken) throw new Error("Missing accessToken")
-
-      setAccessToken(data.accessToken)
-      router.replace(nextUrl)
-      router.refresh()
+      await submitCredentials()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Request failed")
     } finally {
@@ -105,23 +121,39 @@ export default function AuthPage() {
           <span className="ks-brand-text text-2xl">Ksocial</span>
         </Link>
         <h1 className="mt-4 text-xl font-bold tracking-tight">
-          {mode === "forgot-password"
-            ? "Reset your password"
-            : mode === "login"
-              ? "Welcome back"
-              : "Join Ksocial"}
+          {challenge
+            ? "Two-step verification"
+            : mode === "forgot-password"
+              ? "Reset your password"
+              : mode === "login"
+                ? "Welcome back"
+                : "Join Ksocial"}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {mode === "forgot-password"
-            ? "We'll email you a 6-digit code"
-            : mode === "login"
-              ? "Sign in to connect with your community"
-              : "Create an account to start sharing"}
+          {challenge
+            ? "Enter the code from your email to finish signing in"
+            : mode === "forgot-password"
+              ? "We'll email you a 6-digit code"
+              : mode === "login"
+                ? "Sign in to connect with your community"
+                : "Create an account to start sharing"}
         </p>
       </div>
 
       <div className="space-y-4 px-6 py-6">
-        {mode === "forgot-password" ? (
+        {challenge ? (
+          <TwoFactorLoginForm
+            challengeToken={challenge.token}
+            email={challenge.email}
+            onSuccess={finishLogin}
+            onResend={submitCredentials}
+            onBack={() => {
+              setChallenge(null)
+              setPassword("")
+              setError(null)
+            }}
+          />
+        ) : mode === "forgot-password" ? (
           <ForgotPasswordForm
             onBackToLogin={() => {
               setMode("login")

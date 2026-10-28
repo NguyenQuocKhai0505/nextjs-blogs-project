@@ -13,6 +13,7 @@ import type { SessionMeta } from "./session-meta.js"
 import { SessionsService } from "../sessions/session.service.js"
 import { describeUserAgent } from "./user-agent.js"
 import { LoginTwoFactorDto } from "./dto/login-two-factor.dto.js"
+import { TwoFactorCodeDto } from "./dto/login-two-factor.dto.js"
 
 const ACCESS_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const MAX_OTP_ATTEMPTS = 5
@@ -385,6 +386,50 @@ export class AuthService {
     return this.issueTokens(payload.sub, meta)
   }
 
+  async requestTwoFactorToggle(userId: string, enable: boolean) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, twoFactorEnabled: true },
+    })
+    if (!user) throw new UnauthorizedException("User not found")
+
+    if (user.twoFactorEnabled === enable) {
+      throw new BadRequestException(
+        enable
+          ? "Two-factor authentication is already enabled"
+          : "Two-factor authentication is already disabled"
+      )
+    }
+
+    const account = await this.prisma.account.findFirst({
+      where: { userId, providerId: "credentials" },
+      select: { password: true },
+    })
+    if (!account?.password) {
+      throw new BadRequestException("Two-factor authentication only applies to password login")
+    }
+
+    await this.sendOtp(
+      user,
+      enable ? OtpPurpose.ENABLE_2FA : OtpPurpose.DISABLE_2FA,
+      enable
+        ? "Confirm enabling two-factor authentication"
+        : "Confirm disabling two-factor authentication"
+    )
+    return { message: "OTP sent to your email", email: maskEmail(user.email) }
+  }
+
+  async confirmTwoFactorToggle(userId: string, enable: boolean, dto: TwoFactorCodeDto) {
+    await this.verifyOtp(userId, enable ? OtpPurpose.ENABLE_2FA : OtpPurpose.DISABLE_2FA, dto.otp)
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { twoFactorEnabled: enable },
+    })
+    return {
+      twoFactorEnabled: enable,
+      message: `Two-factor authentication ${enable ? "enabled" : "disabled"} successfully`,
+    }
+  }
   private async startLoginChallenge(user: { id: string; email: string }) {
     await this.sendOtp(user, OtpPurpose.LOGIN_2FA, "Your Ksocial sign-in code")
 

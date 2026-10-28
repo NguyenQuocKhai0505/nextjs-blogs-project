@@ -29,6 +29,7 @@ export class UsersService {
         bio: true,
         createdAt: true,
         role: true,
+        twoFactorEnabled: true,
       } as Prisma.UserSelect,
     })
     if (!user) throw new NotFoundException("User not found")

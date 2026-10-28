@@ -10,3 +10,10 @@ export class LoginTwoFactorDto {
   @Matches(/^\d{6}$/)
   otp!: string
 }
+
+export class TwoFactorCodeDto {
+  @IsString()
+  @Length(6, 6)
+  @Matches(/^\d{6}$/)
+  otp!: string
+}
